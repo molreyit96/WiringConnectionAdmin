@@ -1,6 +1,6 @@
 {% extends 'index.html' %} 
 {%load static%}
-{% block title %} Duplicate Order List {% endblock %} 
+{% block title %} Login Audit {% endblock %} 
 {% load humanize %}
 {% block container %}
 
@@ -8,81 +8,136 @@
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
 
-        
         <div class="row">
             <div class="col-sm-12">
                 <div class="card">
                     <h6 class="card-header card-header-wc" >Filters</h6>
                     <div class="card-body">
-                        <div class="row">  
-                            <div class="col-lg-1">  
-                                User
-                            </div>                    
-                            <div class="col-lg-2">                                  
-                                    <input class="form-control" type="text" name="user" id="user" value={{selectUser}}>
+                        <div class="row">
+                            <div class="col-lg-2">
+                                <label>Date From</label>
+                                <input class="form-control" type="date" name="date_from" id="date_from" value="{{date_from}}">
                             </div>
-                            <div class="col-lg-8">                                                              
-                                <div class="form-outline" style="align-items: center;">
-                                    <input class="btn btn-primary" type="submit" value="Search">                            
-                                   
+                            <div class="col-lg-2">
+                                <label>Date To</label>
+                                <input class="form-control" type="date" name="date_to" id="date_to" value="{{date_to}}">
+                            </div>
+                            <div class="col-lg-2">
+                                <label>Operation Type</label>
+                                <select class="form-control" name="operationType" id="operationType">
+                                    <option value="">All</option>
+                                    {% for op in operationTypes %}
+                                    <option value="{{op}}" {% if selectOperationType == op %}selected{% endif %}>{{op}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-lg-2">
+                                <label>User</label>
+                                <select class="form-control" name="createdBy" id="createdBy">
+                                    <option value="">All</option>
+                                    {% for u in createdByList %}
+                                    <option value="{{u}}" {% if selectCreatedBy == u %}selected{% endif %}>{{u}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-lg-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_staff" id="is_staff" value="1" {% if select_is_staff %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_staff">is Staff</label>
                                 </div>
                             </div>
-                            <div class="col-lg-1">  
+                            <div class="col-lg-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_supervisor" id="is_supervisor" value="1" {% if select_is_supervisor %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_supervisor">is Sup.</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin" value="1" {% if select_is_admin %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_admin">is Admin</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_superAdmin" id="is_superAdmin" value="1" {% if select_is_superAdmin %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_superAdmin">is SuperAdmin</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-lg-12">
+                                <input class="btn btn-primary" type="submit" value="Search">
+                                <a href="/login_audit/" type="button" class="btn btn-secondary">Clear</a>
                                 <a href="/" type="button" class="btn btn-danger">Close</a>
                             </div>
                         </div>
+                        {% if filter_error %}
+                        <div class="row mt-2">
+                            <div class="col-lg-12">
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    {{filter_error}}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
 
-  
+        {% if applied %}
         <div class="row">
             <div class="col-sm-12 my-3">
                 <div class="card">
-                    <h6 class="card-header card-header-wc" >Audit List</h6>
+                    <h6 class="card-header card-header-wc" >Audit List <span class="badge badge-secondary">{{log|length}} records</span></h6>
                     <div class="card-body">
                         <div class="row">                                          
                             <div class="col-lg-12"> 
+                                <div class="table-responsive">
                                 <table id="orders" class="table table-sm table-bordered table-striped">
                                     <thead class="table-primary">
                                         <tr>
-                                            <th scope="col" style="width: 25%">Date</th>
-                                                <th scope="col" style="width: 25%">Description</th>
-                                                <th scope="col" style="width: 25%">Operation Type</th>                                            
-                                                <th scope="col" style="width: 25%">User</th>  
-                                                <th scope="col" style="width: 25%">is Staff</th> 
-                                                <th scope="col" style="width: 25%">is Sup.</th> 
-                                                <th scope="col" style="width: 25%">is Admin</th> 
-                                                <th scope="col" style="width: 25%">is SuperAdmin</th> 
-
+                                            <th scope="col">Date</th>
+                                            <th scope="col">Description</th>
+                                            <th scope="col">Operation Type</th>                                            
+                                            <th scope="col">User</th>  
+                                            <th scope="col">is Staff</th> 
+                                            <th scope="col">is Sup.</th> 
+                                            <th scope="col">is Admin</th> 
+                                            <th scope="col">is SuperAdmin</th> 
                                         </tr>              
                                     </thead>
                                     <tbody>                                       
                                         {% for data in log %}
                                         <tr>
                                             <td>{{data.created_date|date:"Y-m-d H:i"}}</td>
-                                
-                                            <td>{{data.operationDetail}} </td>
-                                            <td> {{data.operationType}}</td>                     
-                                                                                        
+                                            <td>{{data.operationDetail}}</td>
+                                            <td>{{data.operationType}}</td>
                                             <td>{{data.createdBy}}</td>     
                                             <td>{{data.is_staff}}</td>  
                                             <td>{{data.is_supervisor}}</td>                                             
                                             <td>{{data.is_admin}}</td>  
                                             <td>{{data.is_superAdmin}}</td>  
                                         </tr>                                             
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="8" class="text-center">No records found</td>
+                                        </tr>
                                     {% endfor %}
                                     </tbody>                              
                                 </table>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    
-        
+        {% endif %}
         
     </form>
 </div>

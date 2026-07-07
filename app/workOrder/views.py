@@ -7366,19 +7366,61 @@ def login_audit(request):
     per = period.objects.filter(status__in=(1,2)).first()
     context["per"] = per
 
-    user = ""
+    operationTypes = logInAudit.objects.values_list('operationType', flat=True).distinct().order_by('operationType')
+    context["operationTypes"] = operationTypes
+
+    createdByList = logInAudit.objects.values_list('createdBy', flat=True).distinct().order_by('createdBy')
+    context["createdByList"] = createdByList
+
+    wo_log = logInAudit.objects.none()
+    applied = False
 
     if request.method == "POST":
-        user = request.POST.get('user')
+        applied = True
+        filters = {}
+        date_from = request.POST.get('date_from')
+        date_to = request.POST.get('date_to')
+        operationType = request.POST.get('operationType')
+        createdBy = request.POST.get('createdBy')
+        is_staff = request.POST.get('is_staff')
+        is_supervisor = request.POST.get('is_supervisor')
+        is_admin = request.POST.get('is_admin')
+        is_superAdmin = request.POST.get('is_superAdmin')
 
-    if user != "":
-        wo_log = logInAudit.objects.filter(createdBy = user).order_by('created_date').reverse()
-        context["log"] = wo_log
-    else:
-        wo_log = logInAudit.objects.filter().order_by('created_date').reverse()
-        context["log"] = wo_log
-    
-    context["selectUser"] = user
+        if date_from:
+            filters['created_date__gte'] = parser.parse(date_from)
+        if date_to:
+            filters['created_date__lt'] = parser.parse(date_to) + timedelta(days=1)
+        if operationType:
+            filters['operationType'] = operationType
+        if createdBy:
+            filters['createdBy'] = createdBy
+        if is_staff:
+            filters['is_staff'] = True
+        if is_supervisor:
+            filters['is_supervisor'] = True
+        if is_admin:
+            filters['is_admin'] = True
+        if is_superAdmin:
+            filters['is_superAdmin'] = True
+
+        if not filters:
+            context["filter_error"] = "Select at least one filter to search."
+            applied = False
+        else:
+            wo_log = logInAudit.objects.filter(**filters).order_by('-created_date')
+
+        context["date_from"] = date_from
+        context["date_to"] = date_to
+        context["selectOperationType"] = operationType
+        context["selectCreatedBy"] = createdBy
+        context["select_is_staff"] = is_staff
+        context["select_is_supervisor"] = is_supervisor
+        context["select_is_admin"] = is_admin
+        context["select_is_superAdmin"] = is_superAdmin
+
+    context["log"] = wo_log
+    context["applied"] = applied
 
     return render(request, "login_audit.html", context)
 
