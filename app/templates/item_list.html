@@ -48,7 +48,7 @@
                                                 <td>{{item.itemID}}</td>
                                                 <td>{{item.name}}</td>
                                                 <td>{{item.description}}</td>
-                                                <td> <a href="/update_item/{{item.itemID}}"><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a></td>
+                                                <td> <a href="/update_item/{{item.itemID}}"  data-always-enabled="true" ><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a></td>
                                                 {% if item.is_active %}
                                                     <td> <a href="/item_price/{{item.itemID}}"><i class="fa-solid fa-hand-holding-dollar" style="color: green;"></i></a></td>
                                                 {% else %}

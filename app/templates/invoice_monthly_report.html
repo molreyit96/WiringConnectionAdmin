@@ -18,7 +18,7 @@
                                 <div class="mb-3">    
                                     <label for="PID" class="form-label">Select Date From</label>                
                                     <div class="input-group mb-3">  
-                                        <input type="date" name="date" 
+                                        <input data-always-enabled="true" type="date" name="date" 
                                             placeholder="mm-dd-yyyy" value=""
                                             min="1997-01-01" max="2030-12-31" class="form-control" required>
                                     </div>       
@@ -28,7 +28,7 @@
                                 <div class="mb-3">    
                                     <label for="PID" class="form-label">To</label>                
                                     <div class="input-group mb-3">  
-                                        <input type="date" name="date2" 
+                                        <input data-always-enabled="true"  type="date" name="date2" 
                                             placeholder="mm-dd-yyyy" value=""
                                             min="1997-01-01" max="2030-12-31" class="form-control" required>
                                     </div>       
@@ -39,7 +39,7 @@
                                 <div class="mb-3">    
                                     <label for="PID" class="form-label">Status</label>                
                                         <div class="input-group mb-3">   
-                                            <select class="form-select" aria-label="Default select example" name="status" id="status"> 
+                                            <select data-always-enabled="true"  class="form-select" aria-label="Default select example" name="status" id="status"> 
                                             
                                                 {%if selectEstatus == "0"%} 
                                                     <option value ="0"  selected >Status</option>
@@ -96,15 +96,15 @@
                             
                             <div class="col-lg-5">                                                              
                                 <div class="form-outline" style="align-items: center;">
-                                    <input class="btn btn-primary" type="submit" value="Search">     
+                                    <input data-always-enabled="true"  class="btn btn-primary" type="submit" value="Search">     
                                     {%if dateSelected%}
-                                        <a class="btn btn-primary" href="/get_monthly_report/{{dateSelected|date:'Y-m-d'}}/{{dateSelected2|date:'Y-m-d'}}/{{statusSelected}}" role="button">Download</a>
+                                        <a data-always-enabled="true"  class="btn btn-primary" href="/get_monthly_report/{{dateSelected|date:'Y-m-d'}}/{{dateSelected2|date:'Y-m-d'}}/{{statusSelected}}" role="button">Download</a>
                                     {%endif%}                       
                                                              
                                 </div>
                             </div>
                             <div class="col-lg-1">  
-                                <a href="/" type="button" class="btn btn-danger">Close</a>
+                                <a data-always-enabled="true"  href="/" type="button" class="btn btn-danger">Close</a>
                             </div>
                         </div> 
                         

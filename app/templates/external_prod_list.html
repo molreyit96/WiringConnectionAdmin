@@ -84,7 +84,7 @@
                                         {%if emp.is_supervisor == False and order.Status != "5"%}                                                                           
                                             <a class="btn btn-success" href="/create_external_prod/{{order.id}}" role="button">Add External Production</a>
                                         {%endif%}
-                                        <a href="/order_detail/{{order.id}}/{{emp.is_supervisor}}" type="button" class="btn btn-danger">Close</a> 
+                                        <a href="/order_detail/{{order.id}}/{{emp.is_supervisor}}" type="button" class="btn btn-danger" data-always-enabled="true">Close</a> 
                                     </div>
                                 </div>
                             </div>   

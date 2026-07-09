@@ -60,7 +60,7 @@
                                 
                             </div>
                             <div class="col-sm-2">
-                                <a class="btn btn-danger btn" href="/period_list/" ><i class="fa-solid fa-right-from-bracket fa-2x m-2"></i></br>Close</a>                                       
+                                <a class="btn btn-danger btn" href="/period_list/" data-always-enabled="true"><i class="fa-solid fa-right-from-bracket fa-2x m-2"></i></br>Close</a>                                       
                             </div>
                         </div>                                   
                     </div> 
@@ -231,7 +231,7 @@
                                                     {%endif%}
                                                 </td>
                                                 <td> 
-                                                    <a href="/payroll/{{period.id}}/0/0/{{item.LocationID}}">
+                                                    <a href="/payroll/{{period.id}}/0/0/{{item.LocationID}}" class="delete-link">
                                                         <i class="fa-solid fa-circle-arrow-right" style="color: green;"></i>
                                                     </a>
                                                 </td>

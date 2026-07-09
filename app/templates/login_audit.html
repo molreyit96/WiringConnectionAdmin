@@ -16,15 +16,15 @@
                         <div class="row">
                             <div class="col-lg-2">
                                 <label>Date From</label>
-                                <input class="form-control" type="date" name="date_from" id="date_from" value="{{date_from}}">
+                                <input data-always-enabled="true"  class="form-control" type="date" name="date_from" id="date_from" value="{{date_from}}">
                             </div>
                             <div class="col-lg-2">
                                 <label>Date To</label>
-                                <input class="form-control" type="date" name="date_to" id="date_to" value="{{date_to}}">
+                                <input data-always-enabled="true"  class="form-control" type="date" name="date_to" id="date_to" value="{{date_to}}">
                             </div>
                             <div class="col-lg-2">
                                 <label>Operation Type</label>
-                                <select class="form-control" name="operationType" id="operationType">
+                                <select data-always-enabled="true"  class="form-control" name="operationType" id="operationType">
                                     <option value="">All</option>
                                     {% for op in operationTypes %}
                                     <option value="{{op}}" {% if selectOperationType == op %}selected{% endif %}>{{op}}</option>
@@ -33,43 +33,43 @@
                             </div>
                             <div class="col-lg-2">
                                 <label>User</label>
-                                <select class="form-control" name="createdBy" id="createdBy">
+                                <select data-always-enabled="true"  class="form-control" name="createdBy" id="createdBy">
                                     <option value="">All</option>
                                     {% for u in createdByList %}
                                     <option value="{{u}}" {% if selectCreatedBy == u %}selected{% endif %}>{{u}}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="col-lg-1">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="is_staff" id="is_staff" value="1" {% if select_is_staff %}checked{% endif %}>
-                                    <label class="form-check-label" for="is_staff">is Staff</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-1">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="is_supervisor" id="is_supervisor" value="1" {% if select_is_supervisor %}checked{% endif %}>
-                                    <label class="form-check-label" for="is_supervisor">is Sup.</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-1">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin" value="1" {% if select_is_admin %}checked{% endif %}>
-                                    <label class="form-check-label" for="is_admin">is Admin</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-1">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="is_superAdmin" id="is_superAdmin" value="1" {% if select_is_superAdmin %}checked{% endif %}>
-                                    <label class="form-check-label" for="is_superAdmin">is SuperAdmin</label>
+                            <div class="col-lg-4">
+                                <label class="form-label">Roles</label>
+                                <div>
+                                    <div class="form-check form-check-inline">
+                                        <input data-always-enabled="true"  class="form-check-input" type="checkbox" name="is_staff" id="is_staff" value="1" {% if select_is_staff %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_staff">Staff</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input data-always-enabled="true"  class="form-check-input" type="checkbox" name="is_supervisor" id="is_supervisor" value="1" {% if select_is_supervisor %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_supervisor">Sup.</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input data-always-enabled="true"  class="form-check-input" type="checkbox" name="is_admin" id="is_admin" value="1" {% if select_is_admin %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_admin">Admin</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" name="is_superAdmin" id="is_superAdmin" value="1" {% if select_is_superAdmin %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_superAdmin">SuperAdmin</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                                
+
                         <div class="row mt-2">
                             <div class="col-lg-12">
-                                <input class="btn btn-primary" type="submit" value="Search">
-                                <a href="/login_audit/" type="button" class="btn btn-secondary">Clear</a>
-                                <a href="/" type="button" class="btn btn-danger">Close</a>
+                                <input data-always-enabled="true" class="btn btn-primary" type="submit" value="Search">
+                                <a data-always-enabled="true"  href="/login_audit/" type="button" class="btn btn-secondary">Clear</a>
+                                <a data-always-enabled="true"  href="/" type="button" class="btn btn-danger">Close</a>
                             </div>
                         </div>
                         {% if filter_error %}

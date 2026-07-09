@@ -20,13 +20,13 @@
                                     <label for="employee" class="form-label">Employee</label>                
                                         <div class="input-group mb-3">   
                                             {% if post %}
-                                            <input type="text" class="form-control" placeholder="Select Employee" aria-label="employeeName" id="employeeName" name="employeeName" aria-describedby="basic-addon1" value="" required disabled> 
-                                            <input type="text" class="form-control" placeholder="Select Employee" aria-label="employee" id="employee" name="employee" aria-describedby="basic-addon1" value="" hidden>                          
+                                            <input data-always-enabled="true" type="text" class="form-control" placeholder="Select Employee" aria-label="employeeName" id="employeeName" name="employeeName" aria-describedby="basic-addon1" value="" required disabled> 
+                                            <input data-always-enabled="true" type="text" class="form-control" placeholder="Select Employee" aria-label="employee" id="employee" name="employee" aria-describedby="basic-addon1" value="" hidden>                          
                                             {% else %}
-                                                <input type="text" class="form-control" placeholder="Select Employee" aria-label="employeeName" id="employeeName" name="employeeName" aria-describedby="basic-addon1" value="{{selectedEmployeeName}}" required disabled> 
-                                                <input type="text" class="form-control" placeholder="Select Employee" aria-label="employee" id="employee" name="employee" aria-describedby="basic-addon1" value="{{selectedEmployeeID}}" hidden>                                                                                               
+                                                <input data-always-enabled="true" type="text" class="form-control" placeholder="Select Employee" aria-label="employeeName" id="employeeName" name="employeeName" aria-describedby="basic-addon1" value="{{selectedEmployeeName}}" required disabled> 
+                                                <input data-always-enabled="true" type="text" class="form-control" placeholder="Select Employee" aria-label="employee" id="employee" name="employee" aria-describedby="basic-addon1" value="{{selectedEmployeeID}}" hidden>                                                                                               
                                             {% endif %}
-                                            <button hx-get="/employee_list_pay_report/" class="btn btn-primary py-2" hx-target="#dialog" ><i class="fa-sharp fa-solid fa-magnifying-glass"></i></button>                                            
+                                            <button data-always-enabled="true" hx-get="/employee_list_pay_report/" class="btn btn-primary py-2" hx-target="#dialog" ><i class="fa-sharp fa-solid fa-magnifying-glass"></i></button>                                            
                                         </div>
                                 </div>
                                 
@@ -35,7 +35,7 @@
                                 <div class="mb-3">    
                                     <label for="PID" class="form-label">Select Date From</label>                
                                     <div class="input-group mb-3">  
-                                        <input type="date" name="date" 
+                                        <input data-always-enabled="true" type="date" name="date" 
                                             placeholder="mm-dd-yyyy" value=""
                                             min="1997-01-01" max="2030-12-31" class="form-control" required>
                                     </div>       
@@ -45,7 +45,7 @@
                                 <div class="mb-3">    
                                     <label for="PID" class="form-label">To</label>                
                                     <div class="input-group mb-3">  
-                                        <input type="date" name="date2" 
+                                        <input data-always-enabled="true" type="date" name="date2" 
                                             placeholder="mm-dd-yyyy" value=""
                                             min="1997-01-01" max="2030-12-31" class="form-control" required>
                                     </div>       
@@ -56,7 +56,7 @@
                                 <div class="mb-3">    
                                     <label for="PID" class="form-label">Location</label>                
                                         <div class="input-group mb-3">   
-                                            <select class="form-select" aria-label="Default select example" name="location" id="location">                                                
+                                            <select data-always-enabled="true"  class="form-select" aria-label="Default select example" name="location" id="location">                                                
                                                 <!--{%if locationSelected == "0" %}
                                                     <option value ="0" selected>Location</option>
                                                 {%else%}
@@ -83,9 +83,9 @@
                             
                             <div class="col-lg-5">                                                              
                                 <div class="form-outline" style="align-items: center;">
-                                    <input class="btn btn-primary" type="submit" value="Search">     
+                                    <input data-always-enabled="true"  class="btn btn-primary" type="submit" value="Search">     
                                     {%if dateSelected%}                                        
-                                        <a class="btn btn-primary" href="/get_summary_by_employee/{{dateSelected|date:'Y-m-d'}}/{{dateSelected2|date:'Y-m-d'}}/{{selectedEmployeeID}}/{{locationSelected}}/1" role="button">Download</a>
+                                        <a data-always-enabled="true"  class="btn btn-primary" href="/get_summary_by_employee/{{dateSelected|date:'Y-m-d'}}/{{dateSelected2|date:'Y-m-d'}}/{{selectedEmployeeID}}/{{locationSelected}}/1" role="button">Download</a>
                                     {%endif%}                       
                                     <a href="/" type="button" class="btn btn-danger">Close</a>                             
                                 </div>

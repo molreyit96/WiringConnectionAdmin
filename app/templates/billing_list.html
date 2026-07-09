@@ -123,7 +123,7 @@
                             </div>
                             <div class="col-sm-1">
                                 <a href="/order_detail/{{order.id}}/{{emp.is_supervisor}}" type="button"
-                                    class="btn btn-danger">Close</a>
+                                    class="btn btn-danger" data-always-enabled="true">Close</a>
                             </div>
                         </div>
 
@@ -180,6 +180,7 @@
                                             <td class="p-1">
                                                 <a data-bs-toggle="tooltip" data-bs-placement="top"
                                                     title="Estimate Preview"
+                                                    data-always-enabled="true"
                                                     hx-get="/estimate_preview/{{order.id}}/{{itemd.estimateNumber}}"
                                                     hx-target="#dialog"><i class="fa-solid fa-magnifying-glass"
                                                         style="color: green;"></i></a>
@@ -216,6 +217,7 @@
                                                     &nbsp;
                                                     {% if itemd.is_partial %}
                                                         <a data-bs-toggle="tooltip" data-bs-placement="top"
+                                                        class="delete-link"
                                                         title="Convert to final estimate"
                                                         onclick="convert_to_final({{order.id}},{{itemd.estimateNumber}})" >
                                                             <i class="fa-solid fa-magic" style="color: blue;"></i></a>
@@ -223,6 +225,7 @@
                                                     {% else %}
                                                         <a data-bs-toggle="tooltip" data-bs-placement="top"
                                                         title="Convert to Partial estimate"
+                                                        class="delete-link"
                                                         onclick="convert_to_partial({{order.id}},{{itemd.estimateNumber}})" >
                                                             <i class="fa-solid fa-magic" style="color: blue;"></i></a>
                                                         &nbsp;
@@ -290,6 +293,7 @@
                                             <!--<td class="p-1">{{itemd.total}}</td>-->
                                             <td class="p-1">
                                                 <a hx-get="/invoice_preview/{{order.id}}/{{itemd.invoiceNumber}}"
+                                                    data-always-enabled="true"
                                                     hx-target="#dialog"><i class="fa-solid fa-magnifying-glass"
                                                         style="color: green;"></i></a>
                                                 &nbsp; <a data-bs-toggle="tooltip" data-bs-placement="top"
@@ -303,6 +307,8 @@
                                                         
                                                         &nbsp; 
                                                         <a data-bs-toggle="tooltip" data-bs-placement="top"
+                                                        data-always-enabled="false"
+                                                        class="delete-link"
                                                         title="Delete Invoice"
                                                         onclick="deleteInvoice({{order.id}},{{itemd.invoiceNumber}})" >
                                                             <i class="fa-solid fa-trash" style="color: red;"></i></a>

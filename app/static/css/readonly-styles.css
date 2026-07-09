@@ -1,0 +1,120 @@
+/* static/css/readonly-styles.css */
+
+/* Read-only mode body class */
+body.readonly-mode [hx-get],
+body.readonly-mode [hx-post],
+body.readonly-mode [hx-put],
+body.readonly-mode [hx-delete],
+body.readonly-mode [hx-patch] {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+/* But allow exceptions */
+body.readonly-mode [data-always-enabled="true"] {
+    cursor: pointer !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Disabled HTMX elements */
+.htmx-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+/* Read-only disabled elements */
+.readonly-disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
+/* Lock icon only for buttons and links - NOT for inputs */
+.readonly-icon {
+    display: inline-block;
+    font-size: 0.7em;
+    opacity: 0.6;
+    margin-left: 4px;
+}
+
+/* Buttons with lock icon */
+button.readonly-disabled .readonly-icon,
+a.readonly-disabled .readonly-icon,
+.action-link .readonly-icon,
+.delete-link .readonly-icon,
+.edit-link .readonly-icon {
+    display: inline-block;
+}
+
+/* Ensure inputs don't get lock icon */
+input.readonly-disabled .readonly-icon,
+textarea.readonly-disabled .readonly-icon,
+select.readonly-disabled .readonly-icon {
+    display: none !important;
+}
+
+/* Read-only banner */
+.readonly-banner {
+    animation: slideDown 0.3s ease-out;
+    border-left: 4px solid #ffc107;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Read-only info bar */
+.readonly-info-bar {
+    border-left: 4px solid #0d6efd;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Disabled form fields - NO lock icons */
+form .readonly-disabled input,
+form .readonly-disabled select,
+form .readonly-disabled textarea {
+    background-color: #f8f9fa !important;
+    cursor: not-allowed !important;
+}
+
+/* Ensure no lock icon appears on form fields */
+form input.readonly-disabled::after,
+form textarea.readonly-disabled::after,
+form select.readonly-disabled::after {
+    display: none !important;
+    content: '' !important;
+}
+
+/* Keep close, cancel, back, and search buttons enabled */
+body.readonly-mode .close-btn,
+body.readonly-mode .close-button,
+body.readonly-mode .btn-close,
+body.readonly-mode .cancel-btn,
+body.readonly-mode .back-btn,
+body.readonly-mode .search-btn,
+body.readonly-mode .search-button,
+body.readonly-mode [data-always-enabled="true"] {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+}

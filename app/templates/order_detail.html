@@ -103,7 +103,7 @@
                                     <button hx-get="/wo_comment_log/{{order.id}}/{{isSupervisor}}" class="btn btn-success py-2 mx-1" hx-target="#dialog" data-bs-toggle="tooltip" data-bs-placement="top" title="Add Comment">
                                         <i class="fa-solid fa-comment-medical"></i>
                                     </button>
-                                    <button hx-get="/get_wo_comment_log/{{order.id}}" class="btn btn-primary py-2 mx-1" hx-target="#dialog" data-bs-toggle="tooltip" data-bs-placement="top" title="View Comments">
+                                    <button hx-get="/get_wo_comment_log/{{order.id}}" class="btn btn-primary py-2 mx-1" hx-target="#dialog" data-bs-toggle="tooltip" data-bs-placement="top" title="View Comments" data-always-enabled="true">
                                         <i class="fa-solid fa-comment"></i>
                                         
                                     </button>  
@@ -111,12 +111,12 @@
                                         <i class="fa-solid fa-file-upload"></i>
                                     </button>  
                                     {% if order.invoiceFile %}
-                                        <button type="button" class="btn btn-info py-2 mx-1" data-bs-toggle="modal" data-bs-target="#viewInvoiceModal" data-bs-toggle="tooltip" data-bs-placement="top" title="View Invoice">
+                                        <button type="button" class="btn btn-info py-2 mx-1" data-bs-toggle="modal" data-bs-target="#viewInvoiceModal" data-bs-toggle="tooltip" data-bs-placement="top" title="View Invoice" data-always-enabled="true">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
                                     {% endif %}
                                     
-                                        <a href="/order_list/" class="btn btn-danger ml-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Go Back">
+                                        <a href="/order_list/" class="btn btn-danger ml-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Go Back" data-always-enabled="true">
                                             <i class="fa-solid fa-right-from-bracket"></i>
                                         </a>
                                     
@@ -149,7 +149,7 @@
                                     {% endif %}                                
                                 {% endif %} 
 
-                                <a class="btn btn-success" data-bs-toggle="tooltip" data-bs-placement="top" title="Status Log" href="/status_log/{{order.id}}/{{isSupervisor}}"><i class="fa-solid fa-clock-rotate-left fa-2x m-2" style="color: white;"></i></br>Status Log</a> 
+                                <a class="btn btn-success" data-always-enabled="true" data-bs-toggle="tooltip" data-bs-placement="top" title="Status Log" href="/status_log/{{order.id}}/{{isSupervisor}}"><i class="fa-solid fa-clock-rotate-left fa-2x m-2" style="color: white;"></i></br>Status Log</a> 
                             </div>
                         </div>     
 
@@ -175,7 +175,7 @@
                     <h6 class="card-header card-header-wc" >Billing</h6>
                     <div class="card-body">        
                         {%if order.Status != "1" and order.Status != "6"%}     
-                            <a class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Billing Detail" href="/billing_list/{{order.id}}/False"><i class="fa-solid fa-calculator fa-2x m-2" style="color: white;"></i></br>Billing</a>                                                
+                            <a class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Billing Detail" data-always-enabled="true" href="/billing_list/{{order.id}}/False"><i class="fa-solid fa-calculator fa-2x m-2" style="color: white;"></i></br>Billing</a>                                                
                             <!--<a data-bs-toggle="tooltip" data-bs-placement="top" title="Authorized Billing" href="/authorized_billing_list/{{order.id}}"><i class="fa-solid fa-money-check-dollar" style="color: green;"></i></a> -->                                                                                                                
                         {%endif%}
                     </div>

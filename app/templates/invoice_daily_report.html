@@ -19,21 +19,21 @@
                             </div>
                             <div class="col-lg-2">                           
                                 
-                                <input type="date" name="date" 
+                                <input data-always-enabled="true" type="date" name="date" 
                                 placeholder="mm-dd-yyyy" value=""
                                 min="1997-01-01" max="2030-12-31" required>
                             </div>
                             <div class="col-lg-8">                                                              
                                 <div class="form-outline" style="align-items: center;">
-                                    <input class="btn btn-primary" type="submit" value="Search">     
+                                    <input data-always-enabled="true"  class="btn btn-primary" type="submit" value="Search">     
                                     {%if dateSelected%}
-                                        <a class="btn btn-primary" href="/get_daily_report/{{dateSelected|date:'Y-m-d'}}" role="button">Download</a>
+                                        <a  data-always-enabled="true" class="btn btn-primary" href="/get_daily_report/{{dateSelected|date:'Y-m-d'}}" role="button">Download</a>
                                     {%endif%}                       
                                                              
                                 </div>
                             </div>
                             <div class="col-lg-1">  
-                                <a href="/" type="button" class="btn btn-danger">Close</a>
+                                <a data-always-enabled="true" href="/" type="button" class="btn btn-danger">Close</a>
                             </div>
                         </div>
                     </div>

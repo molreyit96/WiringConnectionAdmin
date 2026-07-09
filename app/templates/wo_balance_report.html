@@ -16,7 +16,7 @@
                         <div class="row"> 
                             <div class="col-lg-2">   
                                 Status                                                  
-                                <select class="form-select" aria-label="Default select example" name="status" id="status"> 
+                                <select data-always-enabled="true" class="form-select" aria-label="Default select example" name="status" id="status"> 
                                     
                                     {%if selectEstatus == "0"%} 
                                         <option value ="0"  selected >Status</option>
@@ -68,9 +68,9 @@
                             <div class="col-lg-2">  
                                 Location                          
                                 {%if emp.is_superAdmin or user.is_staff or emp.is_admin %} 
-                                    <select class="form-select" aria-label="Default select example" name="location" id="location">                                                
+                                    <select data-always-enabled="true" class="form-select" aria-label="Default select example" name="location" id="location">                                                
                                 {%else%}
-                                    <select class="form-select" aria-label="Default select example" name="location" id="location" hidden>                                    
+                                    <select data-always-enabled="true" class="form-select" aria-label="Default select example" name="location" id="location" hidden>                                    
                                 {%endif%}
                                 {%if selectLoc == "0" %}
                                     <option value ="0" selected>Location</option>
@@ -91,7 +91,7 @@
                      
                             <div class="col-lg-6 pt-4">                                                              
                                 <div class="form-outline" style="align-items: center;">
-                                    <input class="btn btn-primary" type="submit" value="Search">   
+                                    <input data-always-enabled="true" class="btn btn-primary" type="submit" value="Search">   
                                                                       
                                     {% if selectEstatus != None and selectEstatus != "0" or selectLoc != None and selectLoc != "0"%} 
                                         <a class="btn btn-primary" href="/get_balance_report/{{selectEstatus}}/{{selectLoc}}" role="button">Download</a>                            

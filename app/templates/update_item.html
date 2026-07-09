@@ -34,7 +34,7 @@
                                     <div class="form-outline" style="align-items: center;">                                       
                                         <!-- <input type="submit" value="Save"> -->
                                         <input class="btn btn-primary" type="submit" value="Update">
-                                        <a class="btn btn-danger" href="/item_list/" role="button">Close</a>
+                                        <a class="btn btn-danger" href="/item_list/" role="button"  data-always-enabled="true" >Close</a>
                                         {%if user.is_staff or emp.is_superAdmin%}
                                             <a class="btn btn-success" role="button" onclick="confirmDelete('{{is_used}}', '{{included_in}}', '{{form.itemID.value}}')">Delete Item</a>
                                         {%endif%}

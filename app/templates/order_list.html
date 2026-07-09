@@ -33,7 +33,7 @@
                         <div class="row">                   
                             <div class="col-lg-2">   
                                 Status                                                  
-                                <select class="form-select" aria-label="Default select example" name="status" id="status"> 
+                                <select class="form-select" aria-label="Default select example" name="status" id="status" data-always-enabled="true"> 
                                     
                                     {%if selectEstatus == "0"%} 
                                         <option value ="0"  selected >Status</option>
@@ -85,7 +85,7 @@
                             <div class="col-lg-2">  
                                 Location                          
                                 {%if emp.is_superAdmin or user.is_staff or emp.is_admin %} 
-                                    <select class="form-select" aria-label="Default select example" name="location" id="location">                                                
+                                    <select class="form-select" aria-label="Default select example" name="location" id="location" data-always-enabled="true">                                                
                                 {%else%}
                                     <select class="form-select" aria-label="Default select example" name="location" id="location" hidden>                                    
                                 {%endif%}
@@ -108,25 +108,25 @@
                                 
                                 {% if emp.is_superAdmin  or user.is_staff or emp.is_admin %}
                                 PID
-                                    <input class="form-control" type="text" name="pid" id="pid" value={{selectPID}}>
+                                    <input class="form-control" type="text" name="pid" id="pid" data-always-enabled="true" value={{selectPID}}>
                                 {%endif%}                                
                             </div>     
                             <div class="col-lg-2">                                
                                 {% if emp.is_superAdmin  or user.is_staff or emp.is_admin %}
                                 Invoice
-                                    <input class="form-control" type="text" name="invoiceNumber" id="invoiceNumber" value={{selectedInvoice}}>
+                                    <input class="form-control" type="text" name="invoiceNumber" id="invoiceNumber" data-always-enabled="true" value={{selectedInvoice}}>
                                 {%endif%}                                
                             </div>   
                             <div class="col-lg-2">                                
                                 {% if emp.is_superAdmin  or user.is_staff or emp.is_admin%}
                                 Amount From
-                                <input class="form-control" type="text" name="invoiceAmount" id="invoiceAmount" value="{{selectedAmount}}">
+                                <input class="form-control" type="text" name="invoiceAmount" id="invoiceAmount" value="{{selectedAmount}}" data-always-enabled="true">
                                 {%endif%}                 
                             </div>    
                             <div class="col-lg-2">                                
                                 {% if emp.is_superAdmin  or user.is_staff or emp.is_admin %}
                                 Amount To
-                                <input class="form-control" type="text" name="invoiceAmountF" id="invoiceAmountF" value="{{selectedAmountF}}">
+                                <input class="form-control" type="text" name="invoiceAmountF" id="invoiceAmountF" value="{{selectedAmountF}}" data-always-enabled="true">
                                 {%endif%}                 
                             </div>                   
                         </div>
@@ -135,14 +135,14 @@
                                 
                                 {% if emp.is_superAdmin  or user.is_staff or emp.is_admin %}
                                     Address
-                                    <input class="form-control" type="text" name="address" id="address" value="{{selectedAddress}}">
+                                    <input class="form-control" type="text" name="address" id="address" value="{{selectedAddress}}" data-always-enabled="true">
                                 {%endif%}           
                             </div>
                         </div>
                         <div class="row my-4">  
                             <div class="col-lg-4">                                                              
                                 <div class="form-outline" style="align-items: center;">
-                                    <input class="btn btn-primary" type="submit" value="Search">                            
+                                    <input class="btn btn-primary" type="submit" value="Search" data-always-enabled="true">                            
                                     <a class="btn btn-primary" href="/get_order_list/{{selectEstatus}}/{{selectLoc}}/{{selectPIDd}}/{{selectedAddressd}}/{{selectedInvoiced}}/{{selectedAmountd}}/{{selectedAmountFd}}/False" role="button">Download</a>  
                                     {% if emp.is_superAdmin  or user.is_staff or emp.is_admin %}
                                         <a class="btn btn-success" href="/create_order/" role="button">Create New</a>                                    

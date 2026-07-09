@@ -38,12 +38,31 @@
       <link rel="stylesheet" href="{% static 'sidebar/css/style.css' %} ">
   
   
-  
+      {% if emp.is_read_only %}
+        <link rel="stylesheet" href="{% static 'css/readonly-styles.css' %}">
+      {% endif %}
   
   </head>
   
   
   <body>
+
+    <script>      
+      var emp = {
+          id: {{ emp.employeeID|default:0 }},
+          name: "{{ emp.first_name|default:'' }} {{ emp.last_name|default:'' }}".trim(),
+          email: "{{ emp.email|default:'' }}",
+          is_read_only: {{ emp.is_read_only|yesno:"true,false" }},
+          is_admin: {{ emp.is_admin|yesno:"true,false" }},
+          employee_id: {{ emp.employeeID|default:0 }}
+      };
+      
+      // Only log once
+      if (emp && emp.is_read_only && !window._empLogged) {
+          console.log('Employee loaded:', emp.name);
+          window._empLogged = true;
+      }
+  </script>
       
     <div class="wrapper d-flex align-items-stretch">
       
@@ -99,10 +118,13 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.js"></script>
   
-              <!-- chartJS -->
-              <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
-              <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.js"></script>                                                         
+  <!-- chartJS -->
+  <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+  <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.js"></script>                                                         
   
+  {% if emp.is_read_only %}      
+      <script src="{% static 'js/readonly-controls.js' %}?v=1.0.0"></script>
+  {% endif %}  
   
   
   
@@ -190,6 +212,8 @@
                 $('.alert').show()
             })
         });
+
+        
   
 </script>
 

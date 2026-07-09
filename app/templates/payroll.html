@@ -557,11 +557,11 @@
                             <div class="col-sm-12">
                                 {% for item in week1 %}
                                     {% if item.selected %}
-                                        <a class="btn btn-success position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                        <a data-always-enabled="true" class="btn btn-success position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
                                             {{item.shortDate}}
                                         </a>
                                     {% else %}
-                                        <a class="btn btn-primary position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                        <a data-always-enabled="true" class="btn btn-primary position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
                                             {{item.shortDate}}
                                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
                                                 {{item.Total|intcomma}}
@@ -584,11 +584,11 @@
                             <div class="col-sm-12">
                                 {% for item in week2 %}
                                     {% if item.selected %}
-                                        <a class="btn btn-success position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                        <a data-always-enabled="true"  class="btn btn-success position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
                                             {{item.shortDate}}
                                         </a>
                                     {% else %}
-                                        <a class="btn btn-primary position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                        <a data-always-enabled="true" class="btn btn-primary position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
                                             {{item.shortDate}}
                                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
                                                 {{item.Total|intcomma}}
@@ -614,7 +614,7 @@
                 {% endif %}
                 {% for item in crew %}
                     {% if item.crew == selectedCrew %}
-                        <a class="btn btn-warning px-2" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
+                        <a data-always-enabled="true" class="btn btn-warning px-2" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
                             {% if item.sent_by == None %}
                                 crew {{item.crew}}
                             {% else %}
@@ -624,9 +624,9 @@
                     {% else %}
                         {% if item.approved_by != None %}
                             {% if item.download_date != None %}
-                                <a class="btn btn-primary position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
+                                <a data-always-enabled="true" class="btn btn-primary position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
                             {% else %}
-                                <a class="btn btn-info position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
+                                <a data-always-enabled="true" class="btn btn-info position-relative px-2 mx-3 my-2" style="text-align:start !important;" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
                             {% endif %}
                             {% if item.sent_by == None %}
                                 crew {{item.crew}}
@@ -639,9 +639,9 @@
                         </a>
                         {% else %}
                             {% if item.download_date != None %}
-                                <a class="btn btn-primary px-2" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
+                                <a data-always-enabled="true" class="btn btn-primary px-2" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
                             {% else %}
-                                <a class="btn btn-info px-2" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
+                                <a data-always-enabled="true" class="btn btn-info px-2" href="/payroll/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button">
                             {% endif %}
                             {% if item.sent_by == None %}
                                 crew {{item.crew}}
@@ -671,7 +671,7 @@
             </div>
             
             <div class="col-sm-1">
-                <a class="btn btn-danger" href="/home/">Close</a>
+                <a data-always-enabled="true" class="btn btn-danger" href="/home/">Close</a>
             </div>
         </div>
         
@@ -1087,7 +1087,7 @@
                                                                     </a>
                                                                 {% endif %}
                                                             {% endif %}
-                                                            <button type="button" class="btn btn-sm btn-info load-thumbnails-btn" data-section="maps">
+                                                            <button data-always-enabled="true" type="button" class="btn btn-sm btn-info load-thumbnails-btn" data-section="maps">
                                                                 <i class="fas fa-images"></i> Load Thumbnails
                                                             </button>
                                                         </div>
@@ -1112,7 +1112,7 @@
                                                                     </a>
                                                                 {% endif %}
                                                             {% endif %}
-                                                            <button type="button" class="btn btn-sm btn-info load-thumbnails-btn" data-section="pictures">
+                                                            <button data-always-enabled="true" type="button" class="btn btn-sm btn-info load-thumbnails-btn" data-section="pictures">
                                                                 <i class="fas fa-images"></i> Load Thumbnails
                                                             </button>
                                                         </div>
@@ -1137,7 +1137,7 @@
                                                                     </a>
                                                                 {% endif %}
                                                             {% endif %}
-                                                            <button type="button" class="btn btn-sm btn-info load-thumbnails-btn" data-section="material">
+                                                            <button data-always-enabled="true" type="button" class="btn btn-sm btn-info load-thumbnails-btn" data-section="material">
                                                                 <i class="fas fa-images"></i> Load Thumbnails
                                                             </button>
                                                         </div>
@@ -1160,7 +1160,7 @@
                                     <div class="modal-content">
                                         <div class="modal-header">
                                             <h5 class="modal-title" id="staticBackdropLabel">Update Supervisor - dist. payment - Own Vehicle</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            <button data-always-enabled="true" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
                                             <form method='post' action="" enctype="multipart/form-data" id="update_sup">

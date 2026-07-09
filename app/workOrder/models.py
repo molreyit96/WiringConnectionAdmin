@@ -68,6 +68,7 @@ class Employee(models.Model):
     is_superAdmin = models.BooleanField(default=False)
     is_manager = models.BooleanField(default=False)
     is_mobile = models.BooleanField(default=False)
+    is_read_only = models.BooleanField(default=False)
     accounts_payable = models.BooleanField(default=False)
 
     def __str__(self):
