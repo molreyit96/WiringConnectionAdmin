@@ -7920,6 +7920,15 @@ def update_subcontractor(request, id):
     obj = get_object_or_404(subcontractor, id = id)
  
     form = subcontractorForm(request.POST or None, instance = obj)
+    
+    can_delete = False
+    #Validate if the subcontractor is associeted with an External production
+    ep_sub = externalProduction.objects.filter(subcontractor = obj).count()
+    #Validete if the subcontractor is associated with an Internal PO:
+    ipo_sub = internalPO.objects.filter(vendor= 'S'+ str(obj.id)).count()
+    
+    if ep_sub == 0 and ipo_sub == 0:
+        context["can_delete"] = True
  
     if form.is_valid():
         form.save()
@@ -7927,7 +7936,19 @@ def update_subcontractor(request, id):
 
     context["form"] = form
     context["emp"] = emp
+    context["subcontractor_id"] = id
+    
     return render(request, "create_subcontractor.html", context)
+
+@login_required(login_url='/home/')
+def delete_subcontractor(request, id):   
+
+    obj = get_object_or_404(subcontractor, id = id)
+ 
+    if obj:
+        obj.delete()        
+        
+    return HttpResponseRedirect("/subcontractor_list/")
 
 @login_required(login_url='/home/')
 def external_prod_list(request, id):

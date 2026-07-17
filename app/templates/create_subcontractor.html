@@ -35,6 +35,19 @@
                                 }
                             }
 
+                            function delete_subcontractor(id) {
+                                event.preventDefault();
+
+                                //console.log(id)
+
+                                if (confirm(`Are you sure to remove this Subcontractor?`))
+                                {           
+                                    window.location.href = `/delete_subcontractor/${id}`;
+                            
+                                    
+                                }  
+                            };
+
                             // Add this to run when page loads
                             document.addEventListener('DOMContentLoaded', function() {
                                 var pay70Percent = document.getElementById("pay70Percent");
@@ -192,7 +205,13 @@
                                 <div class="col-lg-6">  
                                     <div class="form-outline" style="align-items: center;">                                                                   
                                         <input class="btn btn-primary" type="submit" value="Save">
-                                        <a class="btn btn-danger" href="/subcontractor_list/" role="button">Close</a>
+                                        <a class="btn btn-danger" href="/subcontractor_list/" role="button">Close</a>                                       
+                                        {% if emp.is_superAdmin  or user.is_staff %}    
+                                            {%if can_delete %}                                     
+                                                <a class="btn btn-warning" onclick="delete_subcontractor({{subcontractor_id}})">Remove</a>                                            
+
+                                            {%endif%}                                            
+                                        {%endif%}
                                     </div>
                                 </div>
                             </div>                                    
@@ -203,3 +222,4 @@
     </form>
 </div>
 {% endblock %}
+

@@ -62,6 +62,9 @@ def mobile(request):
 def mobile_home(request, LocID):
     emp =  catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     per = catalogModel.period.objects.filter(status=1).first()
+    
+    #Select the location according to the parameter
+    loca = catalogModel.Locations.objects.filter(LocationID = LocID).first()
 
     if not per:
         per = catalogModel.period.objects.filter(periodID=-1).first()
@@ -75,7 +78,7 @@ def mobile_home(request, LocID):
         per.save()
 
     else:
-        rejectedDailys = DailyMob.objects.filter(Period=per, Status=5, created_by=request.user.username)
+        rejectedDailys = DailyMob.objects.filter(Period=per, Status=5, created_by=request.user.username, Location = loca)
 
 
     context ={}
@@ -98,8 +101,7 @@ def mobile_home(request, LocID):
     else:
         context["selectedLocation"] = LocID
 
-    #Select the location according to the parameter
-    loca = catalogModel.Locations.objects.filter(LocationID = LocID).first()
+    
     
     # validate that yesterday and today are within the active period
     from_date = getattr(per, 'fromDate', None)
@@ -389,6 +391,7 @@ def crew(request, perID, dID, crewID, LocID):
         superV = catalogModel.Employee.objects.filter(is_supervisor=True)
 
     user = request.user.username
+    
 
     if dID != "0":
 
@@ -402,6 +405,8 @@ def crew(request, perID, dID, crewID, LocID):
             context["AddCrew"] = True
         
         context["crew"] = crews
+
+  
 
     if crews.count() == 1:
         crewID = crews.first().crew

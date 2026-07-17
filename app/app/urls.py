@@ -128,6 +128,7 @@ urlpatterns = [
     path('create_subcontractor/',views.create_subcontractor),
     path('create_subcontractor_modal/<woID>/<tipoOP>/<poID>',views.create_subcontractor_modal),
     path('update_subcontractor/<id>',views.update_subcontractor),
+    path('delete_subcontractor/<id>',views.delete_subcontractor),
     path('external_prod_list/<id>',views.external_prod_list),
     path('create_external_prod/<woID>',views.create_external_prod),
     path('get_external_prod/<id>',views.get_external_prod),
