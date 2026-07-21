@@ -73,10 +73,12 @@
                                         {% if form.invoice != '' and form.invoice != None %}
                                             <a class="btn btn-info" href="/static/media/{{form.invoice}}" target="_blank">View Invoice</a>
                                         {%endif%}
-                                        {%if emp.is_supervisor == False and order.Status != "5" %}
-                                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
-                                                upload Invoice
-                                            </button>
+                                        {%if emp.is_supervisor == False %}
+                                            {%if order.Status != "5" or emp.is_superAdmin or user.is_staff %}
+                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                                                    upload Invoice
+                                                </button>
+                                            {%endif%}
                                         {%endif%}
                                     </div>
                                 </div>
@@ -88,10 +90,12 @@
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="form-outline" style="align-items: center;">
-                                {%if emp.is_supervisor == False and order.Status != "5" %}
-                                    <a class="btn btn-success" hx-get="/update_external_prod/{{form.id}}" hx-target="#dialog">UPDATE</a>
-                                    {%if is_open %}
-                                        <a class="btn btn-warning" onclick="remove_production({{form.id}})">Remove</a>
+                                {%if emp.is_supervisor == False %}
+                                    {%if order.Status != "5" or emp.is_superAdmin or user.is_staff %}
+                                        <a class="btn btn-success" hx-get="/update_external_prod/{{form.id}}" hx-target="#dialog">UPDATE</a>
+                                        {%if is_open %}
+                                            <a class="btn btn-warning" onclick="remove_production({{form.id}})">Remove</a>
+                                        {%endif%}
                                     {%endif%}
                                 {%endif%}
 
@@ -127,8 +131,10 @@
                                                 <td width="15%" class="p-1">Total</td>  
                                                 <td width="15%" class="p-1">     
                                                     {% if emp.is_superAdmin or emp.is_admin or user.is_staff  %}     
-                                                        {%if emp.is_supervisor == False and order.Status != "5" %}
-                                                            <a hx-get="/create_ext_prod_item/{{form.id}}" hx-target="#dialog"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        {%if emp.is_supervisor == False %}
+                                                            {%if order.Status != "5" or emp.is_superAdmin or user.is_staff %}
+                                                                <a hx-get="/create_ext_prod_item/{{form.id}}" hx-target="#dialog"><i class="fa-solid fa-circle-plus"></i></a>
+                                                            {% endif %}
                                                         {% endif %}
                                                     {%endif%}
                                                 </td>                                                 
@@ -144,7 +150,7 @@
                                                     <td class="p-1 text-right">${{itemd.total|floatformat:2|intcomma}}</td>   
                                                     <td class="p-1">
                                                         {% if emp.is_superAdmin or emp.is_admin or user.is_staff  %}     
-                                                            {%if itemd.Status <= 2 %}                                                         
+                                                            {%if itemd.Status <= 2 or emp.is_superAdmin or user.is_staff %}                                                         
                                                                 <a hx-get="/update_ext_prod_item/{{itemd.id}}" hx-target="#dialog"><i class="fa-solid fa-pen-to-square" style="color: green;"></i> Edit</a>
                                                                 <a hx-get="/delete_ext_prod_item/{{itemd.id}}" hx-target="#dialog"><i class="fa-solid fa-circle-minus" style="color: red;"></i> Remove</a>
                                                             {%endif%}

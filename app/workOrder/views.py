@@ -8022,6 +8022,7 @@ def get_external_prod(request, id):
     context["per"] = per
     context["form"] = obj
     context["emp"] = emp
+    context["order"] = obj.woID
     return render(request, "get_external_prod.html", context)
 
 @login_required(login_url='/home/')
@@ -8107,6 +8108,51 @@ def upload_external_prod(request, id):
 
     return HttpResponseRedirect("/get_external_prod/" + str(id))
 
+def propagate_ext_prod_changes_to_billing(request, ext_prod_item):
+    wo = ext_prod_item.externalProdID.woID
+    new_item = ext_prod_item.itemID
+    new_qty = ext_prod_item.quantity
+    new_total = ext_prod_item.total
+
+    auth = None
+
+    if ext_prod_item.autORIZEDID:
+        auth = authorizedBilling.objects.filter(id=ext_prod_item.autORIZEDID.id).first()
+
+    if not auth and ext_prod_item.invoice:
+        auth = authorizedBilling.objects.filter(
+            woID=wo, itemID=new_item, invoice=ext_prod_item.invoice
+        ).first()
+
+    if not auth and ext_prod_item.estimate:
+        auth = authorizedBilling.objects.filter(
+            woID=wo, itemID=new_item, estimate=ext_prod_item.estimate
+        ).first()
+
+    if not auth:
+        auth = authorizedBilling.objects.filter(
+            woID=wo, itemID=new_item, Status__in=(2, 3)
+        ).first()
+
+    if auth:
+        auth.itemID = new_item
+        auth.quantity = new_qty
+        auth.total = new_total
+        auth.updated_date = datetime.now()
+        auth.updatedBy = request.user.username
+        auth.save()
+
+        ext_prod_item.autORIZEDID = auth
+        ext_prod_item.save()
+
+    estimates = woEstimate.objects.filter(woID=wo, Status__in=(1, 2))
+    for est in estimates:
+        calculate_estimate_total(request, wo.id, est.estimateNumber)
+
+    invoices = woInvoice.objects.filter(woID=wo, Status__in=(1, 2))
+    for inv in invoices:
+        calculate_invoice_total(request, wo.id, inv.invoiceNumber)
+
 @login_required(login_url='/home/')
 def create_ext_prod_item(request, id):
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
@@ -8116,6 +8162,10 @@ def create_ext_prod_item(request, id):
     context["per"] = per
 
     dailyID = externalProduction.objects.filter(id = id).first()
+
+    if dailyID.woID.Status == '5' and not emp.is_superAdmin:
+        messages.error(request, "Solo SuperAdmin puede agregar items de produccion externa en ordenes facturadas")
+        return HttpResponseRedirect("/get_external_prod/" + str(dailyID.id))
 
     dailyI = externalProdItem.objects.filter(externalProdID = dailyID)
     itemList = []
@@ -8174,6 +8224,10 @@ def update_ext_prod_item(request, id):
 
     obj = get_object_or_404(externalProdItem, id = id)
 
+    if obj.externalProdID.woID.Status == '5' and not emp.is_superAdmin:
+        messages.error(request, "Solo SuperAdmin puede modificar produccion externa en ordenes facturadas")
+        return HttpResponseRedirect("/get_external_prod/" + str(obj.externalProdID.id))
+
     itemLocation = itemPrice.objects.filter(location__LocationID = obj.externalProdID.woID.Location.LocationID)
     
     itemSelected = itemPrice.objects.filter(id = obj.itemID.id ).first()
@@ -8190,7 +8244,9 @@ def update_ext_prod_item(request, id):
         form.instance.itemID = selectedItem
 
         form.save()
-        context["emp"] = emp     
+        context["emp"] = emp
+
+        propagate_ext_prod_changes_to_billing(request, form.instance)
 
         return HttpResponseRedirect("/get_external_prod/" + str(form.instance.externalProdID.id)) 
 
@@ -8209,13 +8265,18 @@ def delete_ext_prod_item(request, id):
     context["per"] = per
 
     obj = get_object_or_404(externalProdItem, id = id)
+
+    if obj.externalProdID.woID.Status == '5' and not emp.is_superAdmin:
+        messages.error(request, "Solo SuperAdmin puede eliminar items de produccion externa en ordenes facturadas")
+        return HttpResponseRedirect("/get_external_prod/" + str(obj.externalProdID.id))
  
     context["form"] = obj
     context["emp"] = emp
  
     if request.method == 'POST':
+        wo = obj.externalProdID.woID
 
-        authItem = authorizedBilling.objects.filter(woID = obj.externalProdID.woID, itemID = obj.itemID, Status = 1).first()
+        authItem = authorizedBilling.objects.filter(woID = wo, itemID = obj.itemID, Status = 1).first()
 
         if authItem:
             if authItem.quantity == obj.quantity:
@@ -8224,8 +8285,24 @@ def delete_ext_prod_item(request, id):
                 authItem.quantity -=  obj.quantity
                 authItem.save()
 
+        authItemInvoiced = authorizedBilling.objects.filter(woID = wo, itemID = obj.itemID, Status__in=(2, 3)).first()
+
+        if authItemInvoiced:
+            if authItemInvoiced.quantity == obj.quantity:
+                authItemInvoiced.delete()
+            else:
+                authItemInvoiced.quantity -= obj.quantity
+                authItemInvoiced.save()
+
         obj.delete()
 
+        estimates = woEstimate.objects.filter(woID=wo, Status__in=(1, 2))
+        for est in estimates:
+            calculate_estimate_total(request, wo.id, est.estimateNumber)
+
+        invoices = woInvoice.objects.filter(woID=wo, Status__in=(1, 2))
+        for inv in invoices:
+            calculate_invoice_total(request, wo.id, inv.invoiceNumber)
 
         return HttpResponseRedirect("/get_external_prod/" + str(obj.externalProdID.id)) 
 
