@@ -8116,8 +8116,8 @@ def propagate_ext_prod_changes_to_billing(request, ext_prod_item):
 
     auth = None
 
-    if ext_prod_item.autORIZEDID:
-        auth = authorizedBilling.objects.filter(id=ext_prod_item.autORIZEDID.id).first()
+    if ext_prod_item.autorizedID:
+        auth = authorizedBilling.objects.filter(id=ext_prod_item.autorizedID.id).first()
 
     if not auth and ext_prod_item.invoice:
         auth = authorizedBilling.objects.filter(
@@ -8142,7 +8142,7 @@ def propagate_ext_prod_changes_to_billing(request, ext_prod_item):
         auth.updatedBy = request.user.username
         auth.save()
 
-        ext_prod_item.autORIZEDID = auth
+        ext_prod_item.autorizedID = auth
         ext_prod_item.save()
 
     estimates = woEstimate.objects.filter(woID=wo, Status__in=(1, 2))
