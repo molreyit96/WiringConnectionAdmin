@@ -2657,7 +2657,7 @@ def estimate(request, id, estimateID):
         if data.quantity > 0:
 
             #calculate the Price for each item
-            price = Decimal(str(data.total)) / Decimal(str(data.quantity))
+            price = Decimal(str(data.total).replace(',', '')) / Decimal(str(data.quantity))
 
             itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price': price, 'amount':data.total,'Encontrado':False})
             #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':data.total,'Encontrado':False})
@@ -2695,9 +2695,9 @@ def estimate(request, id, estimateID):
         if data.total != None and data.total != "":
             
             if data.isAmountRounded:    
-                amount = int(round(float(str(data.total))))  
+                amount = int(round(float(str(data.total).replace(',', ''))))  
             else:
-                amount = Decimal(str(data.total))      
+                amount = Decimal(str(data.total).replace(',', ''))      
             
         else:
             amount = 0
@@ -3104,7 +3104,7 @@ def invoice(request, id, invoiceID):
         if data.quantity > 0:
 
             #calculate the Price for each item
-            price = Decimal(str(data.total)) / Decimal(str(data.quantity))
+            price = Decimal(str(data.total).replace(',', '')) / Decimal(str(data.quantity))
 
             itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':price, 'amount':data.total,'Encontrado':False})
             #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':data.total,'Encontrado':False})
@@ -3141,9 +3141,9 @@ def invoice(request, id, invoiceID):
         linea = linea + 1
         if data.total != None and data.total != "":
             if data.isAmountRounded:
-                amount = int(round(float(str(data.total)))) 
+                amount = int(round(float(str(data.total).replace(',', '')))) 
             else:
-                amount = Decimal(str(data.total))
+                amount = Decimal(str(data.total).replace(',', ''))
         else:
             amount = 0
 
@@ -3165,7 +3165,7 @@ def invoice(request, id, invoiceID):
             itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="13%" align="center"> </td> '
             
             if data.isAmountRounded:
-                itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center"> $'  + '{0:,.2f}'.format(int(round(float(str(data.total))))) + '</td>'
+                itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center"> $'  + '{0:,.2f}'.format(int(round(float(str(data.total).replace(',', ''))))) + '</td>'
             else:
                 itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center"> $'  + '{0:,.2f}'.format(float(data.total)) + '</td>'
             
@@ -3337,7 +3337,7 @@ def download_estimate_preview(request, id, estimateID):
         if data.quantity > 0:
 
             #calculate the Price for each item
-            price = Decimal(str(data.total)) / Decimal(str(data.quantity))
+            price = Decimal(str(data.total).replace(',', '')) / Decimal(str(data.quantity))
 
             itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price': price, 'amount':data.total,'Encontrado':False})
             #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':data.total,'Encontrado':False})
@@ -3378,9 +3378,9 @@ def download_estimate_preview(request, id, estimateID):
         if data.total != None and data.total != "":
             
             if data.isAmountRounded:
-                amount = int(round(float(str(data.total))))  
+                amount = int(round(float(str(data.total).replace(',', ''))))  
             else:
-                amount = Decimal(str(data.total)) 
+                amount = Decimal(str(data.total).replace(',', '')) 
         else:
             amount = 0
 
@@ -3533,7 +3533,7 @@ def estimate_preview(request, id, estimateID):
         if data.quantity > 0:
 
             #calculate the Price for each item
-            price = Decimal(str(data.total)) / Decimal(str(data.quantity))
+            price = Decimal(str(data.total).replace(',', '')) / Decimal(str(data.quantity))
 
             itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':price, 'amount':data.total,'Encontrado':False})
             #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':data.total,'Encontrado':False})
@@ -3574,9 +3574,9 @@ def estimate_preview(request, id, estimateID):
         if data.total != None and data.total != "":
             
             if data.isAmountRounded:
-                amount = int(round(float(str(data.total))))  
+                amount = int(round(float(str(data.total).replace(',', ''))))  
             else:
-                amount = Decimal(str(data.total)) 
+                amount = Decimal(str(data.total).replace(',', '')) 
         else:
             amount = 0
 
@@ -3708,7 +3708,7 @@ def invoice_preview(request, id, invoiceID):
     for data in authBilling:
         if data.quantity > 0:
             #calculate the Price for each item
-            price = Decimal(str(data.total)) / Decimal(str(data.quantity))
+            price = Decimal(str(data.total).replace(',', '')) / Decimal(str(data.quantity))
 
             itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':price, 'amount':data.total,'Encontrado':False})
             #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':data.total,'Encontrado':False})
@@ -3745,9 +3745,9 @@ def invoice_preview(request, id, invoiceID):
         linea = linea + 1
         if data.total != None and data.total != "":
             if data.isAmountRounded:
-                amount = int(round(float(str(data.total)))) 
+                amount = int(round(float(str(data.total).replace(',', '')))) 
             else:
-                amount = Decimal(str(data.total))
+                amount = Decimal(str(data.total).replace(',', ''))
         else:
             amount = 0
 
@@ -3765,7 +3765,7 @@ def invoice_preview(request, id, invoiceID):
             itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="13%" align="center">  </td> '
             
             if data.isAmountRounded:
-                itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center"> $'  + '{0:,.2f}'.format(int(round(float(str(data.total))))) + '</td>'
+                itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center"> $'  + '{0:,.2f}'.format(int(round(float(str(data.total).replace(',', ''))))) + '</td>'
             else:
                 itemHtml = itemHtml + ' <td style="border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center"> $'  + '{0:,.2f}'.format(float(data.total)) + '</td>'
             
@@ -3914,9 +3914,9 @@ def calculate_invoice_total(request, id, invoiceID):
         linea = linea + 1
         if data.total != None and data.total != "":
             if data.isAmountRounded:
-                amount = int(round(float(str(data.total)))) 
+                amount = int(round(float(str(data.total).replace(',', '')))) 
             else:
-                amount = Decimal(str(data.total))
+                amount = Decimal(str(data.total).replace(',', ''))
         else:
             amount = 0
 
@@ -3998,9 +3998,9 @@ def calculate_estimate_total(request, id, estimateID):
         linea = linea + 1
         if data.total != None and data.total != "":
             if data.isAmountRounded:
-                amount = int(round(float(str(data.total)))) 
+                amount = int(round(float(str(data.total).replace(',', '')))) 
             else:
-                amount = Decimal(str(data.total))
+                amount = Decimal(str(data.total).replace(',', ''))
         else:
             amount = 0
 
@@ -6535,10 +6535,11 @@ def get_order_list(request,estatus, loc,pid,addR,invNumber,invAmount,invAmountF,
         poTotal = 0
         for po in internalpo:
             if po.total:
+                poTotalStr = str(po.total).replace(',', '')
                 if po.isAmountRounded:
-                    poTotal += int(round(float(str(po.total))))
+                    poTotal += int(round(float(poTotalStr)))
                 else:
-                    poTotal += Decimal(str(po.total))
+                    poTotal += Decimal(poTotalStr)
 		
         poTotal = validate_decimals(poTotal)
 
@@ -9116,9 +9117,9 @@ def billing_list(request, id, isRestoring):
         for i in internal:
             if i.total:
                 if i.isAmountRounded:
-                    po_total += int(round(float(str(i.total))))
+                    po_total += int(round(float(str(i.total).replace(',', ''))))
                 else:
-                    po_total += Decimal(str(i.total))
+                    po_total += Decimal(str(i.total).replace(',', ''))
 		
         po_total = validate_decimals(po_total)
         
@@ -9130,9 +9131,9 @@ def billing_list(request, id, isRestoring):
         for i in internal_facturado:
             if i.total:
                 if i.isAmountRounded:
-                    po_facturado += int(round(float(str(i.total))))
+                    po_facturado += int(round(float(str(i.total).replace(',', ''))))
                 else:
-                    po_facturado += Decimal(str(i.total))
+                    po_facturado += Decimal(str(i.total).replace(',', ''))
 		
         po_facturado = validate_decimals(po_facturado)
         
@@ -9144,9 +9145,9 @@ def billing_list(request, id, isRestoring):
         for i in internal_no_facturado:
             if i.total:
                 if i.isAmountRounded:
-                    po_no_facturado += int(round(float(str(i.total))))
+                    po_no_facturado += int(round(float(str(i.total).replace(',', ''))))
                 else:
-                    po_no_facturado += Decimal(str(i.total))
+                    po_no_facturado += Decimal(str(i.total).replace(',', ''))
 		
         po_no_facturado = validate_decimals(po_no_facturado)
         
@@ -9997,9 +9998,9 @@ def invoice_monthly_report(request):
             for data in internal:                
                 if data.total != None and data.total != "":                    
                     if data.isAmountRounded:
-                        amount = int(round(float(str(data.total))))  
+                        amount = int(round(float(str(data.total).replace(',', ''))))  
                     else:
-                        amount = Decimal(str(data.total)) 
+                        amount = Decimal(str(data.total).replace(',', '')) 
                 else:
                     amount = 0
 
@@ -10621,9 +10622,9 @@ def get_monthly_report(request, dateSelected, dateSelected2, status):
         for data in internal:                
             if data.total != None and data.total != "":                    
                 if data.isAmountRounded:
-                    amount = int(round(float(str(data.total))))  
+                    amount = int(round(float(str(data.total).replace(',', ''))))  
                 else:
-                    amount = Decimal(str(data.total)) 
+                    amount = Decimal(str(data.total).replace(',', '')) 
             else:
                 amount = 0
 
@@ -11782,9 +11783,9 @@ def get_invoiced_production_total_for_wo(wo):
     for i in internal_facturado:
         if i.total:
             if i.isAmountRounded:
-                po_facturado += int(round(float(str(i.total))))
+                po_facturado += int(round(float(str(i.total).replace(',', ''))))
             else:
-                po_facturado += Decimal(str(i.total))
+                po_facturado += Decimal(str(i.total).replace(',', ''))
     
     po_facturado = validate_decimals(po_facturado)  
     
@@ -11835,10 +11836,11 @@ def get_uninvoiced_production_total_for_wo(wo):
     
     for i in internal_no_facturado:
         if i.total:
+            totalStr = str(i.total).replace(',', '')
             if i.isAmountRounded:
-                po_no_facturado += int(round(float(str(i.total))))
+                po_no_facturado += int(round(float(totalStr)))
             else:
-                po_no_facturado += Decimal(str(i.total))
+                po_no_facturado += Decimal(totalStr)
     
     po_no_facturado = validate_decimals(po_no_facturado)     
     total_no_facturado = 0   
