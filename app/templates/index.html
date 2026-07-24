@@ -145,7 +145,8 @@
     document.body.addEventListener('htmx:beforeRequest', function(e){
       const el = e.detail.elt;
       const target = el.getAttribute('hx-target');
-      if (target === '#dialog') {
+      const isGet = el.hasAttribute('hx-get');
+      if (target === '#dialog' && isGet) {
         pendingBtn = el;
         el.classList.add('disabled');
         el.style.pointerEvents = 'none';
@@ -165,6 +166,17 @@
           pendingBtn = null;
         }
         modal.show();
+      }
+    });
+
+    document.body.addEventListener('htmx:afterOnLoad', function(e){
+      if (e.detail.target && e.detail.target.id === "dialog" && e.detail.xhr.status === 200) {
+        var resp = e.detail.xhr.responseText;
+        if (resp.indexOf('save-success') !== -1) {
+          modal.hide();
+          document.getElementById('dialog').innerHTML = '';
+          window.location.href = window.location.href;
+        }
       }
     });
   });

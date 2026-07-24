@@ -6,7 +6,7 @@
 {% load widget_tweaks%}
 
 <div class="container">
-    <form method='post' action="{{request.path}}" enctype="multipart/form-data" class="modal-content" id="ext_production">
+    <form method='post' action="{{request.path}}" class="modal-content" id="ext_production">
         {% csrf_token %}
 
         <div class="modal-header">
@@ -14,10 +14,8 @@
         </div>              
        
         <div class="modal-body">
+            <div id="save-error" class="alert alert-danger" style="display:none;"></div>
             <div class="row">
-                <!-- Using the formset
-              {{ form.as_p }} -->
-
                 <div class ="row">
                     <div class ="col-lg-12">
                         <div class="mb-3">
@@ -26,21 +24,12 @@
                         </div>
                     </div>
                 </div>
-                <!--<div class ="row">
-                    <div class ="col-lg-12">
-                        <div class="mb-3">
-                            <label for="{{ form.woID.id_for_label }}" class="form-label">Selected Work Order</label>
-                            {% render_field form.woID|append_attr:"disabled:disabled" class="form-control" %}
-                            <div class="invalid-feedback">{{ form.woID.errors|first }}</div>
-                        </div>
-                    </div>
-                </div>-->
                 <div class ="row">
                     <div class ="col-lg-12">
                         <div class="mb-3">
                             <label for="{{ form.subcontractor.id_for_label }}" class="form-label">Subcontractor</label>
                             {% render_field form.subcontractor|append_attr:"required:required" class="form-control" %}
-                            <div class="invalid-feedback">{{ form.subcontractor.errors|first }}</div>
+                            {% if form.subcontractor.errors %}<div class="text-danger small">{{ form.subcontractor.errors|first }}</div>{% endif %}
                         </div>
                     </div>
                 </div>
@@ -48,10 +37,8 @@
                     <div class="col-sm-12">
                         <div class="mb-3">
                             <label for="{{ form.invoiceNumber.id_for_label }}" class="form-label">Invoice Number</label>
-                            
-                                {% render_field form.invoiceNumber|append_attr:"required:required" class="form-control" %}
-                            
-                            <div class="invalid-feedback">{{ form.invoiceNumber.errors|first }}</div>
+                            {% render_field form.invoiceNumber|append_attr:"required:required" class="form-control" %}
+                            {% if form.invoiceNumber.errors %}<div class="text-danger small">{{ form.invoiceNumber.errors|first }}</div>{% endif %}
                         </div>
                     </div>  
                 </div>  
@@ -59,25 +46,62 @@
                 <div class="row">             
                     <div class="col-sm-12">
                         <label for="{{ form.total_invoice.id_for_label }}" class="form-label">Total Invoice</label>                      
-                        {% render_field form.total_invoice|append_attr:"required:required" class="form-control" %}                          
-                        <div class="invalid-feedback">{{ form.total_invoice.errors|first }}</div>
+                        {% render_field form.total_invoice|append_attr:"required:required" class="form-control" %}
+                        {% if form.total_invoice.errors %}<div class="text-danger small">{{ form.total_invoice.errors|first }}</div>{% endif %}
                     </div>                                   
                 </div>  
                 <div class="row">
                     <div class="col-lg-6">
                         <label for="{{ form.invoice_date.id_for_label }}" class="form-label">Invoice Date</label>                       
-                        {% render_field form.invoice_date|append_attr:"required:required" class="form-control" %}                   
-                        <div class="invalid-feedback">{{ form.invoice_date.errors|first }}</div>
+                        {% render_field form.invoice_date|append_attr:"required:required" class="form-control" %}
+                        {% if form.invoice_date.errors %}<div class="text-danger small">{{ form.invoice_date.errors|first }}</div>{% endif %}
                     </div>
                 </div>
           </div>                  
         </div>
         
         <div class="modal-footer">          
-            <button type="submit" class="btn btn-primary" form="ext_production">Save</button>
+            <button type="button" class="btn btn-primary" id="btnSaveExtProd">Save</button>
             <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button> 
         </div>
    
     </form>
 </div>
+
+<script>
+(function(){
+    var form = document.getElementById('ext_production');
+    var btnSave = document.getElementById('btnSaveExtProd');
+    var errorDiv = document.getElementById('save-error');
+    var redirectUrl = '/get_external_prod/{{form.instance.id}}';
+
+    btnSave.addEventListener('click', function(){
+        errorDiv.style.display = 'none';
+        var formData = new FormData(form);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState === 4){
+                if(xhr.status === 200){
+                    window.location.href = redirectUrl;
+                } else {
+                    try {
+                        var resp = JSON.parse(xhr.responseText);
+                        var msgs = [];
+                        for(var field in resp.errors) {
+                            msgs.push(field + ': ' + resp.errors[field].join(', '));
+                        }
+                        errorDiv.innerHTML = msgs.join('<br>') || 'Error saving. Please try again.';
+                    } catch(e) {
+                        errorDiv.innerHTML = 'Error saving. Please try again.';
+                    }
+                    errorDiv.style.display = 'block';
+                }
+            }
+        };
+        xhr.send(formData);
+    });
+})();
+</script>
 {% endblock %}

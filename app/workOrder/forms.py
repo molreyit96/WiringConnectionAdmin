@@ -1,6 +1,7 @@
 import re
 from types import CoroutineType
 from django import forms
+from django.db.models import Q
 from .models import *
 from django.core.validators import FileExtensionValidator
 
@@ -561,7 +562,11 @@ class dailySupForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['woID'].disabled = True        
+        self.fields['woID'].disabled = True
+        if self.instance and self.instance.pk and self.instance.woID:
+            self.fields['woID'].queryset = workOrder.objects.filter(
+                Q(pk=self.instance.woID.pk) | Q(Status__in=(2, 8))
+            )
 
 
 class DailyEmpForm(forms.ModelForm):
@@ -717,7 +722,7 @@ class subcontractorForm(forms.ModelForm):
       
 class extProdForm(forms.ModelForm):
     
-    woID = forms.ModelChoiceField(label = "Selected Work Order", queryset=workOrder.objects.filter(Status__in=(2,8)), widget=forms.Select(attrs={'class':'form-control'}))
+    woID = forms.ModelChoiceField(label = "Selected Work Order", queryset=workOrder.objects.filter(Status__in=(2,5,8)), widget=forms.Select(attrs={'class':'form-control'}))
     subcontractor = forms.ModelChoiceField(queryset=subcontractor.objects.filter(is_active=True), widget=forms.Select(attrs={'class': 'form-control'})) 
     invoiceNumber = forms.CharField(label="Invoice Number", max_length=200, widget=forms.TextInput(attrs={'class':'form-control'}))  
     total_invoice = forms.CharField(label="Total Invoice", max_length=200, widget=forms.TextInput(attrs={'class':'form-control'}))  
@@ -735,6 +740,10 @@ class extProdForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['woID'].disabled = True
+        if self.instance and self.instance.pk and self.instance.woID:
+            self.fields['woID'].queryset = workOrder.objects.filter(
+                Q(pk=self.instance.woID.pk) | Q(Status__in=(2, 5, 8))
+            )
 
 class extProdItemForm(forms.ModelForm):
     """ itemID = forms.ModelChoiceField(queryset=itemPrice.objects.filter(location__LocationID = ),required=False)"""

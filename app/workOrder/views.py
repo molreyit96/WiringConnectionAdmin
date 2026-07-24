@@ -8034,6 +8034,10 @@ def update_external_prod(request, id):
     
     obj = get_object_or_404(externalProduction , id = id )
 
+    if obj.woID.Status == '5' and not emp.is_superAdmin:
+        messages.error(request, "Solo SuperAdmin puede modificar produccion externa en ordenes facturadas")
+        return HttpResponseRedirect("/get_external_prod/" + str(id))
+
     form = extProdForm(request.POST or None, instance = obj)
 
     if form.is_valid():
@@ -8044,7 +8048,16 @@ def update_external_prod(request, id):
             None
         form.save()
 
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            from django.http import JsonResponse
+            return JsonResponse({"status": "ok"})
+
         return HttpResponseRedirect("/get_external_prod/" + str(id))
+    elif request.method == 'POST':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            from django.http import JsonResponse
+            return JsonResponse({"status": "error", "errors": form.errors}, status=400)
+        messages.error(request, "Error al guardar: " + str(form.errors))
 
     context["per"] = per
     context["form"] = form
