@@ -1,7 +1,48 @@
 # utils/email.py
-from django.core.mail import EmailMessage
 from django.conf import settings
 import os
+import json
+import urllib.request
+import urllib.error
+
+
+def send_email_via_brevo(subject, message, recipient_list, html_message=None):
+    api_key = os.environ.get("BREVO_API_KEY", "")
+    from_email = settings.DEFAULT_FROM_EMAIL
+
+    payload = {
+        "sender": {"email": from_email},
+        "to": [{"email": email} for email in recipient_list],
+        "subject": subject,
+        "textContent": message,
+    }
+    if html_message:
+        payload["htmlContent"] = html_message
+
+    data = json.dumps(payload).encode("utf-8")
+    print(f"[BREVO] Sending email to: {recipient_list}, from: {from_email}")
+    print(f"[BREVO] API key present: {bool(api_key)}")
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "api-key": api_key,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            print(f"[BREVO] Email sent OK. Status: {resp.status}")
+            return True, ""
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        print(f"[BREVO] API error {e.code}: {body}")
+        return False, f"Brevo API error {e.code}: {body}"
+    except Exception as e:
+        print(f"[BREVO] Connection error: {str(e)}")
+        return False, f"Connection error: {str(e)}"
+
 
 def send_email_with_attachment(
     subject,

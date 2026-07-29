@@ -204,6 +204,10 @@ urlpatterns = [
          ),
          name='login'),
          path('login/',viewHome.login),
+     path('forgot-password/', viewHome.password_reset_request, name='password_reset'),
+     path('forgot-password/<uidb64>/<token>/', viewHome.password_reset_confirm, name='password_reset_confirm'),
+     path('forgot-password/complete/', viewHome.password_reset_request, name='password_reset_complete'),
+     path('change-password/', viewHome.change_password, name='change_password'),
          # Mobile URLs
         path('mobile/', include('mobile.urls')), 
     ]

@@ -1,8 +1,14 @@
 from django.shortcuts import render, redirect, HttpResponseRedirect
 from django.http import HttpResponse
 from datetime import datetime
-from django.contrib.auth import authenticate, login as login_process
+from django.contrib.auth import authenticate, login as login_process, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.conf import settings
+from utils.email import send_email_via_brevo
 from workOrder import models as woModels
 from mobile import models as mobModels
 from workOrder import views as woViews
@@ -267,3 +273,70 @@ def login(request):
             message = "Username or password is incorrect"
     dic = {'state': state, 'message': message}
     return render(request, 'login.html', dic)
+
+
+def password_reset_request(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        if email:
+            users = User.objects.filter(email__iexact=email)
+            for user in users:
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                reset_url = request.build_absolute_uri(
+                    f'/forgot-password/{uid}/{token}/'
+                )
+                send_email_via_brevo(
+                    subject='Password Reset - Wiring Connection',
+                    message=f'Click the following link to reset your password:\n\n{reset_url}\n\nIf you did not request this, please ignore this email.',
+                    recipient_list=[email],
+                )
+        return render(request, 'password_reset_done.html')
+    return render(request, 'password_reset.html')
+
+
+def password_reset_confirm(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            new_password = request.POST.get('new_password', '')
+            confirm_password = request.POST.get('confirm_password', '')
+            if new_password and new_password == confirm_password:
+                user.set_password(new_password)
+                user.save()
+                return render(request, 'password_reset_complete.html')
+            else:
+                return render(request, 'password_reset_confirm.html', {
+                    'validlink': True,
+                    'error': 'Passwords do not match.',
+                    'uidb64': uidb64,
+                    'token': token,
+                })
+        return render(request, 'password_reset_confirm.html', {
+            'validlink': True,
+            'uidb64': uidb64,
+            'token': token,
+        })
+    return render(request, 'password_reset_confirm.html', {'validlink': False})
+
+
+@login_required(login_url='/login/')
+def change_password(request):
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        if new_password and new_password == confirm_password:
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)
+            return render(request, 'change_password_done.html')
+        else:
+            return render(request, 'change_password.html', {
+                'error': 'Passwords do not match.'
+            })
+    return render(request, 'change_password.html')
