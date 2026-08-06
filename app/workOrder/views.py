@@ -16,6 +16,8 @@ import smtplib
 from django.conf import settings
 from smtplib import SMTP_SSL as SMTP
 from email.mime.text import MIMEText
+# Actualizado: 2026-08-05 - Envio de correos migrado de SMTP a la API de Brevo
+from utils.email import send_email_via_brevo_with_attachment
 from telnetlib import WONT
 from unittest import TextTestResult
 from urllib import response
@@ -6039,10 +6041,118 @@ def generate_recap(empID, perID):
 
     return myPdf
 
+# ============================================================
+# COMENTADAS: 2026-08-05 - Migradas a send_recap_brevo y send_recap_emp_brevo
+# Las funciones antiguas enviaban los recaps via SMTP (django EmailMessage.send()
+# y smtplib.SMTP_SSL), lo cual esta bloqueado en DigitalOcean.
+# Ahora se usa la API de Brevo via HTTPS. Se mantienen comentadas como referencia.
+# ============================================================
+# @login_required(login_url='/home/')
+# def send_recap(request, perID):
+#     empSelected =request.POST.get('Employees')
+#    
+#     try:
+#         if empSelected != 0:
+#             empList = empSelected.split(",")
+#             per = period.objects.filter(id = perID).first()
+#             if per:
+#                 empRecap = employeeRecap.objects.filter(Period = per, EmployeeID__employeeID__in = empList)
+#
+#                 for item in empRecap:
+#                     subject = 'Recap Weeks ' + per.weekRange
+#                     message = 'Hello ' + item.EmployeeID.last_name + ' ' + item.EmployeeID.first_name + ','
+#                     message += '\n \n Attached you can find the recap of the weeks ' + per.weekRange
+#                     message += '\n please review it and let me know if you have any question or problem.'
+#                     message += '\n \n best regards,'
+#                     emailTo = item.EmployeeID.email
+#                     if emailTo != None:
+#                         email =  EmailMessage(subject,message, 'hrdepartment@wiringconnection.com' ,[emailTo])
+#                         email.attach_file(item.recap.path)                    
+#                         email.send()
+#
+#                         item.mailingDate = datetime.now()
+#                         item.save()
+#     except Exception as e:
+#         return render(request,'landing.html',{'message':'Somenthing went Wrong!' + str(e), 'alertType':'danger','emp':emp, 'per': per})
+#    
+#
+#     return HttpResponseRedirect('/location_period_list/' + perID) 
+#
+# def send_email_recap(request, subject, message, destination):
+#     email_sender= os.environ.get('DEFAULT_FROM_EMAIL')
+#     email_pass= settings.EMAIL_HOST_PASSWORD
+#     
+#     SMTPserver = os.environ.get('EMAIL_HOST')
+#     sender =     os.environ.get('EMAIL_HOST_USER')    
+#
+#     # typical values for text_subtype are plain, html, xml
+#     text_subtype = 'html'
+#
+#     msg = MIMEText(message, text_subtype)
+#     msg['Subject']= subject
+#     msg['From']   = sender 
+#     msg['To']   = destination
+#
+#     conn = SMTP(SMTPserver)
+#     conn.set_debuglevel(False)
+#     conn.login(email_sender, email_pass)
+#     try:
+#         conn.sendmail(sender, [destination], msg.as_string())
+#     finally:
+#         conn.quit()
+#
+#     
+#
+# @login_required(login_url='/home/')
+# def send_recap_emp(request, perID, empID):   
+#     per = period.objects.filter(id = perID).first()
+#     emp = Employee.objects.filter(employeeID = empID).first()
+#     try:
+#         if per and emp:
+#             empRecap = employeeRecap.objects.filter(Period = per, EmployeeID = emp)
+#
+#             for item in empRecap:
+#                 subject = 'Recap Weeks ' + per.weekRange
+#                 message = 'Hello ' + item.EmployeeID.last_name + ' ' + item.EmployeeID.first_name + ','
+#                 message += '\n \n Attached you can find the recap of the weeks ' + per.weekRange
+#                 message += '\n please review it and let me know if you have any question or problem.'
+#                 message += '\n \n best regards,'
+#
+#                 emailTo = item.EmployeeID.email              
+#                 
+#                 if emailTo != None:
+#                     email = EmailMessage(subject,message, 'hrdepartment@wiringconnection.com' ,[emailTo])
+#                     email.attach_file(item.recap.path)                
+#                     email.send()
+#
+#                     #send_email_recap(request, subject, message, emailTo)
+#
+#                     item.mailingDate = datetime.now()
+#                     item.save()
+#                 
+#                 
+#     except Exception as e:
+#         return render(request,'landing.html',{'message':'Somenthing went Wrong!' + str(e) + "////" + settings.EMAIL_HOST_PASSWORD + "+++", 'alertType':'danger','emp':emp, 'per': per})
+#    
+#
+#     return HttpResponseRedirect('/location_period_list/' + perID) 
+
+# ============================================================
+# Agregadas: 2026-08-05 - Versiones Brevo de send_recap / send_recap_emp
+# Como funcionan con la API de Brevo:
+#   1. Se obtienen los recaps (PDF) de los empleados del periodo.
+#   2. Por cada empleado con email, se llama a send_email_via_brevo_with_attachment()
+#      pasando la ruta del PDF en attachment_paths.
+#   3. Esa funcion codifica el PDF en base64, arma el payload JSON y hace POST
+#      a https://api.brevo.com/v3/smtp/email con el header "api-key".
+#   4. Si Brevo responde HTTP 201, se registra item.mailingDate.
+# ============================================================
+
 @login_required(login_url='/home/')
-def send_recap(request, perID):
-    empSelected =request.POST.get('Employees')
-   
+def send_recap_brevo(request, perID):
+    empSelected = request.POST.get('Employees')
+    errors = []
+
     try:
         if empSelected != 0:
             empList = empSelected.split(",")
@@ -6057,48 +6167,46 @@ def send_recap(request, perID):
                     message += '\n please review it and let me know if you have any question or problem.'
                     message += '\n \n best regards,'
                     emailTo = item.EmployeeID.email
-                    if emailTo != None:
-                        email =  EmailMessage(subject,message, 'hrdepartment@wiringconnection.com' ,[emailTo])
-                        email.attach_file(item.recap.path)                    
-                        email.send()
+                    if emailTo:
+                        attachment_path = None
+                        if item.recap:
+                            attachment_path = item.recap.path
+                            # Si el PDF no existe en disco (ej. datos restaurados de otro servidor),
+                            # se regenera automaticamente antes de enviar. Agregado: 2026-08-06
+                            if not os.path.exists(attachment_path):
+                                print(f"[BREVO] Recap PDF not found, regenerating for {item.EmployeeID.employeeID}", flush=True)
+                                file = make_recap_pdf(item.EmployeeID.employeeID, perID)
+                                item.recap = file
+                                item.save()
+                                attachment_path = item.recap.path
 
-                        item.mailingDate = datetime.now()
-                        item.save()
+                        # Envio via API Brevo (HTTPS). El remitente lo define DEFAULT_FROM_EMAIL.
+                        is_success, errorMessage = send_email_via_brevo_with_attachment(
+                            subject=subject,
+                            message=message,
+                            recipient_list=[emailTo],
+                            attachment_paths=[attachment_path] if attachment_path else None,
+                        )
+                        if is_success:
+                            item.mailingDate = datetime.now()
+                            item.save()
+                        else:
+                            errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {errorMessage}")
+                            print(f"[BREVO] Error sending recap to {emailTo}: {errorMessage}", flush=True)
     except Exception as e:
-        return render(request,'landing.html',{'message':'Somenthing went Wrong!' + str(e), 'alertType':'danger','emp':emp, 'per': per})
-   
+        return render(request,'landing.html',{'message':'Somenthing went Wrong!' + str(e), 'alertType':'danger', 'per': per})
 
-    return HttpResponseRedirect('/location_period_list/' + perID) 
+    if errors:
+        return render(request,'landing.html',{'message':'Some recap emails were not sent: ' + ' | '.join(errors), 'alertType':'warning', 'per': per})
 
-def send_email_recap(request, subject, message, destination):
-    email_sender= os.environ.get('DEFAULT_FROM_EMAIL')
-    email_pass= settings.EMAIL_HOST_PASSWORD
-    
-    SMTPserver = os.environ.get('EMAIL_HOST')
-    sender =     os.environ.get('EMAIL_HOST_USER')    
+    return HttpResponseRedirect('/location_period_list/' + perID)
 
-    # typical values for text_subtype are plain, html, xml
-    text_subtype = 'html'
-
-    msg = MIMEText(message, text_subtype)
-    msg['Subject']= subject
-    msg['From']   = sender 
-    msg['To']   = destination
-
-    conn = SMTP(SMTPserver)
-    conn.set_debuglevel(False)
-    conn.login(email_sender, email_pass)
-    try:
-        conn.sendmail(sender, [destination], msg.as_string())
-    finally:
-        conn.quit()
-
-    
 
 @login_required(login_url='/home/')
-def send_recap_emp(request, perID, empID):   
+def send_recap_emp_brevo(request, perID, empID):
     per = period.objects.filter(id = perID).first()
     emp = Employee.objects.filter(employeeID = empID).first()
+    errors = []
     try:
         if per and emp:
             empRecap = employeeRecap.objects.filter(Period = per, EmployeeID = emp)
@@ -6110,24 +6218,43 @@ def send_recap_emp(request, perID, empID):
                 message += '\n please review it and let me know if you have any question or problem.'
                 message += '\n \n best regards,'
 
-                emailTo = item.EmployeeID.email              
-                
-                if emailTo != None:
-                    email = EmailMessage(subject,message, 'hrdepartment@wiringconnection.com' ,[emailTo])
-                    email.attach_file(item.recap.path)                
-                    email.send()
+                emailTo = item.EmployeeID.email
 
-                    #send_email_recap(request, subject, message, emailTo)
+                if emailTo:
+                    attachment_path = None
+                    if item.recap:
+                        attachment_path = item.recap.path
+                        # Si el PDF no existe en disco (ej. datos restaurados de otro servidor),
+                        # se regenera automaticamente antes de enviar. Agregado: 2026-08-06
+                        if not os.path.exists(attachment_path):
+                            print(f"[BREVO] Recap PDF not found, regenerating for {item.EmployeeID.employeeID}", flush=True)
+                            file = make_recap_pdf(item.EmployeeID.employeeID, perID)
+                            item.recap = file
+                            item.save()
+                            attachment_path = item.recap.path
 
-                    item.mailingDate = datetime.now()
-                    item.save()
-                
-                
+                    # Envio via API Brevo (HTTPS). El remitente lo define DEFAULT_FROM_EMAIL.
+                    is_success, errorMessage = send_email_via_brevo_with_attachment(
+                        subject=subject,
+                        message=message,
+                        recipient_list=[emailTo],
+                        attachment_paths=[attachment_path] if attachment_path else None,
+                    )
+                    if is_success:
+                        item.mailingDate = datetime.now()
+                        item.save()
+                    else:
+                        errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {errorMessage}")
+                        print(f"[BREVO] Error sending recap to {emailTo}: {errorMessage}", flush=True)
+
+
     except Exception as e:
         return render(request,'landing.html',{'message':'Somenthing went Wrong!' + str(e) + "////" + settings.EMAIL_HOST_PASSWORD + "+++", 'alertType':'danger','emp':emp, 'per': per})
-   
 
-    return HttpResponseRedirect('/location_period_list/' + perID) 
+    if errors:
+        return render(request,'landing.html',{'message':'Some recap emails were not sent: ' + ' | '.join(errors), 'alertType':'warning', 'emp':emp, 'per':per})
+
+    return HttpResponseRedirect('/location_period_list/' + perID)
 
 @login_required(login_url='/home/')
 def get_list_orders_bySupervisor(request,estatus, loc,pid,addR,invNumber,invAmount,invAmountF):

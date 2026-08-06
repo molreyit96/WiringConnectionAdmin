@@ -8,6 +8,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.conf import settings
+# Actualizado: 2026-07-29 - Envio de correos migrado de SMTP a la API de Brevo
 from utils.email import send_email_via_brevo
 from workOrder import models as woModels
 from mobile import models as mobModels
@@ -286,6 +287,8 @@ def password_reset_request(request):
                 reset_url = request.build_absolute_uri(
                     f'/forgot-password/{uid}/{token}/'
                 )
+                # Envio via API Brevo (HTTPS). Agregado: 2026-07-29
+                # Antes usaba django.core.mail (SMTP), bloqueado en DigitalOcean.
                 send_email_via_brevo(
                     subject='Password Reset - Wiring Connection',
                     message=f'Click the following link to reset your password:\n\n{reset_url}\n\nIf you did not request this, please ignore this email.',

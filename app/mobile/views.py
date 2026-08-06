@@ -17,7 +17,8 @@ from workOrder import models as catalogModel
 from datetime import datetime, timedelta
 from django.db import transaction
 import os
-from utils.email import send_email_with_attachment
+# Actualizado: 2026-08-05 - send_email_with_attachment fue migrada a la API de Brevo
+from utils.email import send_email_via_brevo_with_attachment
 from django.core.files.base import ContentFile
 import tempfile
 from django.views.decorators.csrf import csrf_exempt
@@ -77,8 +78,7 @@ def mobile_home(request, LocID):
         per.payDate = today
         per.save()
 
-    else:
-        rejectedDailys = DailyMob.objects.filter(Period=per, Status=5, created_by=request.user.username, Location = loca)
+    rejectedDailys = DailyMob.objects.filter(Status=5, created_by=request.user.username).order_by('-rejected_date')
 
 
     context ={}
@@ -223,7 +223,7 @@ def mobile_home(request, LocID):
    """
     context["week1"] = week1
     context["message"] = message
-    context["totalRejected"] = totalRejected
+    context["totalRejected"] = rejectedDailys.count()
     context["totalDeleted"] = totalDeleted
 
     return render(request, "mobile/home.html", context)
@@ -238,6 +238,10 @@ def crew(request, perID, dID, crewID, LocID):
 
     if not per:
         per = catalogModel.period.objects.filter(periodID=-1).first()
+
+    perWeek = catalogModel.period.objects.filter(id=perID).first() or per
+    if not perWeek.fromDate:
+        perWeek = per
 
 
     context["per"] = per        
@@ -322,7 +326,7 @@ def crew(request, perID, dID, crewID, LocID):
     #getting the list of days per week
     #startDate = yesterday
     #getting the list of days per week
-    startDate = per.fromDate
+    startDate = perWeek.fromDate
     numDays = 15
     week1 = []
     #***********************************************************************************************************
@@ -339,7 +343,7 @@ def crew(request, perID, dID, crewID, LocID):
         
         
         #obtengo la cantidad de Items asociados
-        dItems = DailyMob.objects.filter(Period = per, Location = loca, day = fullDate)
+        dItems = DailyMob.objects.filter(Period = perWeek, Location = loca, day = fullDate)
         totalItems = 0
 
         for d in dItems:
@@ -1855,13 +1859,15 @@ def reject_timesheet(request, id, origen):
                     f"<p>HHRR. </p></html>\n\n" \
 
                 if empD.email != None:
-                    is_error, errorMessage = send_email_with_attachment(
+                    # Envio via API Brevo (HTTPS). Agregado: 2026-08-05
+                    # Migrado desde SMTP (bloqueado en DigitalOcean). Aviso de rechazo del daily.
+                    is_success, errorMessage = send_email_via_brevo_with_attachment(
                         subject="Action Required: Daily Form Submission Rejected",
                         message=message_body,
                         html_message=message_body,
                         recipient_list=[empD.email],)
                     
-                    if is_error:
+                    if not is_success:
                         errorMessage +=  "Error sending email to employee: " + empD.email + " - " + errorMessage
                     
                     
@@ -2155,11 +2161,16 @@ def approve_timesheet(request, id):
                     message_body += htlmDaily
 
                     if empD.email != None:
-                        is_error, errorMessage = send_email_with_attachment(
+                        # Envio via API Brevo (HTTPS). Agregado: 2026-08-05
+                        # Migrado desde SMTP (bloqueado en DigitalOcean). Envia el daily report aprobado.
+                        is_success, errorMessage = send_email_via_brevo_with_attachment(
                             subject="Daily Report – " + obj.day.strftime("%m-%d-%Y"),
                             message=message_body,
                             html_message=message_body,
                             recipient_list=[empD.email])
+                        
+                        if not is_success:
+                            errorMessage +=  "Error sending email to employee: " + empD.email + " - " + errorMessage
                     
                     
             

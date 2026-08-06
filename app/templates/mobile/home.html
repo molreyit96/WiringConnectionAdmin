@@ -164,10 +164,12 @@
                           {% for item in rejectedDailys %}      
                            <div class="d-flex justify-content-left align-items-bottom">
                                 <i class="fas fa-briefcase mr-2" style="padding-bottom: 15px;"></i> 
-                                <p id="address" name="address" style="margin-left: 10px">{{item.woID.prismID}} - {{item.woID.workOrderId}} - {{item.woID.PO}}</p>   
-                                <!--<i class="fas fa-map-marker-alt mr-2 ml-3" style="padding-bottom: 15px; margin-left: 10px;"></i> 
-                                <p id="address" name="address" style="margin-left: 10px">{{item.woID.JobAddress}}</p> -->
-                                <a href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}"><i class="fa fa-pen-to-square" style="padding-bottom: 15px; color: green; padding-bottom: 15px; margin-left: 10px;"></i></a>                                                                  
+                                <p id="address" name="address" style="margin-left: 10px; margin-bottom: 0;">
+                                    {{item.woID.prismID}} - {{item.woID.workOrderId}} - {{item.woID.PO}}<br>
+                                    <small><i class="far fa-calendar-alt"></i> {{item.day|date:"m-d-Y"}} &nbsp;|&nbsp; <i class="fas fa-map-marker-alt"></i> {{item.Location.name}} &nbsp;|&nbsp; <i class="fas fa-calendar-week"></i> Period: {{item.Period.periodID}}</small><br>
+                                    {% if item.comments %}<small><i class="fas fa-comment"></i> {{item.comments}}</small>{% endif %}
+                                </p>
+                                <a href="/mobile/crew/{{item.Period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{item.Location.LocationID}}"><i class="fa fa-pen-to-square" style="padding-bottom: 15px; color: green; padding-bottom: 15px; margin-left: 10px;"></i></a>                                                                  
                             </div>
                           {% endfor %}                                       
 

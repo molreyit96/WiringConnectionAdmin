@@ -102,8 +102,9 @@ urlpatterns = [
 
     path('upload_daily/<id>/<LocID>',views.upload_daily),
     path('recap/<perID>',views.recap),
-    path('send_recap/<perID>',views.send_recap),
-    path('send_recap_emp/<perID>/<empID>',views.send_recap_emp),
+    # Actualizado: 2026-08-05 - Vistas migradas de SMTP a API Brevo
+    path('send_recap/<perID>',views.send_recap_brevo),
+    path('send_recap_emp/<perID>/<empID>',views.send_recap_emp_brevo),
     path('get_summary/<perID>',views.get_summary),
     path('update_sup_daily/<id>/<woid>',views.update_sup_daily),
     path('delete_daily/<id>/<LocID>',views.delete_daily),
