@@ -1,5 +1,18 @@
 {% load humanize %}
 {% load static %}
+{% comment %}
+========================================================================
+DISEÑO ANTERIOR (2026-08-10): plantilla del recap reemplazada.
+El codigo Python que generaba las filas del detalle (itemHtml,
+itemHtml2, itemLine) se mantiene comentado en make_recap_pdf()
+dentro de workOrder/views.py como referencia.
+
+El nuevo diseño se basa en el archivo "Recap Example.xlsx"
+(sheet "Recap"): se elimina la columna Double Time, Bonus pasa a la
+posicion 5 (despues de Over Time), Location y Date se fusionan en una
+sola columna "Location / Date", las filas se agrupan por Location y se
+agregan "Date Generated" (arriba derecha) y la fila "Grand Total".
+========================================================================
  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
@@ -343,3 +356,180 @@
                 {%endif%}
   </body>
   </html>
+{% endcomment %}
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Payroll Recap</title>
+
+<style>
+    @page {
+        size: "A4";
+        margin: 1.0cm 1.0cm 1.0cm 1.0cm;
+    }
+</style>
+</head>
+
+<body>
+    <table width="100%" border="0">
+        <tr>
+            <td style="font-family:Verdana, Geneva, sans-serif; font-weight:350; font-size:20px; border-top:1px solid #555; border-bottom:0.5px solid #999; border-left:1px solid #444; border-right:1px solid #444; padding: 3px;" width="70%" align="center">
+                <strong>Payroll Recap</strong>
+            </td>
+            <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:1px solid #555; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding: 3px;" width="30%" align="center">
+                <strong>Date Generated:</strong> {{date_generated}}
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <table border="0" width="100%">
+                    <tr>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="8%" align="center">
+                            <strong>ID</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="12%" align="center">
+                            <strong>Weeks</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="8%" align="center">
+                            <strong>From</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="14%" align="center">
+                            {{period.fromDate|date:"SHORT_DATE_FORMAT"}}
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="8%" align="center">
+                            <strong>To</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="14%" align="center">
+                            {{period.toDate|date:"SHORT_DATE_FORMAT"}}
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="10%" align="center">
+                            <strong>Pay Date</strong>
+                        </td>
+                        <td colspan="2" style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:0.5px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 2px; padding-bottom: 2px;" width="26%" align="center">
+                            {{period.payDate|date:"SHORT_DATE_FORMAT"}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="8%" align="center">
+                            {{emp.employeeID}}
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; border-top:0.5px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 2px; padding-bottom: 2px;" width="12%" align="center">
+                            {{period.weekRange}}
+                        </td>
+                        <td colspan="3" style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:10px; border-top:0.5px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px; padding-bottom: 3px;" width="30%" align="center">
+                            <strong>Name</strong>
+                        </td>
+                        <td colspan="4" style="font-family:Verdana, Geneva, sans-serif; font-weight:bold; font-size:14px; border-top:0.5px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px; padding-bottom: 3px;" width="50%" align="center">
+                            {{emp.last_name}} {{emp.first_name}}
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <table border="0" width="100%">
+                    <tr>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                            <strong>Location / Date</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; word-wrap: break-word; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="22%" align="center">
+                            <strong>Address</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                            <strong>Regular Time</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                            <strong>Over Time</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                            <strong>Bonus</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                            <strong>Production</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                            <strong>Own Vehicle</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center">
+                            <strong>On Call</strong>
+                        </td>
+                        <td style="background-color: #b4c6e7; font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center">
+                            <strong>Payroll</strong>
+                        </td>
+                    </tr>
+
+                    {% for row in recap_rows %}
+                        {% if row.type == 'location' %}
+                            <tr style="height: 18px;">
+                                <td colspan="9" style="background-color: #d9e1f2; font-family:Verdana, Geneva, sans-serif; font-weight:bold; font-size:9px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #444; padding-top: 3px; padding-left: 4px;" align="left">
+                                    {{ row.location }}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr style="height: 20px;">
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                                    {{ row.date }}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; word-wrap: break-word; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="22%" align="center">
+                                    {{ row.address }}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                                    {% if row.rt != 0 %}${{ row.rt|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                                    {% if row.ot != 0 %}${{ row.ot|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                                    {% if row.bonus != 0 and row.bonus != None %}${{ row.bonus|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                                    {% if row.production != 0 %}${{ row.production|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                                    {% if row.own_vehicle != 0 %}${{ row.own_vehicle|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center">
+                                    {% if row.on_call != 0 and row.on_call != None %}${{ row.on_call|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                                <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center">
+                                    {% if row.payroll != 0 %}${{ row.payroll|floatformat:"2"|intcomma }}{% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+
+                    <tr>
+                        <td colspan="2" style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:9px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" align="center">
+                            <strong>Grand Total</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                            <strong>${{rtTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                            <strong>${{otTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">
+                            <strong>${{bonTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                            <strong>${{prodTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="10%" align="center">
+                            <strong>${{ovTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center">
+                            <strong>${{ocTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                        <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; background-color: #e2efda; border-top:2px solid #000; border-bottom:1px solid #444; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="12%" align="center">
+                            <strong>${{payTotal|floatformat:"2"|intcomma}}</strong>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

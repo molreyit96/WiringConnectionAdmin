@@ -5623,10 +5623,24 @@ def make_recap_pdf(empID, perID):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename=' + fileName
     
-    lines = []
-    lines2 = []
-    itemHtml = ''
-    itemHtml2 = ''
+# ============================================================
+# NUEVO DISEÑO 2026-08-10: plantilla del recap reemplazada.
+# El diseño anterior (itemHtml/itemHtml2/itemLine + recap_template.html)
+# queda comentado en este archivo como referencia. El nuevo diseño se
+# basa en "Recap Example.xlsx" (sheet "Recap"):
+#   - Se elimina la columna Double Time
+#   - Bonus se mueve a la posicion 5 (despues de Over Time)
+#   - Location y Date se fusionan en una sola columna "Location / Date"
+#   - Filas agrupadas por Location (encabezado de grupo)
+#   - Titulo "Payroll Recap" + "Date Generated"
+#   - Fila final "Grand Total"
+# ============================================================
+#     lines = []
+#     lines2 = []
+#     itemHtml = ''
+#     itemHtml2 = ''
+    recap_rows = []
+    current_location = None
     
     per = period.objects.filter(id = perID).first()
     context["period"] = per
@@ -5645,7 +5659,7 @@ def make_recap_pdf(empID, perID):
     prodTotal = 0
     ovTotal = 0
     payTotal = 0
-    line2 = False 
+#     line2 = False 
 
     for item in dailyemp:
         contador += 1
@@ -5687,6 +5701,34 @@ def make_recap_pdf(empID, perID):
         else:
             own_vehicle = 0
 
+        # ============================================================
+        # NUEVO DISEÑO 2026-08-10: filas del detalle agrupadas por Location.
+        # Se mantiene el loop de calculo original; solo se reemplaza la
+        # generacion de HTML del diseño anterior (itemHtml/itemHtml2) que
+        # queda comentada mas abajo.
+        # ============================================================
+        if item.DailyID.Location == None:
+            location_name = '&nbsp;'
+        else:
+            location_name = item.DailyID.Location.name
+
+        if location_name != current_location:
+            recap_rows.append({'type': 'location', 'location': location_name})
+            current_location = location_name
+
+        recap_rows.append({
+            'type': 'detail',
+            'date': item.DailyID.day.strftime('%m/%d/%Y'),
+            'address': item.DailyID.woID.JobAddress,
+            'rt': rt,
+            'ot': ot,
+            'bonus': bonus,
+            'production': production,
+            'own_vehicle': own_vehicle,
+            'on_call': on_call,
+            'payroll': payroll,
+        })
+
 
         rtTotal += rt
         otTotal += ot
@@ -5701,176 +5743,176 @@ def make_recap_pdf(empID, perID):
         ovTotal += own_vehicle
         payTotal += payroll
 
-        if contador <= 45:
-            itemHtml = itemHtml + '<tr style=" height: 20px;"> '          
-            itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center"> '
+#         if contador <= 45:
+#             itemHtml = itemHtml + '<tr style=" height: 20px;"> '          
+#             itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center"> '
             
-            if item.DailyID.Location == None:
-                itemHtml = itemHtml + '&nbsp;'
-            else:
-                itemHtml = itemHtml + item.DailyID.Location.name
+#             if item.DailyID.Location == None:
+#                 itemHtml = itemHtml + '&nbsp;'
+#             else:
+#                 itemHtml = itemHtml + item.DailyID.Location.name
                             
-            itemHtml = itemHtml + '</td>'
-            itemHtml = itemHtml + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            itemHtml = itemHtml + item.DailyID.day.strftime('%Y-%m-%d')
-            itemHtml = itemHtml + ' </td> '
+#             itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             itemHtml = itemHtml + item.DailyID.day.strftime('%Y-%m-%d')
+#             itemHtml = itemHtml + ' </td> '
             
-            itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="20%" align="center">'
-            itemHtml = itemHtml + item.DailyID.woID.JobAddress
-            itemHtml = itemHtml + ' </td>'
+#             itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="20%" align="center">'
+#             itemHtml = itemHtml + item.DailyID.woID.JobAddress
+#             itemHtml = itemHtml + ' </td>'
             
-            itemHtml = itemHtml + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if rt!= 0:
-                itemHtml = itemHtml + '${0:,.2f}'.format((float(rt)))
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if rt!= 0:
+#                 itemHtml = itemHtml + '${0:,.2f}'.format((float(rt)))
+#             itemHtml = itemHtml + '</td>'
                             
-            itemHtml = itemHtml + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            if ot != 0:                    
-                itemHtml = itemHtml + '${0:,.2f}'.format((float(ot)))
-            itemHtml = itemHtml + ' </td> '
+#             itemHtml = itemHtml + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             if ot != 0:                    
+#                 itemHtml = itemHtml + '${0:,.2f}'.format((float(ot)))
+#             itemHtml = itemHtml + ' </td> '
             
-            itemHtml = itemHtml + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if dt != 0:                    
-                itemHtml = itemHtml +'${0:,.2f}'.format((float(dt)))
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if dt != 0:                    
+#                 itemHtml = itemHtml +'${0:,.2f}'.format((float(dt)))
+#             itemHtml = itemHtml + '</td>'
                
                                 
                             
-            itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if production != 0:
-                itemHtml = itemHtml + '${0:,.2f}'.format((float(production)))
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if production != 0:
+#                 itemHtml = itemHtml + '${0:,.2f}'.format((float(production)))
+#             itemHtml = itemHtml + '</td>'
 
 
-            itemHtml = itemHtml + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if own_vehicle != 0:
-                itemHtml = itemHtml +  '${0:,.2f}'.format((float(own_vehicle)))           
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if own_vehicle != 0:
+#                 itemHtml = itemHtml +  '${0:,.2f}'.format((float(own_vehicle)))           
+#             itemHtml = itemHtml + '</td>'
             
 
-            itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            if on_call != 0 and on_call != None:
-                itemHtml = itemHtml + '${0:,.2f}'.format((float(on_call)))
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             if on_call != 0 and on_call != None:
+#                 itemHtml = itemHtml + '${0:,.2f}'.format((float(on_call)))
+#             itemHtml = itemHtml + '</td>'
             
                     
-            itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            if bonus != 0 and bonus != None:
-                itemHtml = itemHtml + '${0:,.2f}'.format((float(bonus)))
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             if bonus != 0 and bonus != None:
+#                 itemHtml = itemHtml + '${0:,.2f}'.format((float(bonus)))
+#             itemHtml = itemHtml + '</td>'
             
 
-            itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="8%" align="center">'
-            if payroll != 0 and payroll != None:
-                itemHtml = itemHtml + '${0:,.2f}'.format((float(payroll)))
-            itemHtml = itemHtml + '</td>'
+#             itemHtml = itemHtml + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="8%" align="center">'
+#             if payroll != 0 and payroll != None:
+#                 itemHtml = itemHtml + '${0:,.2f}'.format((float(payroll)))
+#             itemHtml = itemHtml + '</td>'
             
                          
-            itemHtml = itemHtml + '</tr>'
-        else:
-            line2 = True
-            itemHtml2 = itemHtml2 + ' <tr style=" height: 20px;"> '          
-            itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center"> '
-            if item.DailyID.Location == None:
-                itemHtml2 = itemHtml2 + '&nbsp;'
-            else:
-                itemHtml2 = itemHtml2 + item.DailyID.Location.name
+#             itemHtml = itemHtml + '</tr>'
+#         else:
+#             line2 = True
+#             itemHtml2 = itemHtml2 + ' <tr style=" height: 20px;"> '          
+#             itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center"> '
+#             if item.DailyID.Location == None:
+#                 itemHtml2 = itemHtml2 + '&nbsp;'
+#             else:
+#                 itemHtml2 = itemHtml2 + item.DailyID.Location.name
                             
-            itemHtml2 = itemHtml2 + '</td>'
-            itemHtml2 = itemHtml2 + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            itemHtml2 = itemHtml2 + item.DailyID.day.strftime('%Y-%m-%d')
-            itemHtml2 = itemHtml2 + ' </td> '
+#             itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             itemHtml2 = itemHtml2 + item.DailyID.day.strftime('%Y-%m-%d')
+#             itemHtml2 = itemHtml2 + ' </td> '
             
-            itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="20%" align="center">'
-            itemHtml2 = itemHtml2 + item.DailyID.woID.JobAddress
-            itemHtml2 = itemHtml2 + ' </td>'
+#             itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="20%" align="center">'
+#             itemHtml2 = itemHtml2 + item.DailyID.woID.JobAddress
+#             itemHtml2 = itemHtml2 + ' </td>'
             
-            itemHtml2 = itemHtml2 + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if rt!= 0:
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(rt)))
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if rt!= 0:
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(rt)))
+#             itemHtml2 = itemHtml2 + '</td>'
                             
-            itemHtml2 = itemHtml2 + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            if ot != 0:                    
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(ot))) 
-            itemHtml2 = itemHtml2 + ' </td> '
+#             itemHtml2 = itemHtml2 + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             if ot != 0:                    
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(ot))) 
+#             itemHtml2 = itemHtml2 + ' </td> '
             
-            itemHtml2 = itemHtml2 + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if dt != 0:                    
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(dt)))
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if dt != 0:                    
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(dt)))
+#             itemHtml2 = itemHtml2 + '</td>'
                
                                 
                             
-            itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if production != 0:
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(production)))
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if production != 0:
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(production)))
+#             itemHtml2 = itemHtml2 + '</td>'
 
 
-            itemHtml2 = itemHtml2 + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-            if own_vehicle != 0:
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(own_vehicle))) 
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#             if own_vehicle != 0:
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(own_vehicle))) 
+#             itemHtml2 = itemHtml2 + '</td>'
             
 
-            itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            if on_call != 0 and on_call != None:
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(on_call)))
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             if on_call != 0 and on_call != None:
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(on_call)))
+#             itemHtml2 = itemHtml2 + '</td>'
             
                     
-            itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-            if bonus != 0 and bonus != None:
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(bonus)))
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#             if bonus != 0 and bonus != None:
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(bonus)))
+#             itemHtml2 = itemHtml2 + '</td>'
             
 
-            itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="8%" align="center">'
-            if payroll != 0 and payroll != None:
-                itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(payroll)))
-            itemHtml2 = itemHtml2 + '</td>'
+#             itemHtml2 = itemHtml2 + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="8%" align="center">'
+#             if payroll != 0 and payroll != None:
+#                 itemHtml2 = itemHtml2 + '${0:,.2f}'.format((float(payroll)))
+#             itemHtml2 = itemHtml2 + '</td>'
             
                          
-            itemHtml2 = itemHtml2 + '</tr>'
+#             itemHtml2 = itemHtml2 + '</tr>'
 
 
 
-    itemLine = ''
+#     itemLine = ''
     
-    itemLine = itemLine + '<tr style=" height: 20px;"> '          
-    itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center"> '
-    itemLine = itemLine + '&nbsp;'
-    itemLine = itemLine + '</td>'
-    itemLine = itemLine + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
-    itemLine = itemLine + ' </td> '   
-    itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="20%" align="center">'
-    itemLine = itemLine + ' </td>'   
-    itemLine = itemLine + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
-    itemLine = itemLine + '</td>'                 
-    itemLine = itemLine + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'   
-    itemLine = itemLine + ' </td> '  
-    itemLine = itemLine + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'  
-    itemLine = itemLine + '</td>'                
-    itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">' 
-    itemLine = itemLine + '</td>'
-    itemLine = itemLine + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'   
-    itemLine = itemLine + '</td>'
-    itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'   
-    itemLine = itemLine + '</td>'        
-    itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'    
-    itemLine = itemLine + '</td>'    
-    itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="8%" align="center">'
-    itemLine = itemLine + '</td>'                      
-    itemLine = itemLine + '</tr>'
+#     itemLine = itemLine + '<tr style=" height: 20px;"> '          
+#     itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #444; border-right:1px solid #999; padding-top: 3px;" width="12%" align="center"> '
+#     itemLine = itemLine + '&nbsp;'
+#     itemLine = itemLine + '</td>'
+#     itemLine = itemLine + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'
+#     itemLine = itemLine + ' </td> '   
+#     itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:7px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="20%" align="center">'
+#     itemLine = itemLine + ' </td>'   
+#     itemLine = itemLine + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'
+#     itemLine = itemLine + '</td>'                 
+#     itemLine = itemLine + ' <td style=" font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'   
+#     itemLine = itemLine + ' </td> '  
+#     itemLine = itemLine + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'  
+#     itemLine = itemLine + '</td>'                
+#     itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">' 
+#     itemLine = itemLine + '</td>'
+#     itemLine = itemLine + '<td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="8%" align="center">'   
+#     itemLine = itemLine + '</td>'
+#     itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'   
+#     itemLine = itemLine + '</td>'        
+#     itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #999; padding-top: 3px;" width="7%" align="center">'    
+#     itemLine = itemLine + '</td>'    
+#     itemLine = itemLine + ' <td style="font-family:Verdana, Geneva, sans-serif; font-weight:200; font-size:8px; border-top:1px solid #999; border-bottom:1px solid #999; border-left:1px solid #999; border-right:1px solid #444; padding-top: 3px;" width="8%" align="center">'
+#     itemLine = itemLine + '</td>'                      
+#     itemLine = itemLine + '</tr>'
     
-    itemLineFinal2 = ''
-    itemLineFinal = ''
-    if contador <= 45:
-        itemLineFinal = itemLine * (45-contador)
-    else:
-         line2 = True
-         itemLineFinal2 = itemLine * (50 - (contador-45))
+#     itemLineFinal2 = ''
+#     itemLineFinal = ''
+#     if contador <= 45:
+#         itemLineFinal = itemLine * (45-contador)
+#     else:
+#          line2 = True
+#          itemLineFinal2 = itemLine * (50 - (contador-45))
     
     """if contador <= 45:
         for x in range(0,45-contador):
@@ -5882,9 +5924,9 @@ def make_recap_pdf(empID, perID):
             lines2.append({'line':x, 'Location': None, 'date': None, 'address': '',
                         'rt': 0, 'ot': 0, 'dt': 0, 'production': 0, 'own_vehicle': 0 , 'on_call': None,  'bonus': None, 'payroll': 0})"""
 
-    context["lines"] = lines
-    context["lines2"] = lines2
-    context["line2"] = line2
+#     context["lines"] = lines
+#     context["lines2"] = lines2
+#     context["line2"] = line2
     context["rtTotal"] = rtTotal
     context["otTotal"] = otTotal
     context["dtTotal"] = dtTotal
@@ -5893,10 +5935,17 @@ def make_recap_pdf(empID, perID):
     context["prodTotal"] = prodTotal
     context["ovTotal"] = ovTotal
     context["payTotal"] = payTotal
-    context["itemHtml"] = itemHtml
-    context["itemHtml2"] = itemHtml2
-    context["itemLine"] = itemLineFinal
-    context["itemLine2"] = itemLineFinal2
+#     context["itemHtml"] = itemHtml
+#     context["itemHtml2"] = itemHtml2
+#     context["itemLine"] = itemLineFinal
+#     context["itemLine2"] = itemLineFinal2
+
+    # ============================================================
+    # NUEVO DISEÑO 2026-08-10: variables de contexto para la plantilla
+    # "recap_template.html" basada en "Recap Example.xlsx" (sheet "Recap").
+    # ============================================================
+    context["recap_rows"] = recap_rows
+    context["date_generated"] = date.today().strftime('%B, %d, %Y')
 
 
     
