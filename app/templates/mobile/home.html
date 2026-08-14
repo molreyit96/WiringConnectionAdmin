@@ -22,9 +22,9 @@
                 <div class="col-sm-12">                                
                     <div class="alert alert-danger" role="alert"> 
                         {%if totalRejected > 0 %}
-                            <p>You  have {{totalRejected}} Dailys Rejected</p>   
+                            <p>You  have {{totalRejected}} rejected dailies for {{locationListRejected}}</p>   
                         {%elif totalDeleted > 0%}                                             
-                            <p>You  have {{totalDeleted}} Dailys Deleted</p>  
+                            <p>You  have {{totalDeleted}} deleted dailies</p>  
                         {% endif %}
                     </div>                                                                    
                 </div>
@@ -110,12 +110,31 @@
                                       {{item.shortDate}}                                            
                                   </a> 
                               {% else %}
-                                  <a class="btn btn-primary position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                  <!--<a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
                                       {{item.shortDate}}
-                                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-{{item.type}}" style="font-size:0.7rem;">
+                                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
                                       {{item.Total|intcomma}}                                            
                                       </span>
-                                  </a> 
+                                  </a> -->
+
+                                  {% if item.btn_enabled %}
+                                        <a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                            {{item.shortDate}}
+                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
+                                            {{item.Total|intcomma}}                                            
+                                            </span>
+                                        </a>
+                                    {% else %}
+                                        <a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2 {% if not btn_enabled %}disabled-link{% endif %}" 
+                                            style="text-align:center !important; width: 5.5em; {% if not btn_enabled %}pointer-events: none; opacity: 0.65;{% endif %}" 
+                                            href="{% if btn_enabled %}/mobile/crew/{{period.id}}/{{item.day}}/0/{{selectedLocation}}{% else %}#{% endif %}" 
+                                            {% if not btn_enabled %}aria-disabled="true" tabindex="-1"{% endif %}>
+                                                {{item.shortDate}}
+                                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
+                                                    {{item.Total|intcomma}}                                            
+                                                </span>
+                                            </a>
+                                    {% endif %} 
                               {% endif %}                                       
                           {% endfor %}  
                           
@@ -125,12 +144,15 @@
               </div> 
           </div>
       </div>     
-      <!--<div class="col-sm-12 pb-5 mb-3">
+      <div class="col-sm-12 pb-5 mb-3">
           <div class="card mt-3 ">
               <h6 class="card-header card-header-wc">Week 2</h6>
               <div class="card-body">
                   <div class="row">
-                      <div class="col-sm-12">                               
+                      <div class="col-sm-12"> 
+                                                
+                            
+
                           {% for item in week2 %}                                 
                               
                               {% if item.selected %}
@@ -138,19 +160,42 @@
                                       {{item.shortDate}}                                            
                                   </a> 
                               {% else %}
-                                  <a class="btn btn-primary position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                  <!--<a class="btn btn-primary position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{period.id}}/{{item.day}}/0/{{selectedLocation}}" > 
                                       {{item.shortDate}}
                                       <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
                                       {{item.Total|intcomma}}                                            
                                       </span>
-                                  </a> 
+                                  </a>  -->
+
+                                    {% if item.btn_enabled %}
+                                        <a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
+                                            {{item.shortDate}}
+                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
+                                            {{item.Total|intcomma}}                                            
+                                            </span>
+                                        </a>
+                                    {% else %}
+                                        <a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2 {% if not btn_enabled %}disabled-link{% endif %}" 
+                                            style="text-align:center !important; width: 5.5em; {% if not btn_enabled %}pointer-events: none; opacity: 0.65;{% endif %}" 
+                                            href="{% if btn_enabled %}/mobile/crew/{{period.id}}/{{item.day}}/0/{{selectedLocation}}{% else %}#{% endif %}" 
+                                            {% if not btn_enabled %}aria-disabled="true" tabindex="-1"{% endif %}>
+                                                {{item.shortDate}}
+                                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
+                                                    {{item.Total|intcomma}}                                            
+                                                </span>
+                                            </a>
+                                    {% endif %} 
+
+                                     
+
+
                               {% endif %}                                       
                           {% endfor %}  
                       </div>
                   </div>                   
               </div> 
           </div>
-      </div>  -->     
+      </div>      
 
 
       <!-- Rejected Dailys    -->

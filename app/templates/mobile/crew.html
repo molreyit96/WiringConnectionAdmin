@@ -12,8 +12,7 @@
  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
 
 
- <style>
-    /* CSS will go here */
+ <style>    
     :root {
        --thumbnail-width: 200px;
        --thumbnail-height: 145px;
@@ -273,6 +272,14 @@
                                     <span class="badge bg-success text-white align-content-center"> {{item.get_Status_display}} </span> 
                                 {%endif%}
                             </h4>
+
+                            {% if dailyUrl.pdfDaily %}
+                                <a href="{{ dailyUrl.pdfDaily.url }}" 
+                                class="btn btn-primary" 
+                                download>
+                                    <i class="fas fa-file-pdf"></i> Download
+                                </a>
+                            {% endif %} 
                             
                             {%if item.Status == 1 or item.Status == 5%}
                                 <a class="btn p-0" onclick="send_payroll({{item.id}},{{selectedLocation}})"><i class="fa-solid fa-paper-plane fa-xl" style="color: green;"></i></a>

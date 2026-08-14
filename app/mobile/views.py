@@ -78,13 +78,17 @@ def mobile_home(request, LocID):
         per.payDate = today
         per.save()
 
-    rejectedDailys = DailyMob.objects.filter(Status=5, created_by=request.user.username).order_by('-rejected_date')
-
+    rejectedDailys = DailyMob.objects.filter(Status=5, created_by=request.user.username, Period=per )
+    rejectedDailysLocation = DailyMob.objects.filter(Status=5, created_by=request.user.username, Period=per, Location=loca ).order_by('-rejected_date')
+    locationListRejected = DailyMob.objects.filter(Status=5, created_by=request.user.username, Period=per ).values_list('Location__name', flat=True).distinct()
 
     context ={}
     context["period"] = per    
     context["emp"]= emp
-    context["rejectedDailys"] = rejectedDailys 
+    context["rejectedDailys"] = rejectedDailysLocation
+    context["totalRejected"] = rejectedDailys.count()
+    context["locationListRejected"] =  ", ".join(locationListRejected)
+    
 
     locaList = catalogModel.employeeLocation.objects.filter(employeeID = emp)
                 
@@ -143,8 +147,9 @@ def mobile_home(request, LocID):
     
 
     #getting the list of days per week
-    startDate = yesterday
-    numDays = 2
+    #startDate = yesterday
+    startDate = per.fromDate
+    numDays = 7
     week1 = []
     totalRejected = 0
     totalDeleted = 0
@@ -163,7 +168,7 @@ def mobile_home(request, LocID):
         totalItems = 0
         
         
-        type ="success"
+        type ="primary"
         for d in dItems:
             
             dItemDetail = DailyMobItem.objects.filter(DailyID=d)
@@ -181,16 +186,19 @@ def mobile_home(request, LocID):
                 type="danger"
 
         pr = None
+        btn_enabled = False
 
         if day == yesterday.strftime("%d"):
             pr = yesterday_period
+            btn_enabled = True
         elif day == today.strftime("%d"):
-            pr = today_period     
+            pr = today_period 
+            btn_enabled = True
                 
 
-        week1.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'type':type, 'actual_period': pr })
+        week1.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'type':type, 'actual_period': pr, 'btn_enabled': btn_enabled })
 
-    """startDate += timedelta(days = numDays)
+    startDate += timedelta(days = numDays)
     week2 = []
     for x in range(0,numDays):
         selectedDay = False
@@ -202,7 +210,7 @@ def mobile_home(request, LocID):
         #obtengo la cantidad de Items asociados
         dItems = DailyMob.objects.filter(Period = per, Location = loca, day = fullDate)
         totalItems = 0
-        type ="success"
+        type ="primary"
         
         for d in dItems:
             dItemDetail = DailyMobItem.objects.filter(DailyID=d)
@@ -218,12 +226,23 @@ def mobile_home(request, LocID):
             if d.Status == 6:
                 totalDeleted += 1
                 type="danger"
+                
+        pr = None
+        btn_enabled = False
 
-        week2.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'type':type })
-   """
+        if day == yesterday.strftime("%d"):
+            pr = yesterday_period
+            btn_enabled = True
+        elif day == today.strftime("%d"):
+            pr = today_period 
+            btn_enabled = True
+
+        week2.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'type':type, 'actual_period': pr, 'btn_enabled': btn_enabled })
+   
+   
     context["week1"] = week1
-    context["message"] = message
-    context["totalRejected"] = rejectedDailys.count()
+    context["week2"] = week2
+    context["message"] = message    
     context["totalDeleted"] = totalDeleted
 
     return render(request, "mobile/home.html", context)
@@ -417,8 +436,14 @@ def crew(request, perID, dID, crewID, LocID):
 
     if crewID != "0":
         dailyID = DailyMob.objects.filter(Period = perID, day=selectedDate, crew = crewID, Location = loca, created_by = user ).first()
-
         
+
+        #Getting the pdf Url
+        dailyUrl = None
+        if dailyID.Status == 4:
+            dailyUrl = catalogModel.Daily.objects.filter(mobile_id=dailyID.id).first()
+        context["dailyUrl"] = dailyUrl            
+            
         dailyEmp = DailyMobEmployee.objects.filter(DailyID = dailyID).order_by('created_date')
         context["dailyEmp"] = dailyEmp
 
