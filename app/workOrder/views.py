@@ -4393,7 +4393,7 @@ def location_period_list(request, id):
                 else:
                     file = None
 
-                empRecap.append({'employeeID': item.employeeID, 'name': item, 'file': file, 'mailingDate': empR.mailingDate })
+                empRecap.append({'employeeID': item.employeeID, 'name': item, 'file': file, 'mailingDate': empR.mailingDate if empR else None })
 
         
         
@@ -5648,7 +5648,7 @@ def make_recap_pdf(empID, perID):
     emp = Employee.objects.filter(employeeID = empID).first()
     context["emp"] = emp
 
-    dailyemp = DailyEmployee.objects.filter(EmployeeID = emp, DailyID__Period = per).order_by('DailyID__day')
+    dailyemp = DailyEmployee.objects.filter(EmployeeID = emp, DailyID__Period = per).order_by('DailyID__Location', 'DailyID__day')
 
     contador = 0
     rtTotal = 0
