@@ -341,6 +341,9 @@ def crew(request, perID, dID, crewID, LocID):
         context["period"] = today_period
     else:
         context["period"] = per
+        
+        
+    context["perweek"] = perWeek.fromDate
 
     #***********************************************************************************************************
     #StartDate is taken from the Period.From because it is possible to edit rejected Dailys from other days than yesterday or today
