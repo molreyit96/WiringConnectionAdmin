@@ -194,7 +194,8 @@ def mobile_home(request, LocID):
         elif day == today.strftime("%d"):
             pr = today_period 
             btn_enabled = True
-                
+        else:    
+            pr = per   
 
         week1.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'type':type, 'actual_period': pr, 'btn_enabled': btn_enabled })
 
@@ -236,6 +237,8 @@ def mobile_home(request, LocID):
         elif day == today.strftime("%d"):
             pr = today_period 
             btn_enabled = True
+        else:    
+            pr = per
 
         week2.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'type':type, 'actual_period': pr, 'btn_enabled': btn_enabled })
    
@@ -377,6 +380,8 @@ def crew(request, perID, dID, crewID, LocID):
             pr = yesterday_period
         elif day == today.strftime("%d"):
             pr = today_period
+        else:               
+            pr = per
 
         week1.append({'day':day, 'shortDate': shortDate, 'longDate': longDate, 'fullDate': fullDate, 'Total': totalItems, 'selected': selectedDay, 'actual_period': pr })
 
@@ -419,8 +424,9 @@ def crew(request, perID, dID, crewID, LocID):
     if dID != "0":
 
         #If selectedDate is not yesterday or today, just get the dailys in Rejected Status
+        # 2026/08/17 PISMALEJ - Get all the Dailies even if the day isn't yesterday or today but in read mode
         if selectedDate != yesterday and selectedDate != today:
-            crews = DailyMob.objects.filter(Period = perID, day=selectedDate, Location = loca, Status=5, created_by = user).order_by('crew')
+            crews = DailyMob.objects.filter(Period = perID, day=selectedDate, Location = loca, created_by = user).order_by('crew')
             context["AddCrew"] = False
         else:
             # get the list of dailys for the period, Day selected and Location
