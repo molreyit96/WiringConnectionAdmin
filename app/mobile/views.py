@@ -4,6 +4,7 @@ from django.views.generic import CreateView
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.utils import timezone
 import xlwt
 from datetime import datetime
 from django.contrib.auth import authenticate, login as login_process
@@ -17,6 +18,7 @@ from workOrder import models as catalogModel
 from datetime import datetime, timedelta
 from django.db import transaction
 import os
+import uuid
 # Actualizado: 2026-08-05 - send_email_with_attachment fue migrada a la API de Brevo
 from utils.email import send_email_via_brevo_with_attachment
 from django.core.files.base import ContentFile
@@ -1222,6 +1224,101 @@ def delete_daily_item_sup(request, id, LocID):
 
 
 #************** DAILY DOCS ***********************
+
+# Replace the BulkUploadView class in views.py
+class BulkUploadCompressedView(View):
+    def post(self, request, id, LocID, docType, *args, **kwargs):
+        # Use the new form specifically for bulk upload
+        form = BulkUploadDocsForm(request.POST, request.FILES)
+        
+        # Get the DailyID from the form data
+        daily_id_input = request.POST.get('DailyID')
+        
+        # Get the DailyMob object
+        try:
+            if isinstance(daily_id_input, str) and daily_id_input.isdigit():
+                daily_id = DailyMob.objects.get(id=int(daily_id_input))
+            elif isinstance(daily_id_input, DailyMob):
+                daily_id = daily_id_input
+            else:
+                # Try to get it from the URL parameter 'id'
+                daily_id = DailyMob.objects.get(id=id)
+        except (DailyMob.DoesNotExist, ValueError):
+            return JsonResponse({
+                'success': False,
+                'errors': f'Invalid DailyID: {daily_id_input}'
+            }, status=400)
+        
+        # Use the docType from the URL (original behavior)
+        doc_type = int(docType)
+        
+        # Get files from request
+        files = self.request.FILES.getlist('files')
+        
+        if not files:
+            return JsonResponse({
+                'success': False,
+                'errors': 'No files provided'
+            }, status=400)
+        
+        created_docs = []
+        
+        # Process each file individually (original behavior)
+        for file in files:
+            try:
+                doc = DailyMobDocs(
+                    DailyID=daily_id,
+                    docType=doc_type,  # Use URL parameter, not form data
+                    docName=os.path.splitext(file.name)[0],
+                    document=file,
+                    createdBy=self.request.user.username,
+                    Status=1,
+                    created_date=datetime.now()
+                )
+                doc.save()
+                created_docs.append({
+                    'id': doc.id,
+                    'name': doc.docName,
+                    'url': doc.document.url,
+                    'docType': doc_type,
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'errors': f'Error processing {file.name}: {str(e)}'
+                }, status=500)
+        
+        return JsonResponse({
+            'success': True,
+            'documents': created_docs,
+            'uploaded_count': len(created_docs),
+            'total_files': len(files)
+        })
+    
+    def get(self, request, id, LocID, docType, *args, **kwargs):
+        emp = catalogModel.Employee.objects.filter(
+            user__username__exact=request.user.username
+        ).first()
+        
+        per = catalogModel.period.objects.filter(status__in=(1, 2)).first()
+        dailyID = DailyMob.objects.filter(id=id).first()
+        
+        # Use the existing DailyMobDocsForm for the GET request (display only)
+        form = DailyMobDocsForm(initial={
+            'DailyID': dailyID,
+            'docType': docType
+        })
+        
+        return render(request, 'mobile/create_daily_doc_compressed.html', {
+            'form': form,
+            'dailyID': dailyID,
+            'emp': emp,
+            'docType': docType,
+            'selectedLocation': LocID,
+            'per': per
+        })
+
+
 class BulkUploadView(View):
     def post(self, request, id, LocID, docType, *args, **kwargs):
         form = DailyMobDocsForm(request.POST, request.FILES)

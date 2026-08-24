@@ -81,6 +81,29 @@ class DailyMobDocsForm(forms.ModelForm):
         self.fields['docType'].disabled = True
         
 
+class BulkUploadDocsForm(forms.ModelForm):
+    files = forms.FileField(
+        widget=forms.ClearableFileInput(attrs={'multiple': True}),
+        validators=[FileExtensionValidator(['pdf', 'png', 'jpg', 'jpeg'])],
+        required=False,
+    )
+
+    class Meta:
+        model = DailyMobDocs
+        fields = [
+            'DailyID',
+            'docType',
+            'docName',
+            'document',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make fields optional since we set them manually
+        self.fields['DailyID'].required = False
+        self.fields['docType'].required = False
+        self.fields['docName'].required = False
+        self.fields['document'].required = False
 
 class TimesheetForm(forms.ModelForm):   
     class Meta:

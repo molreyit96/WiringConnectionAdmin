@@ -523,7 +523,7 @@
                                             {% if item.supervisor != None and item.woID != None %}
                                                 {% if emp.is_superAdmin  or user.is_staff or period.status == 1 %}
                                                     {%if item.Status == 1 or item.Status == 5%}        
-                                                        <a href="/mobile/create_daily_docs/{{item.id}}/{{selectedLocation}}/1" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/1" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
                                                     {%endif%}
                                                 {%endif%}
                                             {% endif %}
@@ -573,7 +573,7 @@
                                             {% if item.supervisor != None and item.woID != None %}
                                                 {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
                                                     {%if item.Status == 1 or item.Status == 5%}        
-                                                        <a href="/mobile/create_daily_docs/{{item.id}}/{{selectedLocation}}/2" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/2" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
                                                     {%endif%}
                                                 {%endif%}
                                             {% endif %}
@@ -621,7 +621,7 @@
                                             {% if item.supervisor != None and item.woID != None %}
                                                 {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
                                                     {%if item.Status == 1 or item.Status == 5%}        
-                                                        <a href="/mobile/create_daily_docs/{{item.id}}/{{selectedLocation}}/3" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/3" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
                                                     {%endif%}
                                                 {%endif%}
                                             {% endif %}

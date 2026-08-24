@@ -1,7 +1,6 @@
 from turtle import home
 from django.contrib import admin
 from django.urls import path, include
-from . import views
 from mobile import views
 
 urlpatterns = [
@@ -31,6 +30,7 @@ urlpatterns = [
 
      # ****** Daily Docs **********************
      path('create_daily_docs/<id>/<LocID>/<docType>', views.BulkUploadView.as_view(), name='bulk-upload'),
+     path('create_daily_docs_compressed/<id>/<LocID>/<docType>', views.BulkUploadCompressedView.as_view(), name='bulk-upload-compressed'),
      path('delete_daily_docs/<id>/<LocID>',views.delete_daily_docs),
 
      # ****** Employee **********************

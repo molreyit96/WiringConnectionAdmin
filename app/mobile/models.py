@@ -178,11 +178,16 @@ class DailyMobDocs(models.Model):
     isAuthorized = models.BooleanField(default=False)
     authorized_date = models.DateTimeField(null=True, blank=True)
     autorizedID = models.ForeignKey(catalogModel.authorizedBilling, on_delete=models.SET_NULL, db_column ='autorizedID', null=True, blank=True)
-    created_date = models.DateTimeField(null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     createdBy = models.CharField(max_length=60, blank=True, null=True)
     updated_date = models.DateTimeField(null=True, blank=True)
     updatedBy = models.CharField(max_length=60, blank=True, null=True)
 
+    class Meta:        
+        indexes = [            
+            models.Index(fields=['DailyID', 'docType'], name='idx_dailymobdocs_daily_doctype'),            
+            models.Index(fields=['created_date'], name='idx_dailymobdocs_created_date'),
+        ]
+
     def __str__(self):
         return str(self.DailyID) + " - " + str(self.docType) + " - " + str(self.docName)
-    
