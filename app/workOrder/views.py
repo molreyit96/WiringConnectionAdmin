@@ -17,7 +17,7 @@ from django.conf import settings
 from smtplib import SMTP_SSL as SMTP
 from email.mime.text import MIMEText
 # Actualizado: 2026-08-05 - Envio de correos migrado de SMTP a la API de Brevo
-from utils.email import send_email_via_brevo_with_attachment
+from utils.email import send_email_via_brevo_with_attachment, get_brevo_verified_sender_emails, get_brevo_validated_domains, sender_is_valid_in_brevo, confirm_delivery_or_reject
 from telnetlib import WONT
 from unittest import TextTestResult
 from urllib import response
@@ -6197,16 +6197,53 @@ def generate_recap(empID, perID):
 #   4. Si Brevo responde HTTP 201, se registra item.mailingDate.
 # ============================================================
 
+# ============================================================
+# Agregado: 2026-08-30 - El emisor de los recaps pasa a ser el correo
+# del usuario en sesion: primero el del Employee vinculado al login,
+# luego el del User de Django, y como respaldo DEFAULT_FROM_EMAIL.
+# ============================================================
+def get_sender_email_for_recap(request):
+    # Cambio 2026-08-30: el emisor de los recaps ya NO es el valor fijo
+    # del .env (DEFAULT_FROM_EMAIL), sino el correo del usuario en sesion.
+    # Prioridad: 1) email del Employee vinculado al login, 2) email del User
+    # de Django, 3) como respaldo DEFAULT_FROM_EMAIL si ambos estan vacios.
+    emp = Employee.objects.filter(user__username__exact = request.user.username).first()
+    from_email = emp.email if (emp and emp.email) else request.user.email
+    if not from_email:
+        from_email = settings.DEFAULT_FROM_EMAIL
+    return from_email
+
+
 @login_required(login_url='/home/')
 def send_recap_brevo(request, perID):
     empSelected = request.POST.get('Employees')
     errors = []
+    warns = []
 
     try:
         if empSelected != 0:
             empList = empSelected.split(",")
             per = period.objects.filter(id = perID).first()
             if per:
+                # Cambio 2026-08-30: emisor = correo del usuario en sesion.
+                from_email = get_sender_email_for_recap(request)
+                # Cambio 2026-08-30: verifica el emisor contra Brevo:
+                #   1) emails registrados como sender individual (GET /senders)
+                #   2) dominios autenticados/validados (GET /senders/domains)
+                # Con un dominio validado en Brevo, CUALQUIER correo de ese dominio es valido
+                # (no genera error), aunque no este como sender individual. Un remitente es valido
+                # si cumple 1 o 2. Si alguna API falla (None) no se puede confirmar: se advierte
+                # y se confirma la entrega real por eventos (201 NO garantiza entrega).
+                verified_senders = get_brevo_verified_sender_emails()
+                validated_domains = get_brevo_validated_domains()
+                verification_skipped = verified_senders is None or validated_domains is None
+                if verification_skipped:
+                    warns.append(f"[WARN] Could not check if '{from_email}' is a validated Brevo sender (GET /senders or /domains failed). Make sure domain or email is verified in Brevo before sending recaps.")
+                elif not sender_is_valid_in_brevo(from_email, verified_senders, validated_domains):
+                    return render(request, 'landing.html', {
+                        'message': f"The sender email '{from_email}' is not verified in Brevo. Verify the email/domain in Brevo before sending recaps.",
+                        'alertType': 'warning', 'per': per})
+
                 empRecap = employeeRecap.objects.filter(Period = per, EmployeeID__employeeID__in = empList)
 
                 for item in empRecap:
@@ -6229,16 +6266,32 @@ def send_recap_brevo(request, perID):
                                 item.save()
                                 attachment_path = item.recap.path
 
-                        # Envio via API Brevo (HTTPS). El remitente lo define DEFAULT_FROM_EMAIL.
+                        # Envio via API Brevo (HTTPS). El remitente es el correo del usuario en sesion.
                         is_success, errorMessage = send_email_via_brevo_with_attachment(
                             subject=subject,
                             message=message,
                             recipient_list=[emailTo],
                             attachment_paths=[attachment_path] if attachment_path else None,
+                            from_email=from_email,
                         )
                         if is_success:
-                            item.mailingDate = datetime.now()
-                            item.save()
+                            delivered = True
+                            # Cambio 2026-08-30: 201 NO garantiza entrega. Cuando no se pudo verificar
+                            # el remitente (verification_skipped), Brevo puede rechazar el correo despues
+                            # ("Sending has been rejected because the sender you used ..."). Se confirma
+                            # el estado real con los eventos; mailingDate solo se marca si confirmo entrega.
+                            if verification_skipped:
+                                confirmed, confirmMsg = confirm_delivery_or_reject(emailTo)
+                                if confirmed is False:
+                                    delivered = False
+                                    errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {confirmMsg}")
+                                    print(f"[BREVO] Delivery rejected for {emailTo}: {confirmMsg}", flush=True)
+                                elif confirmed is None:
+                                    delivered = False
+                                    warns.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: Brevo accepted (201) but delivery could not be confirmed yet — check in Brevo. mailingDate NOT updated.")
+                            if delivered:
+                                item.mailingDate = datetime.now()
+                                item.save()
                         else:
                             errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {errorMessage}")
                             print(f"[BREVO] Error sending recap to {emailTo}: {errorMessage}", flush=True)
@@ -6248,6 +6301,11 @@ def send_recap_brevo(request, perID):
     if errors:
         return render(request,'landing.html',{'message':'Some recap emails were not sent: ' + ' | '.join(errors), 'alertType':'warning', 'per': per})
 
+    # Cambio 2026-08-30: avisos (remitente no confirmado / entrega pendiente) se muestran
+    # aunque Brevo haya devuelto 201, para que el usuario revise en Brevo.
+    if warns:
+        return render(request,'landing.html',{'message':' | '.join(warns), 'alertType':'warning', 'per': per})
+
     return HttpResponseRedirect('/location_period_list/' + perID)
 
 
@@ -6256,8 +6314,25 @@ def send_recap_emp_brevo(request, perID, empID):
     per = period.objects.filter(id = perID).first()
     emp = Employee.objects.filter(employeeID = empID).first()
     errors = []
+    warns = []
     try:
         if per and emp:
+            # Cambio 2026-08-30: emisor = correo del usuario en sesion.
+            from_email = get_sender_email_for_recap(request)
+            # Cambio 2026-08-30: si el emisor no esta verificado/activo en Brevo (ni como sender
+            # individual ni por dominio validado) se aborta con alerta. Si GET /senders o
+            # /domains falla (None) no se puede confirmar: se advierte y despues se confirma
+            # la entrega real por eventos (201 NO garantiza entrega).
+            verified_senders = get_brevo_verified_sender_emails()
+            validated_domains = get_brevo_validated_domains()
+            verification_skipped = verified_senders is None or validated_domains is None
+            if verification_skipped:
+                warns.append(f"[WARN] Could not check if '{from_email}' is a validated Brevo sender (GET /senders or /domains failed). Make sure domain or email is verified in Brevo before sending recaps.")
+            elif not sender_is_valid_in_brevo(from_email, verified_senders, validated_domains):
+                return render(request, 'landing.html', {
+                    'message': f"The sender email '{from_email}' is not verified in Brevo. Verify the email/domain in Brevo before sending recaps.",
+                    'alertType': 'warning', 'emp': emp, 'per': per})
+
             empRecap = employeeRecap.objects.filter(Period = per, EmployeeID = emp)
 
             for item in empRecap:
@@ -6282,16 +6357,32 @@ def send_recap_emp_brevo(request, perID, empID):
                             item.save()
                             attachment_path = item.recap.path
 
-                    # Envio via API Brevo (HTTPS). El remitente lo define DEFAULT_FROM_EMAIL.
+                    # Envio via API Brevo (HTTPS). El remitente es el correo del usuario en sesion.
                     is_success, errorMessage = send_email_via_brevo_with_attachment(
                         subject=subject,
                         message=message,
                         recipient_list=[emailTo],
                         attachment_paths=[attachment_path] if attachment_path else None,
+                        from_email=from_email,
                     )
                     if is_success:
-                        item.mailingDate = datetime.now()
-                        item.save()
+                        delivered = True
+                        # Cambio 2026-08-30: 201 NO garantiza entrega. Cuando no se pudo verificar
+                        # el remitente (verification_skipped), Brevo puede rechazar despues
+                        # ("Sending has been rejected because the sender you used ..."). Se confirma
+                        # el estado real con los eventos; mailingDate solo se marca si confirmo entrega.
+                        if verification_skipped:
+                            confirmed, confirmMsg = confirm_delivery_or_reject(emailTo)
+                            if confirmed is False:
+                                delivered = False
+                                errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {confirmMsg}")
+                                print(f"[BREVO] Delivery rejected for {emailTo}: {confirmMsg}", flush=True)
+                            elif confirmed is None:
+                                delivered = False
+                                warns.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: Brevo accepted (201) but delivery could not be confirmed yet — check in Brevo. mailingDate NOT updated.")
+                        if delivered:
+                            item.mailingDate = datetime.now()
+                            item.save()
                     else:
                         errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {errorMessage}")
                         print(f"[BREVO] Error sending recap to {emailTo}: {errorMessage}", flush=True)
@@ -6302,6 +6393,11 @@ def send_recap_emp_brevo(request, perID, empID):
 
     if errors:
         return render(request,'landing.html',{'message':'Some recap emails were not sent: ' + ' | '.join(errors), 'alertType':'warning', 'emp':emp, 'per':per})
+
+    # Cambio 2026-08-30: avisos (remitente no confirmado / entrega pendiente) se muestran
+    # aunque Brevo haya devuelto 201, para que el usuario revise en Brevo.
+    if warns:
+        return render(request,'landing.html',{'message':' | '.join(warns), 'alertType':'warning', 'emp':emp, 'per':per})
 
     return HttpResponseRedirect('/location_period_list/' + perID)
 
