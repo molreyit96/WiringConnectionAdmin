@@ -6232,14 +6232,16 @@ def send_recap_brevo(request, perID):
                 #   2) dominios autenticados/validados (GET /senders/domains)
                 # Con un dominio validado en Brevo, CUALQUIER correo de ese dominio es valido
                 # (no genera error), aunque no este como sender individual. Un remitente es valido
-                # si cumple 1 o 2. Si alguna API falla (None) no se puede confirmar: se advierte
-                # y se confirma la entrega real por eventos (201 NO garantiza entrega).
+                # si cumple 1 o 2.
+                # Si alguna API de lectura falla (None) NO se puede afirmar ni negar la validez:
+                # se envia igual usando el correo del usuario en sesion como emisor y despues se
+                # confirma la entrega real por eventos (201 NO garantiza entrega).
+                # Cambio 2026-08-30: NO se muestra WARN previo en ese caso (en produccion la key
+                # no puede leer /senders ni /domains aunque el dominio este validado).
                 verified_senders = get_brevo_verified_sender_emails()
                 validated_domains = get_brevo_validated_domains()
                 verification_skipped = verified_senders is None or validated_domains is None
-                if verification_skipped:
-                    warns.append(f"[WARN] Could not check if '{from_email}' is a validated Brevo sender (GET /senders or /domains failed). Make sure domain or email is verified in Brevo before sending recaps.")
-                elif not sender_is_valid_in_brevo(from_email, verified_senders, validated_domains):
+                if not verification_skipped and not sender_is_valid_in_brevo(from_email, verified_senders, validated_domains):
                     return render(request, 'landing.html', {
                         'message': f"The sender email '{from_email}' is not verified in Brevo. Verify the email/domain in Brevo before sending recaps.",
                         'alertType': 'warning', 'per': per})
@@ -6320,15 +6322,14 @@ def send_recap_emp_brevo(request, perID, empID):
             # Cambio 2026-08-30: emisor = correo del usuario en sesion.
             from_email = get_sender_email_for_recap(request)
             # Cambio 2026-08-30: si el emisor no esta verificado/activo en Brevo (ni como sender
-            # individual ni por dominio validado) se aborta con alerta. Si GET /senders o
-            # /domains falla (None) no se puede confirmar: se advierte y despues se confirma
-            # la entrega real por eventos (201 NO garantiza entrega).
+            # individual ni por dominio validado) se aborta con alerta.
+            # Si GET /senders o /domains falla (None) NO se puede afirmar/negar la validez: se
+            # envia igual usando el correo del usuario en sesion y luego se confirma la entrega
+            # real por eventos (201 NO garantiza entrega). Cambio 2026-08-30: sin WARN previo.
             verified_senders = get_brevo_verified_sender_emails()
             validated_domains = get_brevo_validated_domains()
             verification_skipped = verified_senders is None or validated_domains is None
-            if verification_skipped:
-                warns.append(f"[WARN] Could not check if '{from_email}' is a validated Brevo sender (GET /senders or /domains failed). Make sure domain or email is verified in Brevo before sending recaps.")
-            elif not sender_is_valid_in_brevo(from_email, verified_senders, validated_domains):
+            if not verification_skipped and not sender_is_valid_in_brevo(from_email, verified_senders, validated_domains):
                 return render(request, 'landing.html', {
                     'message': f"The sender email '{from_email}' is not verified in Brevo. Verify the email/domain in Brevo before sending recaps.",
                     'alertType': 'warning', 'emp': emp, 'per': per})
