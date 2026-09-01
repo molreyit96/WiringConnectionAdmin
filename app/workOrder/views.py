@@ -6218,7 +6218,6 @@ def get_sender_email_for_recap(request):
 def send_recap_brevo(request, perID):
     empSelected = request.POST.get('Employees')
     errors = []
-    warns = []
 
     try:
         if empSelected != 0:
@@ -6280,17 +6279,17 @@ def send_recap_brevo(request, perID):
                             delivered = True
                             # Cambio 2026-08-30: 201 NO garantiza entrega. Cuando no se pudo verificar
                             # el remitente (verification_skipped), Brevo puede rechazar el correo despues
-                            # ("Sending has been rejected because the sender you used ..."). Se confirma
-                            # el estado real con los eventos; mailingDate solo se marca si confirmo entrega.
+                            # ("Sending has been rejected because the sender you used ..."). Se consulta
+                            # el estado real con los eventos. Cambio 2026-08-30: si no se confirma en la
+                            # ventana (confirmado None) se asume aceptado (201) y NO se muestra mensaje,
+                            # para no confundir al usuario que envia los recaps; solo se reporta un
+                            # rechazo real (evento 'error' de Brevo).
                             if verification_skipped:
                                 confirmed, confirmMsg = confirm_delivery_or_reject(emailTo)
                                 if confirmed is False:
                                     delivered = False
                                     errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {confirmMsg}")
                                     print(f"[BREVO] Delivery rejected for {emailTo}: {confirmMsg}", flush=True)
-                                elif confirmed is None:
-                                    delivered = False
-                                    warns.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: Brevo accepted (201) but delivery could not be confirmed yet — check in Brevo. mailingDate NOT updated.")
                             if delivered:
                                 item.mailingDate = datetime.now()
                                 item.save()
@@ -6303,11 +6302,6 @@ def send_recap_brevo(request, perID):
     if errors:
         return render(request,'landing.html',{'message':'Some recap emails were not sent: ' + ' | '.join(errors), 'alertType':'warning', 'per': per})
 
-    # Cambio 2026-08-30: avisos (remitente no confirmado / entrega pendiente) se muestran
-    # aunque Brevo haya devuelto 201, para que el usuario revise en Brevo.
-    if warns:
-        return render(request,'landing.html',{'message':' | '.join(warns), 'alertType':'warning', 'per': per})
-
     return HttpResponseRedirect('/location_period_list/' + perID)
 
 
@@ -6316,7 +6310,6 @@ def send_recap_emp_brevo(request, perID, empID):
     per = period.objects.filter(id = perID).first()
     emp = Employee.objects.filter(employeeID = empID).first()
     errors = []
-    warns = []
     try:
         if per and emp:
             # Cambio 2026-08-30: emisor = correo del usuario en sesion.
@@ -6370,17 +6363,17 @@ def send_recap_emp_brevo(request, perID, empID):
                         delivered = True
                         # Cambio 2026-08-30: 201 NO garantiza entrega. Cuando no se pudo verificar
                         # el remitente (verification_skipped), Brevo puede rechazar despues
-                        # ("Sending has been rejected because the sender you used ..."). Se confirma
-                        # el estado real con los eventos; mailingDate solo se marca si confirmo entrega.
+                        # ("Sending has been rejected because the sender you used ..."). Se consulta
+                        # el estado real con los eventos. Cambio 2026-08-30: si no se confirma en la
+                        # ventana (confirmado None) se asume aceptado (201) y NO se muestra mensaje,
+                        # para no confundir al usuario que envia los recaps; solo se reporta un
+                        # rechazo real (evento 'error' de Brevo).
                         if verification_skipped:
                             confirmed, confirmMsg = confirm_delivery_or_reject(emailTo)
                             if confirmed is False:
                                 delivered = False
                                 errors.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: {confirmMsg}")
                                 print(f"[BREVO] Delivery rejected for {emailTo}: {confirmMsg}", flush=True)
-                            elif confirmed is None:
-                                delivered = False
-                                warns.append(f"{item.EmployeeID.last_name} {item.EmployeeID.first_name}: Brevo accepted (201) but delivery could not be confirmed yet — check in Brevo. mailingDate NOT updated.")
                         if delivered:
                             item.mailingDate = datetime.now()
                             item.save()
@@ -6394,11 +6387,6 @@ def send_recap_emp_brevo(request, perID, empID):
 
     if errors:
         return render(request,'landing.html',{'message':'Some recap emails were not sent: ' + ' | '.join(errors), 'alertType':'warning', 'emp':emp, 'per':per})
-
-    # Cambio 2026-08-30: avisos (remitente no confirmado / entrega pendiente) se muestran
-    # aunque Brevo haya devuelto 201, para que el usuario revise en Brevo.
-    if warns:
-        return render(request,'landing.html',{'message':' | '.join(warns), 'alertType':'warning', 'emp':emp, 'per':per})
 
     return HttpResponseRedirect('/location_period_list/' + perID)
 
