@@ -284,7 +284,9 @@
                             
                             {% if AddCrew or item.Status == 5 %}
                                 {%if item.Status == 1 or item.Status == 5 %}
-                                    <a class="btn p-0" onclick="send_payroll({{item.id}},{{selectedLocation}})"><i class="fa-solid fa-paper-plane fa-xl" style="color: green;"></i></a>
+                                    {% if item.woID and item.supervisor and dailyItem and dailyEmp %}
+                                        <a class="btn p-0" onclick="send_payroll({{item.id}},{{selectedLocation}})"><i class="fa-solid fa-paper-plane fa-xl" style="color: green;"></i></a>
+                                    {%endif%}
                                 {%endif%}
                             {%endif%}
                         {%endif%}
