@@ -6203,12 +6203,18 @@ def generate_recap(empID, perID):
 # luego el del User de Django, y como respaldo DEFAULT_FROM_EMAIL.
 # ============================================================
 def get_sender_email_for_recap(request):
-    # Cambio 2026-08-30: el emisor de los recaps ya NO es el valor fijo
-    # del .env (DEFAULT_FROM_EMAIL), sino el correo del usuario en sesion.
-    # Prioridad: 1) email del Employee vinculado al login, 2) email del User
-    # de Django, 3) como respaldo DEFAULT_FROM_EMAIL si ambos estan vacios.
-    emp = Employee.objects.filter(user__username__exact = request.user.username).first()
-    from_email = emp.email if (emp and emp.email) else request.user.email
+    # Cambio 2026-09-01: el emisor de los recaps debe ser el correo que esta en
+    # el User de Django (request.user.email), NO el correo del modelo Employee.
+    # Motivo: el Employee (p.ej. 1647) suele tener un correo personal
+    # (erikyol85@gmail.com) que no pasa la validacion de remitente de Brevo,
+    # mientras que el User de Django (p.ej. eyol) suele tener el correo de
+    # dominio verificado (emolina@wiringconnection.com).
+    # Prioridad: 1) email del User de Django, 2) como respaldo el email del
+    # Employee vinculado al login, 3) DEFAULT_FROM_EMAIL si ambos estan vacios.
+    from_email = request.user.email
+    if not from_email:
+        emp = Employee.objects.filter(user__username__exact = request.user.username).first()
+        from_email = emp.email if (emp and emp.email) else None
     if not from_email:
         from_email = settings.DEFAULT_FROM_EMAIL
     return from_email
