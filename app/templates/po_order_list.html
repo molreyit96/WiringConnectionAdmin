@@ -52,23 +52,7 @@
                             <div class="col-sm-4">
                                 <div class="mb-3">
                                     <label for="Status" class="form-label">Status</label>                                    
-                                    {% if order.Status == "1"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Not Started" disabled>                                                                       
-                                    {%elif order.Status == "2"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Work in Progress" disabled>
-                                    {%elif order.Status == "3"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Pending Docs" disabled>                                       
-                                    {%elif order.Status == "4"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Pending Revised WO" disabled>
-                                    {%elif order.Status == "5"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Invoiced" disabled>
-                                    {%elif order.Status == "6"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Transferred" disabled>
-                                    {%elif order.Status == "7"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="Ready To Bill" disabled>
-                                    {%elif order.Status == "8"%}
-                                        <input type="text" name="Status" id="Status" class="form-control" value="RTB / Pending External Production" disabled>
-                                    {%endif%}                                                                                                                                            
+                                    <input type="text" name="Status" id="Status" class="form-control" value="{{ order.get_Status_display }}" disabled>                                                                                                                                          
                                 </div>
                             </div>
                         </div>  
@@ -90,6 +74,14 @@
                                             <a class="btn btn-success" href="/create_po/{{order.id}}/0" role="button">Add PO</a>
                                         {%endif%}
 
+                                        
+                                        {% if po %}
+                                            <button class="btn btn-primary" onclick="downloadAllReceipts({{ order.id }})" id="downloadReceiptsBtn">
+                                                <i class="fa-solid fa-download"></i>  All Receipts
+                                               <!-- <span class="badge bg-light text-dark ms-1">{{ po|length }}</span> -->
+                                            </button>
+                                        {% endif %}
+
                                         <a href="/order_detail/{{order.id}}/{{emp.is_supervisor}}" type="button" class="btn btn-danger" data-always-enabled="true">Close</a> 
                                     </div>
                                 </div>
@@ -108,7 +100,7 @@
                                             <th scope="col">isAmountRounded</th>
                                             <th scope="col">Quantity</th>
                                             <th scope="col">Total</th>
-                                            <th scope="col" style="width: 3%"></th>
+                                            <th scope="col" style="width: 5%"></th>
                                         </tr>              
                                     </thead>
                                     <tbody>                                       
@@ -130,7 +122,14 @@
                                                 <td>{{po.isAmountRounded}}</td>
                                                 <td>{{po.quantity}}</td>
                                                 <td>{{po.total}}</td>                                                
-                                                <td> <a href="/update_po/{{po.id}}/{{order.id}}/0"><i class="fa-solid fa-circle-arrow-right" style="color: green;"></i></a></td>                                 
+                                                <td> 
+                                                    {% if po.receipt %}
+                                                        <a href="{{ po.receipt.url }}" class="receipt-link">
+                                                            <i class="fa-solid fa-download"></i> 
+                                                        </a>
+                                                    {% endif %} 
+                                                    <a href="/update_po/{{po.id}}/{{order.id}}/0"><i class="fa-solid fa-circle-arrow-right" style="color: green;"></i></a>
+                                                </td>                                 
                                             </tr>                                             
                                         {% endfor %}
                                     </tbody>                              
@@ -142,4 +141,151 @@
         </div>      
     </form>
 </div>
+
+<!-- Add JSZip and FileSaver libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+async function downloadAllReceipts(orderId) {
+    // Find all receipt download links in the table
+    const downloadLinks = document.querySelectorAll('#orders tbody tr a.receipt-link');
+    
+    if (downloadLinks.length === 0) {
+        alert('No receipts found to download.');
+        return;
+    }
+    
+    // Get the button and save original text
+    const btn = document.getElementById('downloadReceiptsBtn');
+    if (!btn) return;
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Downloading ${downloadLinks.length} files...`;
+    btn.disabled = true;
+    
+    try {
+        const zip = new JSZip();
+        let successCount = 0;
+        let failCount = 0;
+        let processedCount = 0;
+        
+        // Create a folder for this order
+        const folder = zip.folder(`Order_${orderId}_Receipts`);
+        
+        // Process each receipt
+        for (const link of downloadLinks) {
+            const row = link.closest('tr');
+            
+            // Get PO number from the row
+            const poCell = row?.querySelector('td:first-child');
+            const poNumber = poCell?.textContent?.trim() || `PO_${processedCount + 1}`;
+            
+            try {
+                // Fetch the receipt file
+                const response = await fetch(link.href);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                
+                // Determine file extension from URL or content-type
+                let fileName = link.href.split('/').pop() || `${poNumber}.pdf`;
+                
+                // If URL doesn't have a proper extension, try to determine from content-type
+                if (!fileName.includes('.')) {
+                    const contentType = response.headers.get('content-type');
+                    let ext = '.pdf';
+                    if (contentType) {
+                        if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = '.jpg';
+                        else if (contentType.includes('png')) ext = '.png';
+                        else if (contentType.includes('gif')) ext = '.gif';
+                        else if (contentType.includes('pdf')) ext = '.pdf';
+                    }
+                    fileName = `${poNumber}${ext}`;
+                }
+                
+                // Clean up filename (remove path characters)
+                fileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+                
+                // Add file to ZIP
+                folder.file(fileName, blob);
+                successCount++;
+                
+            } catch (error) {
+                console.error(`Error downloading PO ${poNumber}:`, error);
+                failCount++;
+                
+                // Add error placeholder
+                const errorMsg = `Error downloading receipt for PO ${poNumber}: ${error.message}`;
+                folder.file(`ERROR_PO_${poNumber}.txt`, errorMsg);
+            }
+            
+            processedCount++;
+            
+            // Update progress every 5 files or at the end
+            if (processedCount % 5 === 0 || processedCount === downloadLinks.length) {
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${processedCount}/${downloadLinks.length} files processed...`;
+            }
+        }
+        
+        // Show summary if there were errors
+        if (failCount > 0) {
+            console.warn(`Download completed with errors: ${successCount} success, ${failCount} failed`);
+        }
+        
+        // Generate and download ZIP
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP file...`;
+        
+        const zipBlob = await zip.generateAsync({ 
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+        
+        // Generate filename with date
+        const dateStr = new Date().toISOString().slice(0,10);
+        const zipFileName = `receipts_order_${orderId}_${dateStr}.zip`;
+        
+        // Download the ZIP
+        saveAs(zipBlob, zipFileName);
+        
+        // Show success message
+        let message = `✅ Successfully downloaded ${successCount} receipt${successCount !== 1 ? 's' : ''}!`;
+        if (failCount > 0) {
+            message += `\n⚠️ ${failCount} file${failCount !== 1 ? 's' : ''} failed (check error files in ZIP)`;
+        }
+        alert(message);
+        
+    } catch (error) {
+        console.error('Error creating ZIP:', error);
+        alert('Error creating ZIP file. Please try again or download files individually.\n\nError: ' + error.message);
+    } finally {
+        // Restore button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Add confirmation for large downloads
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('downloadReceiptsBtn');
+    if (btn) {
+        const originalClick = btn.onclick;
+        btn.addEventListener('click', function(e) {
+            const totalReceipts = parseInt(this.querySelector('.badge')?.textContent || 0);
+            if (totalReceipts > 10) {
+                if (!confirm(`You are about to download ${totalReceipts} receipts. This may take a moment. Continue?`)) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+});
+
+</script>
+
 {% endblock %}

@@ -284,8 +284,8 @@
                             
                             {% if AddCrew or item.Status == 5 %}
                                 {%if item.Status == 1 or item.Status == 5 %}
-                                    {% if item.woID and item.supervisor and dailyItem and dailyEmp %}
-                                        <a class="btn p-0" onclick="send_payroll({{item.id}},{{selectedLocation}})"><i class="fa-solid fa-paper-plane fa-xl" style="color: green;"></i></a>
+                                    {% if item.woID and item.supervisor and dailyEmp %}
+                                        <a class="btn p-0" onclick="send_payroll({{item.id}},{{selectedLocation}},{{dailyItem|length}})"><i class="fa-solid fa-paper-plane fa-xl" style="color: green;"></i></a>
                                     {%endif%}
                                 {%endif%}
                             {%endif%}
@@ -961,9 +961,12 @@
             }  
         };
         
-        function send_payroll(id, selectedLocation){
+        function send_payroll(id, selectedLocation, dailyItem){
             event.preventDefault();
-            if (confirm(`Are you sure to send this Daily to Approve?`))
+            if (dailyItem==0)
+                alert(`There are no items in this daily`);
+
+            if (confirm(`Are you sure you want to send this daily for approval?`))
             {           
                 console.log(id);
                 console.log(selectedLocation);
