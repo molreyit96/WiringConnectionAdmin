@@ -5184,8 +5184,11 @@ def create_daily_emp(request, id, LocID):
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     dailyID = Daily.objects.filter(id = id).first()
+    
+    #Get all the dailies with the same Period, Day and Location
+    dailyList = list(Daily.objects.filter(Location = dailyID.Location, Period = dailyID.Period, day = dailyID.day, woID = dailyID.woID))
 
-    dailyE = DailyEmployee.objects.filter(DailyID = dailyID)
+    dailyE = DailyEmployee.objects.filter(DailyID__in = dailyList)
     empList = []
 
     per = period.objects.filter(status__in=(1,2)).first()

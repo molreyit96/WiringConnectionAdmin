@@ -734,7 +734,10 @@ def create_daily_emp(request, id, LocID):
     context ={}
     dailyID = DailyMob.objects.filter(id = id).first()
 
-    dailyE = DailyMobEmployee.objects.filter(DailyID = dailyID)
+    #Get all the dailies with the same Period, Day and Location
+    dailyList = list(DailyMob.objects.filter(Location = dailyID.Location, Period = dailyID.Period, day = dailyID.day, woID = dailyID.woID))
+
+    dailyE = DailyMobEmployee.objects.filter(DailyID__in = dailyList)
     empList = []
 
     per = catalogModel.period.objects.filter(status__in=(1,2)).first()
