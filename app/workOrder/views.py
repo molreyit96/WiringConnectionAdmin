@@ -4466,8 +4466,11 @@ def orders_payroll(request, dailyID, LocID):
     
     WOdailyList = list(Daily.objects.filter(Period = daily.Period, day = daily.day, Location__LocationID = LocID).exclude(woID = None).values_list('woID__id',flat=True))
 
-
-    wo = workOrder.objects.filter(Status__in = [1,2,7,8]).exclude(Location__in = loca).exclude(id__in = WOdailyList )
+    # Paulo Ismalej - 08/09/2026
+    # Enable select the same WO on the same Period and date, change requested by Krissia Contreras
+    #wo = workOrder.objects.filter(Status__in = [1,2,7,8]).exclude(Location__in = loca).exclude(id__in = WOdailyList )
+    
+    wo = workOrder.objects.filter(Status__in = [1,2,7,8]).exclude(Location__in = loca)
     context = {}    
     context["orders"] = wo
     context["emp"] = emp    
