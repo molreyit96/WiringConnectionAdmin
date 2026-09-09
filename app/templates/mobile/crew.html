@@ -303,7 +303,7 @@
                                 <p id="address" name="address" style="margin-left: 10px">No Work Order Selected</p>
                             {%else%}
                                 <p id="address" name="address" style="margin-left: 10px">{{item.woID.prismID}} - {{item.woID.workOrderId}} - {{item.woID.PO}}</p>
-                            {%endif%}
+                            {%endif%}                                                        
 
                             {% if AddCrew  or item.Status == 5 %}
                                 {% if emp.is_superAdmin  or user.is_staff  or period.status == 1  or period.status == 0 %}
@@ -311,8 +311,25 @@
                                         <a class="btn  pt-1" href="/mobile/orders_payroll/{{item.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass" style="color: blue;"></i></a>
                                     {%endif%}
                                 {%endif%}
-                            {%endif%}    
+                            {%endif%}
                         </div>
+
+                         
+
+                        {%if woCount == 1%}
+                            <div class="alert alert-warning" role="alert">                                
+                                    This WO is already included in <strong>{{woCount}}</strong> Daily. Please check it before sending the current Daily for approval.                                
+                            </div>
+                        {%elif woCount > 1%}                                                      
+                                <div class="alert alert-warning" role="alert">
+                                    This WO is already included in <strong>{{woCount}}</strong> Dailies. Please check it before sending the current Daily for approval.
+                                </div>
+                            
+                        {%endif%}
+
+
+                        
+
                         {% if item.woID%}
                             <!--Address-->
                             <div class="d-flex justify-content-left align-items-center">

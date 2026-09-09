@@ -448,7 +448,12 @@ def crew(request, perID, dID, crewID, LocID):
     if crewID != "0":
         dailyID = DailyMob.objects.filter(Period = perID, day=selectedDate, crew = crewID, Location = loca, created_by = user ).first()
         
-
+        
+        #Validate if the WO is included in another daily, the same day and period, but different crew
+        woCount = DailyMob.objects.filter(Period = perID, day = selectedDate, Location = loca, woID = dailyID.woID).exclude(id = dailyID.id).count()
+        
+        context["woCount"] = woCount
+        
         #Getting the pdf Url
         dailyUrl = None
         if dailyID.Status == 4:
