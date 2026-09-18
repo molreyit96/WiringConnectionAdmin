@@ -196,6 +196,18 @@ def mobile_home(request, LocID):
         elif day == today.strftime("%d"):
             pr = today_period 
             btn_enabled = True
+            
+            #*** If today is monday look for the last friday in the week and set btn_enabled = True
+            if today.strftime("%A") == "Monday":
+                last_friday = None
+                for d in week1:
+                    if d['fullDate'].strftime("%A") == "Friday":
+                        last_friday = d
+                        break
+                if last_friday:
+                    last_friday['btn_enabled'] = True
+            
+            
         else:    
             pr = per   
 
@@ -239,6 +251,17 @@ def mobile_home(request, LocID):
         elif day == today.strftime("%d"):
             pr = today_period 
             btn_enabled = True
+            
+            #*** If today is monday look for the last friday in the week and set btn_enabled = True
+            if today.strftime("%A") == "Friday":
+                last_friday = None
+                for d in week2:
+                    if d['fullDate'].strftime("%A") == "Wednesday":
+                        last_friday = d
+                        break
+                if last_friday:
+                    last_friday['btn_enabled'] = True
+            
         else:    
             pr = per
 
@@ -430,9 +453,15 @@ def crew(request, perID, dID, crewID, LocID):
 
         #If selectedDate is not yesterday or today, just get the dailys in Rejected Status
         # 2026/08/17 PISMALEJ - Get all the Dailies even if the day isn't yesterday or today but in read mode
+        # If Today is Monday and selectedDate is the nearest Friday Get all the Dailies even if the day isn't yesterday or today but in read mode
         if selectedDate != yesterday and selectedDate != today:
             crews = DailyMob.objects.filter(Period = perID, day=selectedDate, Location = loca, created_by = user).order_by('crew')
-            context["AddCrew"] = False
+            
+            if (today.strftime("%A") == "Monday" and selectedDate.strftime("%A") == "Friday") and (0 <= (today - selectedDate).days <= 3):
+                context["AddCrew"] = True
+            else:
+                context["AddCrew"] = False
+                
         else:
             # get the list of dailys for the period, Day selected and Location
             crews = DailyMob.objects.filter(Period = perID, day=selectedDate, Location = loca, created_by = user).order_by('crew')

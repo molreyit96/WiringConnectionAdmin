@@ -226,7 +226,8 @@
             <h4>{{selectedDate}}</h4>
         </div>
         <div class="d-flex justify-content-between">             
-            <div>  
+            <div>              
+
                 {% if selectedDay > 0 %}
                     {%if emp.is_superAdmin  or user.is_staff  or period.status == 1 or period.status == 0%}        
                             {% if AddCrew %}                  
