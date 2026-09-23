@@ -7,21 +7,26 @@
 
        
 <div class="container">
-    <form method='post'  action="" enctype="multipart/form-data" id="update_sup" >
-        {% csrf_token %}                                                                                                                                                                      
-        <div class="row mt-5 pt-5">
+        <form method='post'  action="" enctype="multipart/form-data" id="update_sup" >
+            {% csrf_token %}                                                                                                                                                                      
+            {% if errorMessage %}
+                <div class="alert alert-danger mt-4" role="alert">
+                    {{ errorMessage }}
+                </div>
+            {% endif %}
+            <div class="row mt-5 pt-5">
             <div class="col-sm-6">      
                 <div class="mb-3">                                                                                                                                                                                      
                     <label for="supervisor" class="form-label">Supervisor</label>
                     <select class="form-select" name="supervisor" id="supervisor" >
                         <option value ="0" selected>Select Supervisor</option>
                         {% for sup in superV %}    
-                            {% if sup.employeeID|slugify == item.supervisor %}                                                 
+                            {% if sup.employeeID|slugify == dailyObj.supervisor %}                                                 
                                 <option value="{{sup.employeeID}}" selected>{{sup.first_name}} {{sup.last_name}}</option>  
                             {% else %}     
                                 <option value="{{sup.employeeID}}">{{sup.first_name}} {{sup.last_name}}</option>   
                             {%endif%}            
-                        {% endfor %}      
+                        {% endfor %}   
                     </select>                                                                                                                                                              
                 </div>                                                                                                                                                                          
             </div>  
@@ -51,7 +56,7 @@
             <input type="text" class="form-control d-none" id="daily" name="daily" value="{{selectedCrew}}"> 
         </div> 
         <div class="d-flex justify-content-center mt-2 pt-2">       
-                <button type="submit" form="update_sup" class="btn btn-primary ">Save</button>
+                <button type="button" class="btn btn-primary" onclick="validateSupervisor()">Save</button>
                 <a type="button" class="btn btn-danger" href="/mobile/crew/{{period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}">Close</a>     
                 
         </div>                                                                         
@@ -59,4 +64,15 @@
         
     
 </div>
+
+<script>
+    function validateSupervisor() {
+        var sup = document.getElementById("supervisor").value;
+        if (sup === "0" || sup === "" || sup === null) {
+            alert("Please select a supervisor before saving.");
+            return false;
+        }
+        document.getElementById("update_sup").submit();
+    }
+</script>
 {% endblock %}

@@ -2091,16 +2091,21 @@ def reject_timesheet(request, id, origen):
 @require_POST
 def save_daily_comment(request, daily_id):
     """
-    Receives a POST with 'comment' and saves it to DailyMob.comments field.
+    Receives a POST with 'comment' and saves it to DailyMob.daily_comments field.
+    Empty string clears the comment (sets it to None).
     """
-    comment = request.POST.get('comment','').strip()
-    if comment is None or comment.strip() == "":
-        return JsonResponse({'success': False, 'message': 'No comment provided.'})
+    comment = request.POST.get('comment', '').strip()
     daily = get_object_or_404(DailyMob, id=daily_id)
+
+    if comment == '':
+        daily.daily_comments = None
+        daily.save()
+        return JsonResponse({'success': True, 'message': 'Comment cleared.'})
+
     daily.daily_comments = comment
     daily.save()
     return JsonResponse({'success': True, 'message': 'Comment saved.'})
-
+    
 @login_required(login_url='/home/')
 @transaction.atomic
 def approve_timesheet(request, id):
