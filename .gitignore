@@ -135,3 +135,21 @@ app/media/Recaps/
 app/media/dailys/
 
 *.dump
+
+# AI assistants / coding agents
+.opencode/
+opencode.jsonc
+opencode.json
+AGENTS.md
+agents.md
+.claude/
+.cursor/
+.windsurf/
+.copilot/
+.aider*
+.github/copilot-instructions.md
+
+# Agent skills
+.skills/
+skill/
+rules/
