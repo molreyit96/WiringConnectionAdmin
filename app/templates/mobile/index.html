@@ -30,6 +30,7 @@
   <!-- CSS -->
    {% comment %} <link rel="stylesheet" href="{% static 'mobile/css/general.css' %} ">  {% endcomment %}
    <link rel="stylesheet" href="{% static 'css/style.css' %} "> 
+   <link rel="stylesheet" href="{% static 'mobile/css/tokens.css' %} "> 
 
   <style>
     body, html {
@@ -61,14 +62,6 @@
     }
     .card-title {
       font-weight: bold;
-    }
-    .btn-primary {
-      background-color: #007bff;
-      border-color: #007bff;
-    }
-    .btn-primary:hover {
-      background-color: #0056b3;
-      border-color: #0056b3;
     }
     .footer-nav {
       background-color: #f8f9fa;
@@ -113,15 +106,15 @@
 
   /* Style the current page button */
   #orders2_paginate .paginate_button.current {
-      background-color: #007bff;
+      background-color: var(--wc-accent);
       color: white;
-      border-color: #007bff;
+      border-color: var(--wc-accent);
   }
 
   #orders2_paginate .paginate_button.current {
-    background-color: #007bff;
+    background-color: var(--wc-accent);
     color: white;
-    border-color: #007bff;
+    border-color: var(--wc-accent);
 }
 
   #orders_paginate .paginate_button:not(.previous):not(.next):not(.current) {

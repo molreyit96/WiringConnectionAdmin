@@ -1,0 +1,27 @@
+:root {
+    --wc-ink: #1f2937;
+    --wc-accent: #0e7490;
+    --wc-accent-dark: #155e75;
+    --wc-bg: #f8fafc;
+    --wc-ok: #16a34a;
+    --wc-danger: #dc2626;
+    --wc-header: var(--wc-accent);
+    --wc-header-ink: #ffffff;
+}
+
+.btn-primary {
+    background-color: var(--wc-accent);
+    border-color: var(--wc-accent);
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--wc-accent-dark);
+    border-color: var(--wc-accent-dark);
+}
+
+.card-header-wc {
+    background-color: var(--wc-header) !important;
+    color: var(--wc-header-ink) !important;
+}
