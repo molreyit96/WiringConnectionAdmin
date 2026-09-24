@@ -25,3 +25,22 @@
     background-color: var(--wc-header) !important;
     color: var(--wc-header-ink) !important;
 }
+
+/* Contraste de contenido DENTRO del header-ink: iconos/links en blanco (≥7:1) */
+.card-header-wc a,
+.card-header-wc a * {
+    color: var(--wc-header-ink) !important;
+}
+
+/* Badges de estado dentro del header-ink: píldora clara (texto cian sobre blanco ≥5.3:1) */
+.card-header-wc .badge {
+    background-color: rgba(255, 255, 255, 0.92) !important;
+    color: var(--wc-header) !important;
+}
+
+/* Botones dentro del header-ink: contorno claro con tinta blanca, sin desbordar el header */
+.card-header-wc .btn:not(.btn-light):not(.btn-outline-light) {
+    color: var(--wc-header-ink) !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+    background-color: transparent !important;
+}
