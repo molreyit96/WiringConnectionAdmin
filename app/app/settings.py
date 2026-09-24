@@ -34,6 +34,13 @@ ALLOWED_HOSTS.extend(
     )
 )
 
+CSRF_TRUSTED_ORIGINS = list(
+    filter(
+        None,
+        os.environ.get('CSRF_TRUSTED_ORIGINS','').split(','),
+    )
+)
+
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 
