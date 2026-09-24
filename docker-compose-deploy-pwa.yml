@@ -1,0 +1,86 @@
+# Stack aislado de sandbox/despliegue PWA (wcapp.endtoendsolutions.dev).
+# No toca el stack de disagro ni el deploy prod del repo (docker-compose-deploy.yml).
+# TLS: nginx propio en el puerto interno 8080 -> host 8443 (80/443 los usa disagro).
+# Certificado: certbot-dns-digitalocean (DNS-01) porque el reto HTTP-01 en :80 no es posible.
+name: wcapp-test
+
+services:
+  app:
+    build:
+      context: .
+    restart: always
+    volumes:
+      - static-data:/vol/web
+    environment:
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      - TRUST_PROXY_XFWD_PROTO=${TRUST_PROXY_XFWD_PROTO:-}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-0}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-0}
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER}
+      - SERVER_EMAIL=${SERVER_EMAIL}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - EMAIL_USE_TLS=${EMAIL_USE_TLS}
+      - EMAIL_TIMEOUT=${EMAIL_TIMEOUT}
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13-alpine
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+
+  proxy:
+    build:
+      context: ./proxy
+    restart: always
+    command: ["/run-ssl.sh"]
+    # Solo en este stack: root para poder leer privkey.pem (0600) del certbot.
+    user: root
+    depends_on:
+      - app
+    ports:
+      - 8443:8080
+    volumes:
+      - static-data:/vol/static
+      - cert-data:/etc/letsencrypt
+    environment:
+      - LISTEN_PORT=8080
+      - APP_HOST=app
+      - APP_PORT=9000
+      - DOMAIN=${DOMAIN}
+
+  certbot:
+    image: certbot/dns-digitalocean
+    profiles: ["maintenance"]
+    volumes:
+      - cert-data:/etc/letsencrypt
+      - cert-log:/var/log/letsencrypt
+      - ${SECRETS_DIR:-./secrets}/digitalocean.ini:/etc/secrets/digitalocean.ini:ro
+    command: >
+      certonly --dns-digitalocean
+      --dns-digitalocean-credentials /etc/secrets/digitalocean.ini
+      --dns-digitalocean-propagation-seconds 30
+      -d ${DOMAIN}
+      --cert-name wcapp
+      --non-interactive --agree-tos -m ${CERTBOT_EMAIL}
+
+volumes:
+  postgres-data:
+  static-data:
+  cert-data:
+  cert-log:

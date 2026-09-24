@@ -41,6 +41,14 @@ CSRF_TRUSTED_ORIGINS = list(
     )
 )
 
+# Termina TLS en el proxy y pasa X-Forwarded-Proto al app.
+# Solo se activa cuando el env TRUST_PROXY_XFWD_PROTO esta seteado.
+if os.environ.get('TRUST_PROXY_XFWD_PROTO', ''):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SESSION_COOKIE_SECURE = bool(int(os.environ.get('SESSION_COOKIE_SECURE', 0)))
+CSRF_COOKIE_SECURE = bool(int(os.environ.get('CSRF_COOKIE_SECURE', 0)))
+
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 
