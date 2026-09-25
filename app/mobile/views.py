@@ -31,6 +31,23 @@ from django.views.decorators.http import require_POST
 from django.db.models import Sum, OuterRef, Subquery, Value, CharField, IntegerField
 from django.db.models.functions import Concat, Cast
 
+
+def crew_url(period_id, day, crew, loc_id, section=None, sub=None):
+    if hasattr(day, 'strftime'):
+        day_str = day.strftime("%d")
+    else:
+        day_str = str(day)
+    url = '/mobile/crew/' + str(period_id) + '/' + day_str + '/' + str(crew) + '/' + str(loc_id)
+    params = []
+    if section:
+        params.append('section=' + section)
+    if sub:
+        params.append('sub=' + sub)
+    if params:
+        url += '?' + '&'.join(params)
+    return HttpResponseRedirect(url)
+
+
 @login_required(login_url='/home/')
 def mobile(request):
     emp =  catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
@@ -306,6 +323,18 @@ def crew(request, perID, dID, crewID, LocID):
     context["emp"]= emp
     context["dailyactual"] =""
 
+    section = request.GET.get('section', 'employees')
+    if section not in ('employees', 'items', 'docs'):
+        section = 'employees'
+    context["section"] = section
+
+    docs_sub = request.GET.get('sub', 'maps')
+    if docs_sub not in ('maps', 'pictures', 'material'):
+        docs_sub = 'maps'
+    context["docsSub"] = docs_sub
+
+    context["editable"] = False
+
     #Select the location
     loca = catalogModel.Locations.objects.filter(LocationID = LocID).first()
 
@@ -460,7 +489,8 @@ def crew(request, perID, dID, crewID, LocID):
         superV = catalogModel.Employee.objects.filter(is_supervisor=True)
 
     user = request.user.username
-    
+
+    crews = DailyMob.objects.none()
 
     if dID != "0":
 
@@ -490,51 +520,62 @@ def crew(request, perID, dID, crewID, LocID):
     if crewID != "0":
         dailyID = DailyMob.objects.filter(Period = perID, day=selectedDate, crew = crewID, Location = loca, created_by = user ).first()
         
-        
-        #Validate if the WO is included in another daily, the same day and period, but different crew
-        woCount = DailyMob.objects.filter(Period = perID, day = selectedDate, Location = loca, woID = dailyID.woID).exclude(id = dailyID.id).count()
-        
-        context["woCount"] = woCount
-        
-        #Getting the pdf Url
-        dailyUrl = None
-        if dailyID.Status == 4:
-            dailyUrl = catalogModel.Daily.objects.filter(mobile_id=dailyID.id).first()
-        context["dailyUrl"] = dailyUrl            
+        if dailyID:
+            #Validate if the WO is included in another daily, the same day and period, but different crew
+            woCount = DailyMob.objects.filter(Period = perID, day = selectedDate, Location = loca, woID = dailyID.woID).exclude(id = dailyID.id).count()
             
-        dailyEmp = DailyMobEmployee.objects.filter(DailyID = dailyID).order_by('created_date')
-        context["dailyEmp"] = dailyEmp
+            context["woCount"] = woCount
+            
+            #Getting the pdf Url
+            dailyUrl = None
+            if dailyID.Status == 4:
+                dailyUrl = catalogModel.Daily.objects.filter(mobile_id=dailyID.id).first()
+            context["dailyUrl"] = dailyUrl            
+                
+            dailyEmp = DailyMobEmployee.objects.filter(DailyID = dailyID).order_by('created_date')
+            context["dailyEmp"] = dailyEmp
 
-        dailyItem = DailyMobItem.objects.filter(DailyID = dailyID).order_by('created_date')
-        dailyTotal = 0
-        ovT = 0
-        for di in dailyItem:
-            dailyTotal += di.total 
+            dailyItem = DailyMobItem.objects.filter(DailyID = dailyID).order_by('created_date')
+            dailyTotal = 0
+            ovT = 0
+            for di in dailyItem:
+                dailyTotal += di.total 
 
 
-        if dailyID.own_vehicle != None:
-            ovT = (dailyTotal * dailyID.own_vehicle) / 100
+            if dailyID.own_vehicle != None:
+                ovT = (dailyTotal * dailyID.own_vehicle) / 100
+            
+            granTotal = dailyTotal + ovT
+
+            #Adding the documents Maps
+            dailyDocs = DailyMobDocs.objects.filter(DailyID = dailyID, docType=1).order_by('created_date')
+
+            #Adding the documents Pictures
+            dailyDocsPic = DailyMobDocs.objects.filter(DailyID = dailyID, docType=2).order_by('created_date')
+
+            #Adding the documents Material Backup
+            dailyDocsMB = DailyMobDocs.objects.filter(DailyID = dailyID, docType=3).order_by('created_date')
         
-        granTotal = dailyTotal + ovT
 
-        #Adding the documents Maps
-        dailyDocs = DailyMobDocs.objects.filter(DailyID = dailyID, docType=1).order_by('created_date')
+            context["dailyactual"] = dailyID
+            context["dailyItem"] = dailyItem
+            context["dailyDocs"] = dailyDocs
+            context["dailyDocsPic"] = dailyDocsPic
+            context["dailyDocsMB"] = dailyDocsMB
+            context["TotalItem"] = dailyTotal
+            context["ovTotal"] = ovT
+            context["GranTotalItem"] = granTotal
 
-        #Adding the documents Pictures
-        dailyDocsPic = DailyMobDocs.objects.filter(DailyID = dailyID, docType=2).order_by('created_date')
+            context["tab_employees"] = dailyEmp.count()
+            context["tab_items"] = dailyItem.count()
+            context["tab_docs"] = dailyDocs.count() + dailyDocsPic.count() + dailyDocsMB.count()
 
-        #Adding the documents Material Backup
-        dailyDocsMB = DailyMobDocs.objects.filter(DailyID = dailyID, docType=3).order_by('created_date')
-    
-
-        context["dailyactual"] = dailyID
-        context["dailyItem"] = dailyItem
-        context["dailyDocs"] = dailyDocs
-        context["dailyDocsPic"] = dailyDocsPic
-        context["dailyDocsMB"] = dailyDocsMB
-        context["TotalItem"] = dailyTotal
-        context["ovTotal"] = ovT
-        context["GranTotalItem"] = granTotal
+            # One server-side editable flag replacing the duplicated template if-chains
+            editable = ((context.get("AddCrew", False) or dailyID.Status == 5)
+                        and (emp.is_superAdmin or request.user.is_staff
+                             or context["period"].status in (0, 1))
+                        and dailyID.Status in (1, 5))
+            context["editable"] = editable
 
     context["week1"] = week1
     context["message"] = message
@@ -607,7 +648,7 @@ def update_supervisor(request, perID, dID, crewID, LocID):
                         wo.WCSup = super
                         wo.save()           
 
-        return HttpResponseRedirect('/mobile/crew/' + str(per) + '/' + dID  + '/'+ str(crew.crew) +'/'+LocID)       
+        return crew_url(per, dID, crew.crew, LocID, section='employees')       
 
     context["superV"] = superV            
     context["selectedCrew"] = int(crewID)
@@ -677,7 +718,8 @@ def create_daily(request, pID, dID, LocID):
         operationDetail = "Period: " + str(per) + ", Crew: " + str(crew.crew)       
         
 
-        return HttpResponseRedirect('/mobile/crew/' + str(per) + '/' + crew.day.strftime("%d")  + '/'+ str(crew.crew) +'/'+LocID)
+        return crew_url(per, crew.day, crew.crew, LocID)
+
     else:
         return HttpResponseRedirect('/mobile/')
 
@@ -723,7 +765,7 @@ def delete_daily(request, id, LocID):
             wo.save()
 
         
-    return HttpResponseRedirect('/mobile/crew/' + str(obj.Period.id) + '/' + obj.day.strftime("%d") + '/0/' + str(LocID)) 
+    return crew_url(obj.Period.id, obj.day, 0, LocID, section='employees') 
 
 @login_required(login_url='/home/')
 def update_order_daily(request, woID, dailyID, LocID):
@@ -774,7 +816,7 @@ def update_order_daily(request, woID, dailyID, LocID):
         per = crew.Period.id      
         
 
-    return HttpResponseRedirect('/mobile/crew/' + str(per) + '/' + crew.day.strftime("%d")  + '/'+ str(crew.crew) +'/' + str(LocID))
+    return crew_url(per, crew.day, crew.crew, LocID, section='employees')
 
 
 #************** DAILY EMP ***********************
@@ -831,7 +873,7 @@ def create_daily_emp(request, id, LocID):
         form.save()  
           
         update_ptp_Emp(id, dailyID.split_paymet)             
-        return HttpResponseRedirect('/mobile/crew/' + str(dailyID.Period.id) + '/' + dailyID.day.strftime("%d") + '/' + str(dailyID.crew) +'/' + str(LocID))        
+        return crew_url(dailyID.Period.id, dailyID.day, dailyID.crew, LocID, section='employees')        
          
     
     context['form']= form
@@ -919,7 +961,7 @@ def update_daily_emp(request, id, LocID):
         update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet) 
 
         context["emp"] = emp       
-        return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) + '/' + str(LocID)) 
+        return crew_url(obj.DailyID.Period.id, obj.DailyID.day, obj.DailyID.crew, LocID, section='employees') 
 
     dailyID = DailyMob.objects.filter(id = obj.DailyID.id).first()
 
@@ -997,7 +1039,7 @@ def delete_daily_emp(request, id, LocID):
 
         update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet)        
        
-    return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) +'/' + str(LocID)) 
+    return crew_url(obj.DailyID.Period.id, obj.DailyID.day, obj.DailyID.crew, LocID, section='employees') 
 
 @login_required(login_url='/home/')
 def delete_daily_emp_sup(request, id, LocID):
@@ -1074,7 +1116,7 @@ def create_daily_item(request, id, LocID):
         
         update_ptp_Emp(id, dailyID.split_paymet)
 
-        return HttpResponseRedirect('/mobile/crew/' + str(dailyID.Period.id) + '/' + dailyID.day.strftime("%d") + '/' + str(dailyID.crew) +'/' + str(LocID))        
+        return crew_url(dailyID.Period.id, dailyID.day, dailyID.crew, LocID, section='items')        
          
     context['form']= form
     context["emp"] = emp
@@ -1183,7 +1225,7 @@ def update_daily_item(request, id, LocID):
 
         update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet) 
 
-        return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) +'/'+str(LocID)) 
+        return crew_url(obj.DailyID.Period.id, obj.DailyID.day, obj.DailyID.crew, LocID, section='items') 
 
     context["form"] = form
     context["emp"] = emp
@@ -1258,7 +1300,7 @@ def delete_daily_item(request, id, LocID):
 
         update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet) 
 
-    return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) +'/' + str(LocID)) 
+    return crew_url(obj.DailyID.Period.id, obj.DailyID.day, obj.DailyID.crew, LocID, section='items') 
 
 @login_required(login_url='/home/')
 def delete_daily_item_sup(request, id, LocID):
@@ -1491,7 +1533,7 @@ def delete_daily_docs(request, id, LocID):
         
         obj.delete()
 
-    return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) +'/' + str(LocID)) 
+    return crew_url(obj.DailyID.Period.id, obj.DailyID.day, obj.DailyID.crew, LocID, section='docs') 
        
 def delete_daily_docs_sup(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
@@ -1528,7 +1570,7 @@ def send_payroll(request, id, LocID):
     context["emp"] = emp
     context["id"] = id
     
-    return HttpResponseRedirect('/mobile/crew/' + str(obj.Period.id) + '/' + obj.day.strftime("%d") + '/0/' + str(LocID)) 
+    return crew_url(obj.Period.id, obj.day, obj.crew, LocID, section='employees') 
 
 
 @login_required(login_url='/home/')

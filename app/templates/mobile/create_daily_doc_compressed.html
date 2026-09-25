@@ -495,7 +495,7 @@
                     <button type="button" class="btn btn-success tap-target" id="retryBtn" style="display:none;">
                         🔄 Retry
                     </button>
-                    <a type="button" class="btn btn-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}">
+                    <a type="button" class="btn btn-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}?section=docs&sub={% if docType == '1' %}maps{% elif docType == '2' %}pictures{% else %}material{% endif %}">
                         ✕ Close
                     </a>
                 </div>
@@ -549,7 +549,7 @@
                  CLOSE BUTTON (Bottom - Fallback)
             ========================================== -->
             <div class="d-flex justify-content-center mt-3 mb-3">
-                <a type="button" class="btn btn-outline-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}">
+                <a type="button" class="btn btn-outline-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}?section=docs&sub={% if docType == '1' %}maps{% elif docType == '2' %}pictures{% else %}material{% endif %}">
                     ✕ Close & Return
                 </a>
             </div>

@@ -264,538 +264,412 @@
 <div class="container">
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="pt-4 text-center" style="margin-top: 5.5rem;">
-            <div class="d-flex align-items-center justify-content-center gap-2">
-                <h4 class="crew-day-title mb-0">{{selectedDateRaw|date:"l, F jS"}}</h4>
-                {% if dayRel %}<span class="crew-day-rel">{{dayRel}}</span>{% endif %}
+        <!-- Sticky context bar: day title + primary actions + crew pills -->
+        <div class="wc-context-bar" id="wcContextBar">
+            <div class="wc-context-row">
+                <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" href="/mobile/home/{{selectedLocation}}" aria-label="Back">
+                    <i class="fa-solid fa-circle-left"></i>
+                </a>
+                <div class="wc-day-title-wrap d-flex align-items-center gap-2 overflow-hidden">
+                    <span class="wc-day-title-sm text-truncate">{{selectedDateRaw|date:"l, F jS"}}</span>
+                    {% if dayRel %}<span class="crew-day-rel">{{dayRel}}</span>{% endif %}
+                    <span class="crew-day-year flex-shrink-0">{{selectedDateRaw|date:"Y"}}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    {% if editable and dailyactual.woID and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyEmp %}
+                        <a class="btn btn-primary tap-target wc-send-btn" onclick="send_payroll({{dailyactual.id}},{{selectedLocation}},{{tab_items}})">
+                            <i class="fa-solid fa-paper-plane"></i> Send
+                        </a>
+                    {% endif %}
+                </div>
             </div>
-            <span class="crew-day-year">{{selectedDateRaw|date:"Y"}}</span>
+
+            <div class="wc-crew-row">
+                {% if AddCrew and editable %}
+                    <a class="btn btn-success tap-target wc-icon-btn flex-shrink-0" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}" aria-label="Add Crew">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </a>
+                {% endif %}
+                <div class="wc-crew-scroll d-flex align-items-center gap-2 overflow-x-auto" id="crewScroll">
+                    {% for item in crew %}
+                        {% if item.crew == selectedCrew %}
+                            <a class="wc-crew-pill wc-crew-pill--active" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}?section={{section}}" role="button">
+                                <i class="fa-solid fa-users"></i> {{item.crew_by_user}}
+                            </a>
+                        {% else %}
+                            {% if item.Status == 6 %}
+                                <a class="wc-crew-pill wc-crew-pill--deleted" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}?section={{section}}" role="button">
+                                    <i class="fa-solid fa-users"></i> {{item.crew_by_user}}
+                                </a>
+                            {% elif item.Status == 5 %}
+                                <a class="wc-crew-pill wc-crew-pill--danger" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}?section={{section}}" role="button">
+                                    <i class="fa-solid fa-users"></i> {{item.crew_by_user}}
+                                </a>
+                            {% else %}
+                                <a class="wc-crew-pill" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}?section={{section}}" role="button">
+                                    <i class="fa-solid fa-users"></i> {{item.crew_by_user}}
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% if editable and dailyactual %}
+                    <button type="button" class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" onclick="delete_daily({{dailyactual.id}},{{selectedLocation}})" aria-label="More" title="Delete Daily">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                {% endif %}
+            </div>
         </div>
-        <div class="d-flex justify-content-between">             
-            <div>              
 
-                {% if selectedDay > 0 %}
-                    {%if emp.is_superAdmin  or user.is_staff  or period.status == 1 or period.status == 0%}        
-                            {% if AddCrew %}                  
-                                <a class="btn btn-success tap-target" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}" style="height: 3em; margin-bottom: 0.5em;">
-                                    <i class="fa-solid fa-user-plus"></i> Crew
-                                </a>    
-                            {% endif %}                  
-                    {%endif%}
-                {%endif%}                   
-
-                {% for item in crew %}                         
-                    {% if item.crew == selectedCrew %}
-                        <a class="btn btn-warning tap-target" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em;"> <i class="fa-solid fa-users"></i>  {{item.crew_by_user}}</a>
-                    {%else%}
-                        {% if item.Status == 5 or item.Status == 6%}
-                                <a class="btn btn-danger tap-target" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em; color:white;"><i class="fa-solid fa-users"></i>  {{item.crew_by_user}}</a>
-                        {%else%}
-                                <a class="btn btn-info tap-target" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em;"><i class="fa-solid fa-users"></i>  {{item.crew_by_user}}</a>
-                        {%endif%} 
-                    {%endif%} 
-                {%endfor%}                        
+        {% if dailyactual and not editable %}
+            <div class="alert alert-secondary wc-readonly-banner" role="alert">
+                <i class="fa-solid fa-lock"></i> Read-only — this Daily can only be viewed.
             </div>
-
-            <div>
-                <a class="btn btn-danger tap-target" href="/mobile/home/{{selectedLocation}}" style="height: 3em; margin-bottom: 0.5em;">
-                    <i class="fa-solid fa-circle-left"></i> 
-                </a> 
-            </div>
-        </div>
+        {% endif %}
   
-      <div class="row mt-2 pt-2">  
+      <div class="row mt-3 pt-2">
         <div class="col-sm-12">
           <div class="card">
-              <div class="card-header card-header-wc d-flex justify-content-between">                
-                
-                
-                
-                {% for item in crew %}                         
-                    {% if item.crew == selectedCrew %}
-                            <h4>Work Order Info.  - {{selectedLoca}} - 
-                                {% if item.Status == 5 or item.Status == 6%}
-                                    <span class="badge bg-danger text-white align-content-center"> {{item.get_Status_display}} </span> 
-                                {%else%}
-                                    <span class="badge bg-success text-white align-content-center"> {{item.get_Status_display}} </span> 
-                                {%endif%}
-                            </h4>
+              <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Work Order Info. - {{selectedLoca}} -
+                    {% if dailyactual.Status == 6 %}
+                        <span class="badge wc-badge-deleted text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                    {% elif dailyactual.Status == 5 %}
+                        <span class="badge bg-danger text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                    {% else %}
+                        <span class="badge bg-success text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                    {% endif %}
+                </h4>
 
-                            {% if dailyUrl.pdfDaily %}
-                                <a href="{{ dailyUrl.pdfDaily.url }}" 
-                                class="btn btn-primary tap-target" 
-                                download>
-                                    <i class="fas fa-file-pdf"></i> Download
-                                </a>
-                            {% endif %} 
-                            
-                                {% if AddCrew or item.Status == 5 %}
-                                    {%if item.Status == 1 or item.Status == 5 %}
-                                        {% if item.woID and item.supervisor and item.supervisor != "0" and dailyEmp %}
-                                            <a class="btn btn-success tap-target" onclick="send_payroll({{item.id}},{{selectedLocation}},{{dailyItem|length}})"><i class="fa-solid fa-paper-plane"></i> Send</a>
-                                        {%endif%}
-                                    {%endif%}
-                                {%endif%}
-                        {%endif%}
-                {%endfor%}   
-
-              </div> 
+                {% if dailyUrl.pdfDaily %}
+                    <a href="{{ dailyUrl.pdfDaily.url }}" class="btn btn-primary tap-target" download><i class="fas fa-file-pdf"></i> Download</a>
+                {% endif %}
+              </div>
               <div class="card-body">
-                  {% for item in crew %} 
-                      {% if item.crew == selectedCrew %}
-                      <!--Work Address-->
-                        <div class="d-flex justify-content-left align-items-center">
-                            <i class="fas fa-briefcase mr-2" style="padding-bottom: 15px;"></i> 
-                            {% if not item.woID%}
-                                <p id="address" name="address" style="margin-left: 10px">No Work Order Selected</p>
-                            {%else%}
-                                <p id="address" name="address" style="margin-left: 10px">{{item.woID.prismID}} - {{item.woID.workOrderId}} - {{item.woID.PO}}</p>
-                            {%endif%}                                                        
+                <!--Work Address-->
+                <div class="d-flex justify-content-left align-items-center">
+                    <i class="fas fa-briefcase mr-2" style="padding-bottom: 15px;"></i>
+                    {% if not dailyactual.woID %}
+                        <p id="address" name="address" style="margin-left: 10px">No Work Order Selected</p>
+                    {% else %}
+                        <p id="address" name="address" style="margin-left: 10px">{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}}</p>
+                    {% endif %}
 
-                            {% if AddCrew  or item.Status == 5 %}
-                                {% if emp.is_superAdmin  or user.is_staff  or period.status == 1  or period.status == 0 %}
-                                    {%if item.Status == 1 or item.Status == 5%}
-                                        <a class="btn  pt-1" href="/mobile/orders_payroll/{{item.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass" style="color: blue;"></i></a>
-                                    {%endif%}
-                                {%endif%}
-                            {%endif%}
-                        </div>
-
-                         
-
-                        {%if woCount == 1%}
-                            <div class="alert alert-warning" role="alert">                                
-                                    This WO is already included in <strong>{{woCount}}</strong> Daily. Please check it before sending the current Daily for approval.                                
-                            </div>
-                        {%elif woCount > 1%}                                                      
-                                <div class="alert alert-warning" role="alert">
-                                    This WO is already included in <strong>{{woCount}}</strong> Dailies. Please check it before sending the current Daily for approval.
-                                </div>
-                            
-                        {%endif%}
-
-
-                        
-
-                        {% if item.woID%}
-                            <!--Address-->
-                            <div class="d-flex justify-content-left align-items-center">
-                                <i class="fas fa-map-marker-alt mr-2" style="padding-bottom: 15px;"></i> 
-                                <p id="address" name="address" style="margin-left: 10px">{{item.woID.JobAddress}}</p>
-                            </div>
-                            <!--Supervisor-->
-                            <div class="d-flex justify-content-left align-items-center">
-                                <i class="fas fa-male mr-2" style="padding-bottom: 15px;"></i> 
-
-                                {% for sup in superV %}    
-                                    {% if sup.employeeID|slugify == item.supervisor %}    
-                                        <p id="supervisor" name="supervisor" style="margin-left: 10px">{{sup.first_name}} {{sup.last_name}}</p>           
-                                    {% endif %}    
-                                {% endfor %}     
-                                
-                                {%if item.supervisor == None%}
-                                    <p id="supervisor" name="supervisor" style="margin-left: 10px">No Supervisor Selected</p> 
-                                {%endif%}
-
-                                {% if AddCrew  or item.Status == 5 %}                                
-                                    {% if emp.is_superAdmin  or user.is_staff  or period.status == 1  or period.status == 0 %}    
-                                        {%if item.Status == 1 or item.Status == 5%}                                                                
-                                            <a class="btn btn-sm btn-outline-primary tap-target" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{item.day|date:'d'}}/{{item.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass"></i> Change Supervisor</a>
-                                        {%endif%}
-                                    {%endif%}
-                                {%endif%}
-                            </div>
-                            <!--Payment and Vehicle-->
-                            <div class="d-flex justify-content-left align-items-center">
-                                <div class="d-flex align-items-center ">
-                                    <i class="fa fa-usd" style="padding-bottom: 15px;"></i> 
-                                    {% if item.split_paymet %}
-                                        <p style="margin-left: 10px">Split</p>
-                                    {% else %}
-                                        <p style="margin-left: 10px">NO Split</p>
-                                    {%endif%}  
-                                </div>
-                                <div class="d-flex align-items-center" style="margin-left: 20px">
-                                    <i class="fa fa-car" style="padding-bottom: 15px;"></i> 
-                                    <p style="margin-left: 10px">{%if item.own_vehicle > 0 %}{{item.own_vehicle}} %{%endif%}</p>
-                                </div> 
-                            </div>
-
-                            {%if item.total_pay != 100 %}
-                                <div class="alert alert-danger" role="alert">
-                                    The Total % to Pay must be equal to 100
-                                </div>
-                                
-                            {%endif%}
-                            {% if not item.supervisor or item.supervisor == "0" or not item.woID %}
-                                <div class="alert alert-warning" role="alert">
-                                    must select a WO and supervisor to add employees and production 
-                                </div>
-                            {%endif%}
-                            
-                            {%endif%}                       
-                        {%endif%} 
-                    {%endfor%}
+                    {% if editable %}
+                        <a class="btn pt-1" href="/mobile/orders_payroll/{{dailyactual.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass" style="color: blue;"></i></a>
+                    {% endif %}
                 </div>
-            </div>
-          </div>                 
-      </div>  
+
+                {% if woCount == 1 %}
+                    <div class="alert alert-warning" role="alert">
+                        This WO is already included in <strong>{{woCount}}</strong> Daily. Please check it before sending the current Daily for approval.
+                    </div>
+                {% elif woCount > 1 %}
+                    <div class="alert alert-warning" role="alert">
+                        This WO is already included in <strong>{{woCount}}</strong> Dailies. Please check it before sending the current Daily for approval.
+                    </div>
+                {% endif %}
+
+                {% if dailyactual.woID %}
+                    <!--Address-->
+                    <div class="d-flex justify-content-left align-items-center">
+                        <i class="fas fa-map-marker-alt mr-2" style="padding-bottom: 15px;"></i>
+                        <p id="address" name="address" style="margin-left: 10px">{{dailyactual.woID.JobAddress}}</p>
+                    </div>
+                    <!--Supervisor-->
+                    <div class="d-flex justify-content-left align-items-center">
+                        <i class="fas fa-male mr-2" style="padding-bottom: 15px;"></i>
+
+                        {% for sup in superV %}
+                            {% if sup.employeeID|slugify == dailyactual.supervisor %}
+                                <p id="supervisor" name="supervisor" style="margin-left: 10px">{{sup.first_name}} {{sup.last_name}}</p>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if dailyactual.supervisor == None %}
+                            <p id="supervisor" name="supervisor" style="margin-left: 10px">No Supervisor Selected</p>
+                        {% endif %}
+
+                        {% if editable %}
+                            <a class="btn btn-sm btn-outline-primary tap-target" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{dailyactual.day|date:'d'}}/{{dailyactual.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass"></i> Change Supervisor</a>
+                        {% endif %}
+                    </div>
+                    <!--Payment and Vehicle-->
+                    <div class="d-flex justify-content-left align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-usd" style="padding-bottom: 15px;"></i>
+                            {% if dailyactual.split_paymet %}
+                                <p style="margin-left: 10px">Split</p>
+                            {% else %}
+                                <p style="margin-left: 10px">NO Split</p>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex align-items-center" style="margin-left: 20px">
+                            <i class="fa fa-car" style="padding-bottom: 15px;"></i>
+                            <p style="margin-left: 10px">{% if dailyactual.own_vehicle > 0 %}{{dailyactual.own_vehicle}} %{% endif %}</p>
+                        </div>
+                    </div>
+
+                    {% if dailyactual.total_pay != 100 %}
+                        <div class="alert alert-danger" role="alert">
+                            The Total % to Pay must be equal to 100
+                        </div>
+                    {% endif %}
+                    {% if not dailyactual.supervisor or dailyactual.supervisor == "0" or not dailyactual.woID %}
+                        <div class="alert alert-warning" role="alert">
+                            must select a WO and supervisor to add employees and production
+                        </div>
+                    {% endif %}
+                {% endif %}
+              </div>
+          </div>
+        </div>
+      </div>
     </form>  
 
-      {% for item in crew %} 
-            {% if item.crew == selectedCrew %}
-                <div class="row mt-3">             
-                    <div class="col-sm-12">  
-                        <div class="card">
-                            <div class="card-header card-header-wc d-flex justify-content-between" >
-                                <h6>Employee List -  % To Pay = {%if item.total_pay > 0 %}{{item.total_pay|floatformat:2|intcomma}}%{%endif%}</h6>
-                                {% if AddCrew  or item.Status == 5  %}                                
-                                    {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                        {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
-                                            {%if item.Status == 1 or item.Status == 5%}
-                                                <a href="/mobile/create_daily_emp/{{item.id}}/{{selectedLocation}}" class="btn btn-primary tap-target"><i class="fa-solid fa-user-plus"></i> Add</a>
-                                            {%endif%}
-                                        {%endif%}
+        <!-- Section tabs -->
+        <div class="wc-tab-row" role="tablist" aria-label="Daily sections" id="wcTabRow" data-storage="{{period.id}}:{{selectedDayRaw}}:{{selectedCrew}}">
+            <button type="button" class="wc-tab {% if section == 'employees' %}is-active{% endif %}" role="tab" id="tab-employees" aria-controls="panel-employees" aria-selected="{% if section == 'employees' %}true{% else %}false{% endif %}" data-panel="employees" tabindex="{% if section == 'employees' %}0{% else %}-1{% endif %}">
+                Employees <span class="wc-tab-count">{{tab_employees}}</span>
+            </button>
+            <button type="button" class="wc-tab {% if section == 'items' %}is-active{% endif %}" role="tab" id="tab-items" aria-controls="panel-items" aria-selected="{% if section == 'items' %}true{% else %}false{% endif %}" data-panel="items" tabindex="{% if section == 'items' %}0{% else %}-1{% endif %}">
+                Items <span class="wc-tab-count">${{GranTotalItem|floatformat:0|intcomma}}</span>
+            </button>
+            <button type="button" class="wc-tab {% if section == 'docs' %}is-active{% endif %}" role="tab" id="tab-docs" aria-controls="panel-docs" aria-selected="{% if section == 'docs' %}true{% else %}false{% endif %}" data-panel="docs" tabindex="{% if section == 'docs' %}0{% else %}-1{% endif %}">
+                Documents <span class="wc-tab-count">{{tab_docs}}</span>
+            </button>
+            <span class="visually-hidden" role="status" aria-live="polite" id="wcTabAnnounce"></span>
+        </div>
+
+        {% if dailyactual %}
+
+        <!-- Status banner -->
+        {% if dailyactual.Status == 5 or dailyactual.Status == 6 %}
+            <div class="alert {% if dailyactual.Status == 5 %}alert-danger{% else %}alert-secondary{% endif %} wc-status-banner mt-3" role="alert">
+                {% if dailyactual.Status == 5 %}
+                    <p class="mb-1"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Rejected</strong> By: {{dailyactual.rejected_by}} - {{dailyactual.rejected_date}}</p>
+                {% elif dailyactual.Status == 6 %}
+                    <p class="mb-1"><i class="fa-solid fa-ban"></i> <strong>Deleted</strong> By: {{dailyactual.deleted_by}} - {{dailyactual.deleted_date}}</p>
+                {% endif %}
+                <p class="mb-0">Comments: {{dailyactual.comments}}</p>
+            </div>
+        {% endif %}
+        {% if dailyactual.Status == 4 %}
+            <div class="alert alert-info wc-status-banner mt-3" role="alert">
+                <p class="mb-0"><i class="fa-solid fa-circle-check"></i> <strong>Approved</strong> By: {{dailyactual.approved_by}} - {{dailyactual.approved_date}}</p>
+                <p class="mb-0">Comments: {{dailyactual.comments}}</p>
+            </div>
+        {% endif %}
+
+        <!-- Employees panel -->
+        <div class="row mt-3 wc-tab-panel {% if section == 'employees' %}is-visible{% endif %}" id="panel-employees" role="tabpanel" aria-labelledby="tab-employees" {% if section != 'employees' %}hidden{% endif %}>
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Employee List - % To Pay = {% if dailyactual.total_pay > 0 %}{{dailyactual.total_pay|floatformat:2|intcomma}}%{% endif %}</h6>
+                        {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                            <a href="/mobile/create_daily_emp/{{dailyactual.id}}/{{selectedLocation}}?section=employees" class="btn btn-primary tap-target"><i class="fa-solid fa-user-plus"></i> Add</a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            {% if not dailyEmp %}
+                                <p>No Employees Included</p>
+                            {% endif %}
+                            {% for emp in dailyEmp %}
+                            <tr>
+                                <td width="35%">
+                                    <div class="d-flex justify-content-left align-items-center">
+                                        <p class="m-2">{{emp.EmployeeID}}</p>
+                                        {% if emp.is_own_vehicle %}<span class="badge bg-success text-white ml-2"> OV </span>{% endif %}
+                                    </div>
+                                </td>
+                                <td width="20%"><p> | {{emp.per_to_pay|floatformat:2|intcomma}}%</p></td>
+                                <td width="35%"><p> | {% if emp.payout > 0 %}${{emp.payout|floatformat:2|intcomma}}{% else %}$0.00{% endif %}</p></td>
+                                <td width="10%">
+                                    {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                        <a href="/mobile/update_daily_emp/{{emp.id}}/{{selectedLocation}}?section=employees"><i class="fa fa-pen-to-square" style="padding-bottom: 15px; color: green;"></i></a>
                                     {% endif %}
-                                {%endif%}
-                            </div>
-                            <div class="card-body">               
-                                <table class="table table-sm">
-                                    {%if not dailyEmp %}
-                                        <p>No Employees Included</p>     
-                                    {%endif%}
-                                    {%for emp in dailyEmp %}
-                                        <tr>
-                                            <td width="35%">      
-                                                <div class="d-flex justify-content-left align-items-center">                                                              
-                                                    <p class="m-2">{{emp.EmployeeID}} </p>   
-                                                    {% if emp.is_own_vehicle%}      
-                                                        <span class="badge bg-success text-white ml-2"> OV </span>      
-                                                    {%endif%}
-                                                </div>           
-                                            </td>
-                                            <td width="20%">
-                                                <p> | {{emp.per_to_pay|floatformat:2|intcomma}}%</p>
-                                            </td>
-                                            <td width="35%">
-                                                <p>   | {%if emp.payout > 0 %}${{emp.payout|floatformat:2|intcomma}}{%else%}$0.00{%endif%}</p>
-                                            </td>
-                                            <td width="10%">
-                                                {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                    {% if AddCrew  or item.Status == 5 %}
-                                                        {%if item.Status == 1 or item.Status == 5%}                                                               
-                                                            <a href="/mobile/update_daily_emp/{{emp.id}}/{{selectedLocation}}"  ><i class="fa fa-pen-to-square" style="padding-bottom: 15px; color: green;"></i></a>
-                                                        {%endif%}
-                                                    {%endif%}
-                                                {%endif%}
-                                                </td>
-                                            <td width="10%">
-                                                {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                    {% if AddCrew  or item.Status == 5 %}
-                                                        {%if item.Status == 1 or item.Status == 5%}  
-                                                            <a hx-get="/delete_daily_emp/{{emp.id}}/{{selectedLocation}}" onclick="delete_daily_emp({{emp.id}},{{selectedLocation}})"><i class="fa fa-circle-minus" style="padding-bottom: 15px; color:red;"></i></a>
-                                                        {%endif%}
-                                                    {%endif%}
-                                                {%endif%}
-                                            </td>
-                                        
-                                        </tr>
-                                    {%endfor%}                                       
-                                </table>                                                      
-                            </div>
-                        </div> 
+                                </td>
+                                <td width="10%">
+                                    {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                        <a href="#" onclick="delete_daily_emp({{emp.id}},{{selectedLocation}})"><i class="fa fa-circle-minus" style="padding-bottom: 15px; color:red;"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="row mt-3">             
-                    <div class="col-sm-12">  
-                        <div class="card">
-                            <div class="card-header card-header-wc d-flex justify-content-between" >
-                                <h6>Item List - Total: ${{TotalItem|floatformat:2|intcomma}} + ${{ovTotal|floatformat:2|intcomma}} = ${{GranTotalItem|floatformat:2|intcomma}} </h6>
-                                {% if AddCrew  or item.Status == 5 %}
-                                    {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                        {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
-                                            {%if item.Status == 1 or item.Status == 5%}
-                                                <a href="/mobile/create_daily_item/{{item.id}}/{{selectedLocation}}" class="btn btn-primary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
-                                            {%endif%}
-                                        {%endif%}
-                                    {% endif %}
-                                {%endif%}
-                            </div>
-                            <div class="card-body">  
-                                <table class="table table-sm">
-                                    {%if not dailyItem %}
-                                        <p>No Items Included</p>     
-                                    {%endif%}
-                                    {%for itemd in dailyItem %}
-                                    <tr>
-                                        <td class="p-1"><p>{{itemd.itemID.item.itemID}}</p></td>
-                                        <td class="p-1"><p> | {{itemd.quantity}}</p></td>
-                                        <td class="p-1"><p> | ${{itemd.emp_payout|floatformat:2|intcomma}}</p></td>
-                                        <td class="p-1"><p> | ${{itemd.total|floatformat:2|intcomma}}</p></td>   
-                                        <td class="p-1">
-                                                {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                    {% if AddCrew  or item.Status == 5 %}                                            
-                                                        {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
-                                                            {%if itemd.Status == 1 %}
-                                                                <div class="d-flex justify-content-between">
-                                                                    {%if item.Status == 1 or item.Status == 5%}                                                                
-                                                                        <a href="/mobile/update_daily_item/{{itemd.id}}/{{selectedLocation}}"><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a>
-                                                                        <a href="#" onclick="delete_daily_item({{itemd.id}},{{selectedLocation}})"><i class="fa-solid fa-circle-minus" style="color: red;"></i></a>  
-                                                                    {%endif%}
-                                                                </div>                           
-                                                            {%endif%}
-                                                        {%endif%}   
-                                                    {%endif%}
-                                                {%endif%}                                                                         
-                                            </td>
-                                    </tr> 
-                                    {%endfor%}
-                                </table>
-                            </div>           
-                        </div>           
-                    </div>           
-                </div>  
-
-                <div class="row mt-3">             
-                    <div class="col-sm-12">  
-                        <div class="card">
-                            <div class="card-header card-header-wc d-flex justify-content-between" >
-                                <h6>Comments </h6>
-                                
-                            </div>
-                            <div class="card-body">  
-                                <form id="daily-comment-form">
-                                    <textarea class="form-control mb-3" name="comment" id="comment" rows="4" placeholder="Enter comments here..." >{{ dailyactual.daily_comments|default_if_none:"" }}</textarea>
-                                    {% if AddCrew  or item.Status == 5 %}                                    
-                                        {%if item.Status == 1 or item.Status == 5%}
-                                            <div class="d-flex align-items-center">
-                                                <button class="button btn-success" type="submit" id="save-comment-btn" disabled>Save Comment</button>
-                                                <button class="button btn-danger" type="button" id="clear-comment-btn">Clear Comment</button>
+        <!-- Items panel -->
+        <div class="row mt-3 wc-tab-panel {% if section == 'items' %}is-visible{% endif %}" id="panel-items" role="tabpanel" aria-labelledby="tab-items" {% if section != 'items' %}hidden{% endif %}>
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Item List - Total: ${{TotalItem|floatformat:2|intcomma}} + ${{ovTotal|floatformat:2|intcomma}} = ${{GranTotalItem|floatformat:2|intcomma}}</h6>
+                        {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                            <a href="/mobile/create_daily_item/{{dailyactual.id}}/{{selectedLocation}}?section=items" class="btn btn-primary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            {% if not dailyItem %}
+                                <p>No Items Included</p>
+                            {% endif %}
+                            {% for itemd in dailyItem %}
+                            <tr>
+                                <td class="p-1"><p>{{itemd.itemID.item.itemID}}</p></td>
+                                <td class="p-1"><p> | {{itemd.quantity}}</p></td>
+                                <td class="p-1"><p> | ${{itemd.emp_payout|floatformat:2|intcomma}}</p></td>
+                                <td class="p-1"><p> | ${{itemd.total|floatformat:2|intcomma}}</p></td>
+                                <td class="p-1">
+                                    {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                        {% if itemd.Status == 1 %}
+                                            <div class="d-flex justify-content-between">
+                                                <a href="/mobile/update_daily_item/{{itemd.id}}/{{selectedLocation}}?section=items"><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a>
+                                                <a href="#" onclick="delete_daily_item({{itemd.id}},{{selectedLocation}})"><i class="fa-solid fa-circle-minus" style="color: red;"></i></a>
                                             </div>
-                                        {%endif%}
-                                    {%endif%}
-                                </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documents panel -->
+        <div class="row mt-3 wc-tab-panel {% if section == 'docs' %}is-visible{% endif %}" id="panel-docs" role="tabpanel" aria-labelledby="tab-docs" {% if section != 'docs' %}hidden{% endif %}>
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Daily Docs.</h6>
+                        <div class="wc-doc-subpills" role="tablist" aria-label="Document type">
+                            <button type="button" class="wc-doc-subpill {% if docsSub == 'maps' %}is-active{% endif %}" data-docsub="maps">Maps</button>
+                            <button type="button" class="wc-doc-subpill {% if docsSub == 'pictures' %}is-active{% endif %}" data-docsub="pictures">Pictures</button>
+                            <button type="button" class="wc-doc-subpill {% if docsSub == 'material' %}is-active{% endif %}" data-docsub="material">Material</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Maps -->
+                        <div class="wc-doc-group {% if docsSub == 'maps' %}is-visible{% endif %}" data-docgroup="maps" {% if docsSub != 'maps' %}hidden{% endif %}>
+                            <h3 class="mb-3">Maps
+                                {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                    <a href="/mobile/create_daily_docs_compressed/{{dailyactual.id}}/{{selectedLocation}}/1" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
+                                {% endif %}
+                            </h3>
+                            <div class="documents-container">
+                                {% if not dailyDocs %}<p>No Maps Included</p>{% endif %}
+                                {% for itemd in dailyDocs %}
+                                <div class="document-thumbnail"
+                                     data-url="{{ itemd.document.url }}"
+                                     data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
+                                    <div class="thumbnail-content">
+                                        {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
+                                            <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
+                                        {% else %}
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
+                                        {% endif %}
+                                        <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
+                                    </div>
+                                    {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times delete-icon"></i></div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Pictures -->
+                        <div class="wc-doc-group {% if docsSub == 'pictures' %}is-visible{% endif %}" data-docgroup="pictures" {% if docsSub != 'pictures' %}hidden{% endif %}>
+                            <h3 class="mb-3 mt-3">Pictures
+                                {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                    <a href="/mobile/create_daily_docs_compressed/{{dailyactual.id}}/{{selectedLocation}}/2" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
+                                {% endif %}
+                            </h3>
+                            <div class="documents-container">
+                                {% if not dailyDocsPic %}<p>No Pictures Included</p>{% endif %}
+                                {% for itemd in dailyDocsPic %}
+                                <div class="document-thumbnail"
+                                     data-url="{{ itemd.document.url }}"
+                                     data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
+                                    <div class="thumbnail-content">
+                                        {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
+                                            <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
+                                        {% else %}
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
+                                        {% endif %}
+                                        <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
+                                    </div>
+                                    {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times delete-icon"></i></div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Material Backup -->
+                        <div class="wc-doc-group {% if docsSub == 'material' %}is-visible{% endif %}" data-docgroup="material" {% if docsSub != 'material' %}hidden{% endif %}>
+                            <h3 class="mb-3 mt-3">Material Backup
+                                {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                    <a href="/mobile/create_daily_docs_compressed/{{dailyactual.id}}/{{selectedLocation}}/3" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
+                                {% endif %}
+                            </h3>
+                            <div class="documents-container">
+                                {% if not dailyDocsMB %}<p>No Material Backup Included</p>{% endif %}
+                                {% for itemd in dailyDocsMB %}
+                                <div class="document-thumbnail"
+                                     data-url="{{ itemd.document.url }}"
+                                     data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
+                                    <div class="thumbnail-content">
+                                        {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
+                                            <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
+                                        {% else %}
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
+                                        {% endif %}
+                                        <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
+                                    </div>
+                                    {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
+                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times delete-icon"></i></div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
                 </div>
-                        
+            </div>
+        </div>
 
-                <div class="row mt-3">             
-                    <div class="col-sm-12">  
-                        <div class="card">
-                            <div class="card-header card-header-wc d-flex justify-content-between" >
-                                <h6>Daily Docs. </h6>
-                                
-                            </div>
-                            <div class="card-body">  
-                                <table class="table table-sm">                                 
-                                    <h3 class="mb-3">Maps
-                                        {% if AddCrew  or item.Status == 5 %}
-
-                                            {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                {% if emp.is_superAdmin  or user.is_staff or period.status == 1 %}
-                                                    {%if item.Status == 1 or item.Status == 5%}
-                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/1" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
-                                                    {%endif%}
-                                                {%endif%}
-                                            {% endif %}
-
-                                        {%endif%}
-                                    </h3>
-                                    <div class="documents-container">
-                                        {%if not dailyDocs %}
-                                            <p>No Maps Included</p>                                                 
-                                        {%endif%}
-                                        {% for itemd in dailyDocs %}
-                                        <div class="document-thumbnail" 
-                                             data-url="{{ itemd.document.url }}"
-                                             data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
-                                            
-                                            <div class="thumbnail-content">
-                                                {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
-                                                    <div class="pdf-thumbnail">
-                                                        <i class="fas fa-file-pdf pdf-icon"></i>
-                                                        <small class="text-muted">PDF Document</small>
-                                                        <canvas class="d-none"></canvas>
-                                                    </div>
-                                                {% else %}
-                                                    <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
-                                                {% endif %}
-                                                
-                                                <div class="overlay">
-                                                    <i class="fas fa-magnifying-glass-plus overlay-icon"></i>
-                                                </div>
-                                            </div>
-                                            
-                                            {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                {% if AddCrew  or item.Status == 5 %}
-                                                    {% if item.Status == 1 or item.Status == 5 %}
-                                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();">
-                                                            <i class="fas fa-times delete-icon"></i>
-                                                        </div>
-                                                    {% endif %}
-                                                {%endif%}
-                                            {%endif%}
-
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                               
-
-                                    <h3 class="mb-3 mt-3">Pictures
-                                        {% if AddCrew  or item.Status == 5 %}
-                                            {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
-                                                    {%if item.Status == 1 or item.Status == 5%}
-                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/2" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
-                                                    {%endif%}
-                                                {%endif%}
-                                            {% endif %}                                            
-                                        {%endif%}
-                                    </h3>
-                                        <div class="documents-container">
-                                            {%if not dailyDocsPic %}
-                                                <p>No Pictures Included</p>     
-                                            {%endif%}
-                                            {% for itemd in dailyDocsPic %}
-                                            <div class="document-thumbnail" 
-                                                data-url="{{ itemd.document.url }}"
-                                                data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
-                                                
-                                                <div class="thumbnail-content">
-                                                    {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
-                                                        <div class="pdf-thumbnail">
-                                                            <i class="fas fa-file-pdf pdf-icon"></i>
-                                                            <small class="text-muted">PDF Document</small>
-                                                            <canvas class="d-none"></canvas>
-                                                        </div>
-                                                    {% else %}
-                                                        <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
-                                                    {% endif %}
-                                                    
-                                                    <div class="overlay">
-                                                        <i class="fas fa-magnifying-glass-plus overlay-icon"></i>
-                                                    </div>
-                                                </div>
-                                                
-                                                {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                    {% if AddCrew  or item.Status == 5 %}
-                                                        {% if item.Status == 1 or item.Status == 5 %}
-                                                            <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();">
-                                                                <i class="fas fa-times delete-icon"></i>
-                                                            </div>
-                                                        {% endif %}
-                                                    {%endif%}
-                                                {%endif%}
-
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-
-                                    <h3 class="mb-3 mt-3">Material Backup
-                                        {% if AddCrew  or item.Status == 5 %}                                        
-                                            {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
-                                                    {%if item.Status == 1 or item.Status == 5%}
-                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/3" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
-                                                    {%endif%}
-                                                {%endif%}
-                                            {% endif %}
-                                        {%endif%}
-                                    </h3>       
-                                        <div class="documents-container">
-                                            {%if not dailyDocsMB %}
-                                                <p>No Material Backup Included</p>     
-                                            {%endif%}
-                                            {% for itemd in dailyDocsMB %}
-                                            <div class="document-thumbnail" 
-                                                data-url="{{ itemd.document.url }}"
-                                                data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
-                                                
-                                                <div class="thumbnail-content">
-                                                    {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
-                                                        <div class="pdf-thumbnail">
-                                                            <i class="fas fa-file-pdf pdf-icon"></i>
-                                                            <small class="text-muted">PDF Document</small>
-                                                            <canvas class="d-none"></canvas>
-                                                        </div>
-                                                    {% else %}
-                                                        <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
-                                                    {% endif %}
-                                                    
-                                                    <div class="overlay">
-                                                        <i class="fas fa-magnifying-glass-plus overlay-icon"></i>
-                                                    </div>
-                                                </div>
-
-
-                                                {% if item.supervisor and item.supervisor != "0" and item.woID %}
-                                                    {% if AddCrew  or item.Status == 5 %}
-                                                        {% if item.Status == 1 or item.Status == 5 %}
-                                                            <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();">
-                                                                <i class="fas fa-times delete-icon"></i>
-                                                            </div>
-                                                        {% endif %}
-                                                    {%endif%}
-                                                {%endif%}
-
-                                            </div>
-                                            {% endfor %}
-                                        </div>                            
-                                    </div>                                   
-                                    
-                                </table>
-                            </div>           
-                        </div>           
-                    </div>           
-                </div> 
-
-                <div class="row mt-3">             
-                    <div class="col-sm-12">
-                        {%if item.Status == 5 or item.Status == 6%}
-                            <div class="alert alert-danger pt5 mt-5" role="alert">   
-                                {%if item.Status == 5 %}                               
-                                    <p>Rejected By: {{item.rejected_by}} - {{item.rejected_date}}</p>
-                                {%elif item.Status == 6 %}                               
-                                    <p>Deleted By: {{item.deleted_by}} - {{item.deleted_date}}</p>
-                                {% endif %}
-                                <p>Comments: {{item.comments}}</p>
-                            </div>
-                        {%endif%}
-                        {%if item.Status == 4%}
-                            <div class="alert alert-info pt5 mt-5" role="alert">                                
-                               <p>Approved By: {{item.approved_by}} - {{item.approved_date}}</p>
-                               <p>Comments: {{item.comments}}</p>
-                            </div>
-                        {%endif%}
+        <!-- Comments (in flow) -->
+        <div class="row mt-3">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Comments</h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="daily-comment-form">
+                            <textarea class="form-control mb-3" name="comment" id="comment" rows="4" placeholder="Enter comments here..." >{{ dailyactual.daily_comments|default_if_none:"" }}</textarea>
+                            {% if editable %}
+                                <div class="d-flex align-items-center">
+                                    <button class="button btn-success" type="submit" id="save-comment-btn" disabled>Save Comment</button>
+                                    <button class="button btn-danger" type="button" id="clear-comment-btn">Clear Comment</button>
+                                </div>
+                            {% endif %}
+                        </form>
                     </div>
                 </div>
+            </div>
+        </div>
 
-            {%endif%} 
-        {%endfor%}
-
-          {%if selectedDay > 0 and selectedCrew > 0 %}      
-            {% for item in crew %} 
-                {% if item.crew == selectedCrew %}
-                    {% if AddCrew  or item.Status == 5 %}
-                        {% if emp.is_superAdmin  or user.is_staff  or period.status == 1  or period.status == 0 %}
-                            {%if item.Status == 1 or item.Status == 5 %}                                                                
-                                <div class="d-flex justify-content-center mt-3 mb-5 pb-5">
-                                    <a class="btn btn-danger tap-target px-4"
-                                    data-bs-toggle="tooltip" data-bs-placement="top"                                  
-                                    onclick="delete_daily({{item.id}},{{selectedLocation}})" >
-                                        <i class="fa-solid fa-trash-can"></i> Delete Daily</a>
-                                </div>   
-                                {% comment %} <a class="btn btn-danger px-2" hx-get="/delete_daily/{{item.id}}/{{selectedLocation}}" hx-target="#dialog"><i class="fa-solid fa-trash-can"></i></a> {% endcomment %}
-                            {%endif%}
-                        {%endif%}
-                    {%endif%}
-                {%endif%}
-            {%endfor%}
-        {%endif%}   
+        {% endif %}
 
         <!-- WC Confirm Modal (bottom-sheet style) -->
         <div class="modal fade" id="wcConfirmModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
@@ -842,6 +716,7 @@
 
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script src="{% static 'mobile/js/crew-tabs.js' %}"></script>
             <script>
 
 
