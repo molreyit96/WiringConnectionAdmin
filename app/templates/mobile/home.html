@@ -15,7 +15,7 @@
         border: 1px solid var(--wc-border);
         background: var(--wc-surface);
         color: var(--wc-ink);
-        font-size: .9rem;
+        font-size: var(--wc-type-sm);
         font-weight: 500;
         text-decoration: none;
         min-height: 44px;
@@ -42,13 +42,14 @@
     }
     .info-tile span {
         display: block;
-        font-size: .72rem;
+        font-size: var(--wc-type-xs);
         text-transform: uppercase;
         letter-spacing: .02em;
         color: var(--wc-ink-2);
     }
     .info-tile strong {
-        font-size: 1rem;
+        font-size: var(--wc-type-base);
+        font-variant-numeric: var(--wc-tnum);
         color: var(--wc-ink);
     }
 
@@ -79,7 +80,7 @@
         color: var(--wc-ink);
     }
     .day-pill .day-short {
-        font-size: .8rem;
+        font-size: var(--wc-type-sm);
         font-weight: 600;
     }
 
@@ -93,7 +94,7 @@
         position: absolute;
         top: .3rem;
         left: .35rem;
-        font-size: .7rem;
+        font-size: .75rem;
         opacity: .75;
     }
 
@@ -106,13 +107,14 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: .72rem;
+        font-size: var(--wc-type-xs);
         font-weight: 700;
+        font-variant-numeric: var(--wc-tnum);
         border-radius: 999px;
         padding: 0 .45rem;
         background: var(--wc-ink-2);
         color: #fff;
-        line-height: 1;
+        line-height: 1.2;
         border: 2px solid var(--wc-surface);
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
     }
@@ -146,7 +148,7 @@
         position: absolute;
         top: .3rem;
         left: .35rem;
-        font-size: .7rem;
+        font-size: .75rem;
         color: var(--wc-danger);
     }
 
@@ -168,15 +170,16 @@
         border-radius: 999px;
         background: var(--wc-danger);
         color: #fff;
-        font-size: .72rem;
+        font-size: var(--wc-type-xs);
         font-weight: 700;
+        font-variant-numeric: var(--wc-tnum);
         line-height: 1;
     }
     .rejected-note {
         display: inline-flex;
         align-items: center;
         gap: .4rem;
-        font-size: .8rem;
+        font-size: var(--wc-type-sm);
         font-weight: 600;
         color: var(--wc-danger);
     }
@@ -201,7 +204,7 @@
         border-bottom: 1px solid var(--wc-border);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         color: var(--wc-ink);
-        font-size: .85rem;
+        font-size: var(--wc-type-sm);
         font-weight: 600;
         text-align: left;
         overflow: hidden;
@@ -224,7 +227,7 @@
     }
     .wc-home-summary .home-sum-mini i {
         margin-right: .3rem;
-        font-size: .74rem;
+        font-size: .75rem;
         opacity: .85;
     }
     .wc-home-summary .home-sum-sep {

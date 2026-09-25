@@ -1,7 +1,37 @@
 /* =========================================================
-   WC Mobile tokens — Palette A "Conductor"
-   Light (default) + Dark (data-theme="dark" on <html>)
+WC Mobile tokens — Palette A "Conductor"
+   Light (default) + Dark (data-theme="dark") on <html>
    ========================================================= */
+
+/* ---- Type: IBM Plex Sans (self-hosted, OFL) ---- */
+@font-face {
+    font-family: "IBM Plex Sans";
+    src: url("../fonts/plex-sans/plex-sans-regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "IBM Plex Sans";
+    src: url("../fonts/plex-sans/plex-sans-medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "IBM Plex Sans";
+    src: url("../fonts/plex-sans/plex-sans-semibold.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "IBM Plex Sans";
+    src: url("../fonts/plex-sans/plex-sans-bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
 
 :root {
     --wc-bg: #eef2f5;
@@ -25,6 +55,16 @@
     --wc-on-accent: #ffffff;
 
     --wc-wash: #eef3f9;
+
+    /* ---- Type scale (self-hosted IBM Plex Sans) ---- */
+    --wc-font-body: "IBM Plex Sans", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+    --wc-type-xs: .875rem;   /* 14px floor — labels, badges, chips */
+    --wc-type-sm: .9375rem;  /* 15px — metadata, tabs, pills, sub-labels */
+    --wc-type-base: 1rem;    /* 16px — body */
+    --wc-type-md: 1.125rem;  /* 18px — emphasis, item names */
+    --wc-type-lg: 1.375rem;  /* 22px — section titles */
+    --wc-type-xl: 2.5rem;    /* 40px — page hero */
+    --wc-tnum: tabular-nums;
 }
 
 [data-theme="dark"] {
@@ -55,6 +95,8 @@
 body {
     background-color: var(--wc-bg) !important;
     color: var(--wc-ink);
+    font-family: var(--wc-font-body) !important;
+    font-weight: 400;
 }
 
 .card {
@@ -235,7 +277,7 @@ a {
     background: var(--wc-surface);
     color: var(--wc-ink);
     text-align: left;
-    font-size: .95rem;
+    font-size: var(--wc-type-sm);
 }
 
 .picker-row:active {
@@ -252,7 +294,7 @@ a {
 
 .picker-row .picker-sub {
     display: block;
-    font-size: .78rem;
+    font-size: var(--wc-type-sm);
     color: var(--wc-ink-2);
 }
 
@@ -260,7 +302,7 @@ a {
 .picker-count {
     color: var(--wc-ink-2);
     text-align: center;
-    font-size: .85rem;
+    font-size: var(--wc-type-sm);
     padding: .35rem 0;
 }
 
@@ -339,13 +381,13 @@ a {
     background: var(--wc-surface-2);
     border: 1px solid var(--wc-border);
     color: var(--wc-ink-2);
-    font-size: .85rem;
+    font-size: var(--wc-type-sm);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
 }
 .wc-status-chip i {
-    font-size: .8rem;
+    font-size: .75rem;
 }
 .wc-status-chip--muted {
     color: var(--wc-ink-2);
@@ -400,7 +442,7 @@ a {
 .wc-actions-sheet-title {
     text-align: center;
     color: var(--wc-ink-2);
-    font-size: .78rem;
+    font-size: var(--wc-type-sm);
     text-transform: uppercase;
     letter-spacing: .05em;
     margin-bottom: .4rem;
@@ -420,7 +462,7 @@ a {
     border: 1px solid var(--wc-border);
     background: var(--wc-surface-2);
     color: var(--wc-ink);
-    font-size: 1rem;
+    font-size: var(--wc-type-base);
     font-weight: 500;
     text-align: left;
     text-decoration: none;
@@ -455,7 +497,7 @@ body.wc-sheet-open {
     display: inline-flex;
     align-items: center;
     gap: .4rem;
-    font-size: .85rem;
+    font-size: var(--wc-type-sm);
     font-weight: 500;
 }
 .wc-inline-note--warn {
@@ -468,7 +510,7 @@ body.wc-sheet-open {
 /* ---- Send validation list ---- */
 .wc-valid-list {
     color: var(--wc-ink);
-    font-size: .95rem;
+    font-size: var(--wc-type-sm);
     line-height: 1.6;
 }
 .wc-crew-row {
@@ -486,7 +528,7 @@ body.wc-sheet-open {
     flex-shrink: 0;
 }
 .wc-day-title-sm {
-    font-size: 1.05rem;
+    font-size: var(--wc-type-md);
     font-weight: 700;
     color: var(--wc-ink);
     white-space: nowrap;
@@ -501,7 +543,7 @@ body.wc-sheet-open {
     background: var(--wc-surface-2);
     border: 1px solid var(--wc-border);
     color: var(--wc-accent);
-    font-size: .78rem;
+    font-size: var(--wc-type-sm);
     font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
@@ -528,7 +570,7 @@ body.wc-sheet-open {
     background: var(--wc-surface-2);
     border: 1px solid var(--wc-border);
     color: var(--wc-ink) !important;
-    font-size: .85rem;
+    font-size: var(--wc-type-sm);
     font-weight: 600;
     white-space: nowrap;
     text-decoration: none;
@@ -574,7 +616,7 @@ body.wc-sheet-open {
     border: 1px solid var(--wc-border);
     background: var(--wc-surface);
     color: var(--wc-ink-2);
-    font-size: .9rem;
+    font-size: var(--wc-type-sm);
     font-weight: 600;
 }
 .wc-tab.is-active {
@@ -583,8 +625,9 @@ body.wc-sheet-open {
     color: var(--wc-on-accent);
 }
 .wc-tab-count {
-    font-size: .72rem;
+    font-size: var(--wc-type-xs);
     font-weight: 700;
+    font-variant-numeric: var(--wc-tnum);
     padding: .1rem .5rem;
     border-radius: 999px;
     background: var(--wc-surface-2);
@@ -617,7 +660,7 @@ body.wc-sheet-open {
     justify-content: flex-start;
     gap: .45rem;
     margin-right: .5rem;
-    font-size: .8rem;
+    font-size: var(--wc-type-sm);
     font-weight: 500;
     color: var(--wc-header-ink);
     white-space: nowrap;
@@ -637,7 +680,7 @@ body.wc-sheet-open {
 }
 .wc-wo-resume-seg i {
     margin-right: .3rem;
-    font-size: .72rem;
+    font-size: .75rem;
     opacity: .8;
 }
 .wc-wo-resume-sep {
@@ -651,8 +694,9 @@ body.wc-sheet-open {
     flex-shrink: 0;
     padding: .1rem .45rem;
     border-radius: 999px;
-    font-size: .72rem;
+    font-size: var(--wc-type-xs);
     font-weight: 700;
+    font-variant-numeric: var(--wc-tnum);
     background: rgba(255, 255, 255, .22);
     color: var(--wc-warn);
 }
@@ -663,7 +707,7 @@ body.wc-sheet-open {
     border-radius: .75rem;
     border: 1px solid var(--wc-border);
     background: var(--wc-surface-2);
-    font-size: .88rem;
+    font-size: var(--wc-type-sm);
     line-height: 1.5;
 }
 .wc-review-note-title {
@@ -713,7 +757,7 @@ body.wc-sheet-open {
     border: 1px solid var(--wc-border);
     background: var(--wc-surface-2);
     color: var(--wc-ink-2);
-    font-size: .8rem;
+    font-size: var(--wc-type-sm);
     font-weight: 600;
 }
 .wc-doc-subpill.is-active {
