@@ -264,33 +264,25 @@
 <div class="container">
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
-        <!-- Sticky context bar: day title + primary actions + crew pills -->
+        <!-- Sticky context bar: centered date / crew switcher / actions -->
         <div class="wc-context-bar" id="wcContextBar">
-            <div class="wc-context-row">
-                <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" href="/mobile/home/{{selectedLocation}}" aria-label="Back">
-                    <i class="fa-solid fa-circle-left"></i>
-                </a>
-                <div class="wc-day-title-wrap d-flex align-items-center gap-2 overflow-hidden">
+            <div class="wc-title-row">
+                <div class="wc-title-side" aria-hidden="true"></div>
+                <div class="wc-title-center">
                     <span class="wc-day-title-sm text-truncate">{{selectedDateRaw|date:"l, F jS"}}</span>
                     {% if dayRel %}<span class="crew-day-rel">{{dayRel}}</span>{% endif %}
                     <span class="crew-day-year flex-shrink-0">{{selectedDateRaw|date:"Y"}}</span>
                 </div>
-                <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                    {% if editable and dailyactual.woID and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyEmp %}
-                        <a class="btn btn-primary tap-target wc-send-btn" onclick="send_payroll({{dailyactual.id}},{{selectedLocation}},{{tab_items}})">
-                            <i class="fa-solid fa-paper-plane"></i> Send
-                        </a>
-                    {% endif %}
-                </div>
+                <div class="wc-title-side" aria-hidden="true"></div>
             </div>
 
             <div class="wc-crew-row">
-                {% if AddCrew and editable %}
-                    <a class="btn btn-success tap-target wc-icon-btn flex-shrink-0" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}" aria-label="Add Crew">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </a>
-                {% endif %}
                 <div class="wc-crew-scroll d-flex align-items-center gap-2 overflow-x-auto" id="crewScroll">
+                    {% if AddCrew and editable %}
+                        <a class="wc-crew-pill wc-add-crew-pill" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}">
+                            <i class="fa-solid fa-plus"></i> Add Crew
+                        </a>
+                    {% endif %}
                     {% for item in crew %}
                         {% if item.crew == selectedCrew %}
                             <a class="wc-crew-pill wc-crew-pill--active" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}?section={{section}}" role="button">
@@ -313,18 +305,46 @@
                         {% endif %}
                     {% endfor %}
                 </div>
+            </div>
+
+            <div class="wc-actions-row">
                 {% if editable and dailyactual %}
-                    <button type="button" class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" onclick="delete_daily({{dailyactual.id}},{{selectedLocation}})" aria-label="More" title="Delete Daily">
+                    <div class="wc-status-chip wc-status-chip--muted" id="wcReadyChip" data-rejected="{% if dailyactual.Status == 5 %}true{% else %}false{% endif %}">
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <span id="wcReadyChipText">Checking…</span>
+                    </div>
+                {% elif dailyactual %}
+                    <div class="wc-status-chip wc-status-chip--muted">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        <span>Read Only</span>
+                    </div>
+                {% else %}
+                    <div class="wc-status-chip wc-status-chip--muted">
+                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                        <span>No Daily</span>
+                    </div>
+                {% endif %}
+                {% if dailyactual %}
+                    <button type="button" class="btn btn-outline-secondary tap-target wc-icon-btn wc-more-btn" id="wcActionsBtn" aria-label="Actions" aria-haspopup="dialog" aria-expanded="false">
                         <i class="fa-solid fa-ellipsis"></i>
                     </button>
                 {% endif %}
             </div>
         </div>
 
-        {% if dailyactual and not editable %}
-            <div class="alert alert-secondary wc-readonly-banner" role="alert">
-                <i class="fa-solid fa-lock"></i> Read-only — this Daily can only be viewed.
-            </div>
+        {% if editable and dailyactual %}
+        <script>
+            window.wcPrecheck = {
+                hasWO: {% if dailyactual.woID %}true{% else %}false{% endif %},
+                hasSup: {% if dailyactual.supervisor and dailyactual.supervisor != "0" %}true{% else %}false{% endif %},
+                hasEmp: {% if dailyEmp %}true{% else %}false{% endif %},
+                hasItem: {% if tab_items > 0 %}true{% else %}false{% endif %},
+                totalPay: {{ dailyactual.total_pay|default:0 }},
+                woCount: {{ woCount|default:0 }},
+                dailyId: {{ dailyactual.id }},
+                locId: {{ selectedLocation }}
+            };
+        </script>
         {% endif %}
   
       <div class="row mt-3 pt-2">
@@ -340,10 +360,6 @@
                         <span class="badge bg-success text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
                     {% endif %}
                 </h4>
-
-                {% if dailyUrl.pdfDaily %}
-                    <a href="{{ dailyUrl.pdfDaily.url }}" class="btn btn-primary tap-target" download><i class="fas fa-file-pdf"></i> Download</a>
-                {% endif %}
               </div>
               <div class="card-body">
                 <!--Work Address-->
@@ -360,14 +376,10 @@
                     {% endif %}
                 </div>
 
-                {% if woCount == 1 %}
-                    <div class="alert alert-warning" role="alert">
-                        This WO is already included in <strong>{{woCount}}</strong> Daily. Please check it before sending the current Daily for approval.
-                    </div>
-                {% elif woCount > 1 %}
-                    <div class="alert alert-warning" role="alert">
-                        This WO is already included in <strong>{{woCount}}</strong> Dailies. Please check it before sending the current Daily for approval.
-                    </div>
+                {% if dailyactual.woID and woCount > 0 %}
+                    <p class="wc-inline-note wc-inline-note--warn mb-2">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Included in {{woCount}} other Daily{{ woCount|pluralize }} today
+                    </p>
                 {% endif %}
 
                 {% if dailyactual.woID %}
@@ -410,16 +422,11 @@
                         </div>
                     </div>
 
-                    {% if dailyactual.total_pay != 100 %}
-                        <div class="alert alert-danger" role="alert">
-                            The Total % to Pay must be equal to 100
-                        </div>
-                    {% endif %}
-                    {% if not dailyactual.supervisor or dailyactual.supervisor == "0" or not dailyactual.woID %}
-                        <div class="alert alert-warning" role="alert">
-                            must select a WO and supervisor to add employees and production
-                        </div>
-                    {% endif %}
+                        {% if not dailyactual.supervisor or dailyactual.supervisor == "0" %}
+                            <p class="wc-inline-note wc-inline-note--muted mb-0">
+                                <i class="fa-solid fa-user-slash" aria-hidden="true"></i> No supervisor — select one to add employees and production
+                            </p>
+                        {% endif %}
                 {% endif %}
               </div>
           </div>
@@ -670,6 +677,48 @@
         </div>
 
         {% endif %}
+
+        <!-- Actions sheet -->
+        <div class="wc-actions-backdrop" id="wcActionsBackdrop" hidden></div>
+        <div class="wc-actions-sheet" id="wcActionsSheet" role="dialog" aria-modal="true" aria-labelledby="wcActionsTitle" hidden>
+            <div class="wc-actions-sheet-handle" aria-hidden="true"></div>
+            <h6 class="wc-actions-sheet-title" id="wcActionsTitle">Daily actions</h6>
+            <div class="wc-actions-sheet-list">
+                {% if editable and dailyactual %}
+                    <button type="button" class="wc-actions-item" data-action="send">
+                        <i class="fa-solid fa-paper-plane"></i> Send for Approval
+                    </button>
+                {% endif %}
+                {% if dailyUrl.pdfDaily %}
+                    <a class="wc-actions-item" data-action="download" href="{{ dailyUrl.pdfDaily.url }}" download>
+                        <i class="fa-solid fa-file-arrow-down"></i> Download Daily
+                    </a>
+                {% endif %}
+                {% if editable and dailyactual %}
+                    <button type="button" class="wc-actions-item wc-actions-item--danger" data-action="delete">
+                        <i class="fa-solid fa-trash"></i> Delete Daily
+                    </button>
+                {% endif %}
+                <button type="button" class="wc-actions-item wc-actions-item--cancel" data-action="cancel">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        <!-- Send validation modal -->
+        <div class="modal fade" id="wcValidModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body pt-4 pb-3">
+                        <h6 class="text-center mb-2">Fix these before sending</h6>
+                        <ul id="wcValidList" class="wc-valid-list mb-3 ps-3"></ul>
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary btn-lg" data-bs-dismiss="modal">Got it</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- WC Confirm Modal (bottom-sheet style) -->
         <div class="modal fade" id="wcConfirmModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">

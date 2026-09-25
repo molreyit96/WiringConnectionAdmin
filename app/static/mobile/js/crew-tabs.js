@@ -172,10 +172,136 @@
         onScroll();
     }
 
+    /* ---- Actions sheet + readiness ---- */
+
+    var sheet = null;
+    var sheetBackdrop = null;
+    var sheetBtn = null;
+
+    function openSheet() {
+        if (!sheet) return;
+        sheet.removeAttribute('hidden');
+        sheetBackdrop.removeAttribute('hidden');
+        sheetBtn.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('wc-sheet-open');
+        setTimeout(function () { sheet.classList.add('is-open'); }, 10);
+    }
+    function closeSheet() {
+        if (!sheet) return;
+        sheet.classList.remove('is-open');
+        document.body.classList.remove('wc-sheet-open');
+        setTimeout(function () {
+            sheet.setAttribute('hidden', '');
+            sheetBackdrop.setAttribute('hidden', '');
+        }, 180);
+        if (sheetBtn) sheetBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function showSendValid(blockers) {
+        var list = document.getElementById('wcValidList');
+        var modal = document.getElementById('wcValidModal');
+        if (!list || !modal) return;
+        list.innerHTML = '';
+        blockers.forEach(function (msg) {
+            var li = document.createElement('li');
+            li.textContent = msg;
+            list.appendChild(li);
+        });
+        var inst = window._wcValidModal || new bootstrap.Modal(modal);
+        window._wcValidModal = inst;
+        inst.show();
+    }
+
+    function runSendPrecheck() {
+        var d = window.wcPrecheck;
+        if (!d) return [];
+        var blockers = [];
+        if (!d.hasWO) blockers.push('Select a Work Order.');
+        if (!d.hasSup) blockers.push('Select a Supervisor.');
+        if (!d.hasEmp) blockers.push('Add at least one employee.');
+        if (!d.hasItem) blockers.push('Add at least one item.');
+        if (d.hasEmp && d.hasItem && d.totalPay !== 100) blockers.push('Total % to Pay must equal 100.');
+        if (d.hasWO && d.woCount > 0) blockers.push('This WO is already used in another Daily today.');
+        return blockers;
+    }
+
+    function handleSend() {
+        closeSheet();
+        var blockers = runSendPrecheck();
+        if (blockers.length) {
+            showSendValid(blockers);
+            return;
+        }
+        if (window.wcConfirm && window.send_payroll) {
+            window.wcConfirm('Are you sure you want to send this daily for approval?', function () {
+                window.send_payroll(window.wcPrecheck.dailyId, window.wcPrecheck.locId, 1);
+            });
+        }
+    }
+
+    function initActionsSheet() {
+        sheet = document.getElementById('wcActionsSheet');
+        sheetBackdrop = document.getElementById('wcActionsBackdrop');
+        sheetBtn = document.getElementById('wcActionsBtn');
+        if (!sheet || !sheetBackdrop) return;
+
+        if (sheetBtn) {
+            sheetBtn.addEventListener('click', function () {
+                if (sheet.classList.contains('is-open')) {
+                    closeSheet();
+                } else {
+                    openSheet();
+                }
+            });
+        }
+
+        sheet.addEventListener('click', function (ev) {
+            var item = ev.target.closest('.wc-actions-item');
+            if (!item) return;
+            var action = item.getAttribute('data-action');
+            if (action === 'cancel') {
+                closeSheet();
+            } else if (action === 'download') {
+                closeSheet();
+            } else if (action === 'send') {
+                handleSend();
+            } else if (action === 'delete' && window.wcConfirm && window.delete_daily) {
+                closeSheet();
+                window.delete_daily(window.wcPrecheck.dailyId, window.wcPrecheck.locId);
+            }
+        });
+
+        sheetBackdrop.addEventListener('click', closeSheet);
+        document.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Escape' && sheet.classList.contains('is-open')) closeSheet();
+        });
+    }
+
+    function updateReadyChip() {
+        var chip = document.getElementById('wcReadyChip');
+        var text = document.getElementById('wcReadyChipText');
+        if (!chip || !text) return;
+        if (chip.getAttribute('data-rejected') === 'true') {
+            chip.className = 'wc-status-chip wc-status-chip--danger';
+            text.textContent = 'Rejected';
+            return;
+        }
+        var blockers = runSendPrecheck();
+        if (blockers.length) {
+            chip.className = 'wc-status-chip wc-status-chip--warn';
+            text.textContent = 'Not ready';
+        } else {
+            chip.className = 'wc-status-chip wc-status-chip--ok';
+            text.textContent = 'Ready to send';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initTabs();
         initDocSubs();
         initSwipe();
         initScrollElevation();
+        initActionsSheet();
+        updateReadyChip();
     });
 })();
