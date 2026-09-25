@@ -614,6 +614,11 @@ body.wc-sheet-open {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.wc-wo-resume-seg i {
+    margin-right: .3rem;
+    font-size: .72rem;
+    opacity: .8;
+}
 .wc-wo-resume-sep {
     color: var(--wc-header-ink);
     opacity: .6;

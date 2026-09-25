@@ -225,17 +225,6 @@ def mobile_home(request, LocID):
             pr = today_period 
             btn_enabled = True
             
-            #*** If today is monday look for the last friday in the week and set btn_enabled = True
-            if today.strftime("%A") == "Monday":
-                last_friday = None
-                for d in week1:
-                    if d['fullDate'].strftime("%A") == "Friday":
-                        last_friday = d
-                        break
-                if last_friday:
-                    last_friday['btn_enabled'] = True
-            
-            
         else:    
             pr = per   
 
@@ -279,16 +268,6 @@ def mobile_home(request, LocID):
         elif day == today.strftime("%d"):
             pr = today_period 
             btn_enabled = True
-            
-            #*** If today is monday look for the last friday in the week and set btn_enabled = True
-            if today.strftime("%A") == "Friday":
-                last_friday = None
-                for d in week2:
-                    if d['fullDate'].strftime("%A") == "Wednesday":
-                        last_friday = d
-                        break
-                if last_friday:
-                    last_friday['btn_enabled'] = True
             
         else:    
             pr = per
@@ -500,10 +479,7 @@ def crew(request, perID, dID, crewID, LocID):
         if selectedDate != yesterday and selectedDate != today:
             crews = DailyMob.objects.filter(Period = perID, day=selectedDate, Location = loca, created_by = user).order_by('crew')
             
-            if (today.strftime("%A") == "Monday" and selectedDate.strftime("%A") == "Friday") and (0 <= (today - selectedDate).days <= 3):
-                context["AddCrew"] = True
-            else:
-                context["AddCrew"] = False
+            context["AddCrew"] = False
                 
         else:
             # get the list of dailys for the period, Day selected and Location

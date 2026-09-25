@@ -222,6 +222,11 @@
         font-weight: 500;
         flex-shrink: 0;
     }
+    .wc-home-summary .home-sum-mini i {
+        margin-right: .3rem;
+        font-size: .74rem;
+        opacity: .85;
+    }
     .wc-home-summary .home-sum-sep {
         color: var(--wc-ink-2);
         opacity: .6;
@@ -240,13 +245,13 @@
         <span class="wc-home-summary-loc">{{ selectedLocationName }}</span>
         {% if period and period.periodID != -1 %}
             <span class="home-sum-sep">·</span>
-            <span class="home-sum-mini">P {{period.periodID}}</span>
+            <span class="home-sum-mini"><i class="fa-solid fa-hashtag" aria-hidden="true"></i>P {{period.periodID}}</span>
             <span class="home-sum-sep">·</span>
-            <span class="home-sum-mini">W {{period.weekRange}}</span>
+            <span class="home-sum-mini"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i>W {{period.weekRange}}</span>
             <span class="home-sum-sep">·</span>
-            <span class="home-sum-mini">{{period.fromDate|date:"m-d"}} – {{period.toDate|date:"m-d"}}</span>
+            <span class="home-sum-mini"><i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i>{{period.fromDate|date:"m-d"}} – {{period.toDate|date:"m-d"}}</span>
             <span class="home-sum-sep">·</span>
-            <span class="home-sum-mini">Pay {{period.payDate|date:"m-d"}}</span>
+            <span class="home-sum-mini"><i class="fa-solid fa-money-bill" aria-hidden="true"></i>Pay {{period.payDate|date:"m-d"}}</span>
         {% else %}
             <span class="home-sum-sep">·</span>
             <span class="home-sum-mini">No Active Period</span>
@@ -342,7 +347,7 @@
                                     {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
                                 </a>
                             {% else %}
-                                <a class="day-pill day-pill--view {% if item.type == 'danger' %}day-pill--danger{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                <a class="day-pill day-pill--view" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
                                     {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% else %}<i class="fa-solid fa-eye day-view-icon"></i>{% endif %}
                                     <span class="day-short">{{item.shortDate}}</span>
                                     {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
@@ -373,7 +378,7 @@
                                     {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
                                 </a>
                             {% else %}
-                                <a class="day-pill day-pill--view {% if item.type == 'danger' %}day-pill--danger{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                <a class="day-pill day-pill--view" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
                                     {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% else %}<i class="fa-solid fa-eye day-view-icon"></i>{% endif %}
                                     <span class="day-short">{{item.shortDate}}</span>
                                     {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}

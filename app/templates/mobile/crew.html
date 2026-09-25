@@ -234,6 +234,18 @@
     border-color: #6c757d;
 }
 
+    .wc-comment-status {
+        font-size: .82rem;
+        font-weight: 500;
+        margin-left: .25rem;
+    }
+    .wc-comment-status--ok {
+        color: var(--wc-ok);
+    }
+    .wc-comment-status--err {
+        color: var(--wc-danger);
+    }
+
     .crew-day-title {
         font-size: 1.35rem;
         font-weight: 700;
@@ -363,13 +375,13 @@
               <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
                 <h4 class="wc-wo-header-title mb-0">Work Order Info</h4>
                 <div class="wc-wo-header-resume" title="{% if dailyactual and dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}} - {{dailyactual.woID.JobAddress}}{% endif %}">
-                    <span class="wc-wo-resume-seg wc-wo-resume-wo flex-shrink-0">{% if dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}}{% else %}No Work Order{% endif %}</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-wo flex-shrink-0"><i class="fa-solid fa-briefcase" aria-hidden="true"></i>{% if dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}}{% else %}No Work Order{% endif %}</span>
                     <span class="wc-wo-resume-sep flex-shrink-0" aria-hidden="true">·</span>
-                    <span class="wc-wo-resume-seg wc-wo-resume-addr" title="{% if dailyactual and dailyactual.woID %}{{dailyactual.woID.JobAddress}}{% endif %}">{% if dailyactual.woID %}{{dailyactual.woID.JobAddress}}{% else %}No address{% endif %}</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-addr" title="{% if dailyactual and dailyactual.woID %}{{dailyactual.woID.JobAddress}}{% endif %}"><i class="fa-solid fa-map-marker-alt" aria-hidden="true"></i>{% if dailyactual.woID %}{{dailyactual.woID.JobAddress}}{% else %}No address{% endif %}</span>
                     <span class="wc-wo-resume-sep flex-shrink-0" aria-hidden="true">·</span>
-                    <span class="wc-wo-resume-seg wc-wo-resume-sup">{% for sup in superV %}{% if sup.employeeID|slugify == dailyactual.supervisor %}{{sup.first_name}} {{sup.last_name}}{% endif %}{% endfor %}{% if not dailyactual.supervisor or dailyactual.supervisor == "0" %}No Supervisor{% endif %}</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-sup"><i class="fa-solid fa-user-tie" aria-hidden="true"></i>{% for sup in superV %}{% if sup.employeeID|slugify == dailyactual.supervisor %}{{sup.first_name}} {{sup.last_name}}{% endif %}{% endfor %}{% if not dailyactual.supervisor or dailyactual.supervisor == "0" %}No Supervisor{% endif %}</span>
                     <span class="wc-wo-resume-sep flex-shrink-0" aria-hidden="true">·</span>
-                    <span class="wc-wo-resume-seg wc-wo-resume-split flex-shrink-0">{% if dailyactual.split_paymet %}Split{% else %}NO Split{% endif %}</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-split flex-shrink-0"><i class="fa-solid fa-dollar-sign" aria-hidden="true"></i>{% if dailyactual.split_paymet %}Split{% else %}NO Split{% endif %}</span>
                     {% if dailyactual.woID and woCount > 0 %}
                     <span class="wc-wo-resume-badge flex-shrink-0" title="Included in {{ woCount }} other Daily{{ woCount|pluralize }} today"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ woCount }}</span>
                     {% endif %}
@@ -686,15 +698,16 @@
                         <h6 class="mb-0">Comments</h6>
                     </div>
                     <div class="card-body">
-                        <form id="daily-comment-form">
+                        <div id="daily-comment-form">
                             <textarea class="form-control mb-3" name="comment" id="comment" rows="4" placeholder="Enter comments here..." >{{ dailyactual.daily_comments|default_if_none:"" }}</textarea>
                             {% if editable %}
-                                <div class="d-flex align-items-center">
-                                    <button class="button btn-success" type="submit" id="save-comment-btn" disabled>Save Comment</button>
-                                    <button class="button btn-danger" type="button" id="clear-comment-btn">Clear Comment</button>
+                                <div class="d-flex align-items-center flex-wrap gap-2">
+                                    <button type="button" class="btn btn-primary tap-target" id="save-comment-btn" disabled>Save Comment</button>
+                                    <button type="button" class="btn btn-outline-secondary tap-target" id="clear-comment-btn">Clear Comment</button>
+                                    <span id="wcCommentStatus" class="wc-comment-status" role="status" aria-live="polite"></span>
                                 </div>
                             {% endif %}
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -794,12 +807,27 @@
 
 
                 var initialComment = $('#comment').val().trim();
+                var statusEl = $('#wcCommentStatus');
 
-                $('#daily-comment-form').on('submit', function(e) {
-                    e.preventDefault();
+                function setStatus(msg, type) {
+                    if (!statusEl.length) return;
+                    statusEl.text(msg || '').attr('class', 'wc-comment-status' + (type === 'err' ? ' wc-comment-status--err' : msg ? ' wc-comment-status--ok' : ''));
+                    clearTimeout(setStatus._t);
+                    if (msg) {
+                        setStatus._t = setTimeout(function () { statusEl.text('').attr('class', 'wc-comment-status'); }, 4000);
+                    }
+                }
+
+                function updateButtonState() {
+                    var currentComment = $('#comment').val().trim();
+                    $('#save-comment-btn').prop('disabled', !(currentComment.length > 0 && currentComment !== initialComment));
+                    $('#clear-comment-btn').prop('disabled', !initialComment);
+                }
+
+                $('#save-comment-btn').on('click', function() {
                     var currentComment = $('#comment').val().trim();
                     if (currentComment === '') {
-                        alert('Please enter a comment before saving.');
+                        setStatus('Please enter a comment before saving.', 'err');
                         return;
                     }
                     $.ajax({
@@ -810,23 +838,22 @@
                             csrfmiddlewaretoken: '{{ csrf_token }}'
                         },
                         success: function(response) {
-                            alert(response.message);
                             initialComment = currentComment;
+                            setStatus((response && response.message) || 'Comment saved.');
                             updateButtonState();
                         },
-                        error: function(xhr) {
-                            alert('Error saving comment.');
+                        error: function() {
+                            setStatus('Error saving comment.', 'err');
                         }
                     });
                 });
 
                 $('#clear-comment-btn').on('click', function() {
                     if (!initialComment) {
-                        alert('There is no comment to clear.');
+                        setStatus('There is no comment to clear.', 'err');
                         return;
                     }
                     wcConfirm('Are you sure you want to remove this comment?', function () {
-                        $('#comment').val('').trigger('input');
                         $.ajax({
                             url: '/mobile/save_daily_comment/{{ dailyactual.id }}',
                             type: 'POST',
@@ -834,51 +861,22 @@
                                 comment: '',
                                 csrfmiddlewaretoken: '{{ csrf_token }}'
                             },
-                            success: function(response) {
-                                alert('Comment cleared.');
+                            success: function() {
+                                $('#comment').val('');
                                 initialComment = '';
+                                setStatus('Comment cleared.');
                                 updateButtonState();
                             },
-                            error: function(xhr) {
-                                alert('Error clearing comment.');
+                            error: function() {
+                                setStatus('Error clearing comment.', 'err');
                             }
                         });
                     });
                 });
 
-                function updateButtonState() {
-                    var currentComment = $('#comment').val().trim();
-                    var saveBtn = $('#save-comment-btn');
-                    var clearBtn = $('#clear-comment-btn');
-
-                    // Save button: enabled only if field has text AND it differs from the saved comment
-                    var canSave = currentComment.length > 0 && currentComment !== initialComment;
-                    saveBtn.prop('disabled', !canSave);
-
-                    // Clear button: enabled only if there is a saved comment
-                    clearBtn.prop('disabled', !initialComment);
-                }
-
                 $(document).ready(function() {
                     updateButtonState();
                     $('#comment').on('input', updateButtonState);
-                });
-
-                // Enable/disable Save Comment button based on textarea content
-                $(document).ready(function() {
-                    var commentField = $('#comment');
-                    var saveBtn = $('#save-comment-btn');
-
-                    function updateButtonState() {
-                        var hasText = commentField.val().trim().length > 0;
-                        saveBtn.prop('disabled', !hasText);
-                    }
-
-                    // Run once on page load
-                    updateButtonState();
-
-                    // Run on every keystroke
-                    commentField.on('input', updateButtonState);
                 });
              
 
