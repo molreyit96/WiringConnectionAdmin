@@ -240,23 +240,9 @@
         color: var(--wc-ink);
         line-height: 1.2;
     }
-    .crew-day-rel {
-        display: inline-flex;
-        align-items: center;
-        padding: .15rem .6rem;
-        border-radius: 999px;
-        font-size: .72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .03em;
-        background: var(--wc-accent);
-        color: var(--wc-on-accent);
-        white-space: nowrap;
-    }
+    .crew-day-rel,
     .crew-day-year {
-        font-size: .95rem;
-        font-weight: 500;
-        color: var(--wc-ink-2);
+        display: none;
     }
 
 </style>
@@ -270,8 +256,7 @@
                 <div class="wc-title-side" aria-hidden="true"></div>
                 <div class="wc-title-center">
                     <span class="wc-day-title-sm text-truncate">{{selectedDateRaw|date:"l, F jS"}}</span>
-                    {% if dayRel %}<span class="crew-day-rel">{{dayRel}}</span>{% endif %}
-                    <span class="crew-day-year flex-shrink-0">{{selectedDateRaw|date:"Y"}}</span>
+                    {% if selectedLoca %}<span class="wc-day-loc-badge"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> {{selectedLoca}}</span>{% endif %}
                 </div>
                 <div class="wc-title-side" aria-hidden="true"></div>
             </div>
@@ -308,42 +293,47 @@
             </div>
 
             <div class="wc-actions-row">
-                {% if editable and dailyactual %}
-                    <div class="wc-status-chip wc-status-chip--muted" id="wcReadyChip" data-rejected="{% if dailyactual.Status == 5 %}true{% else %}false{% endif %}">
-                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                        <span id="wcReadyChipText">Checking…</span>
-                    </div>
-                {% elif dailyactual and dailyactual.Status == 4 %}
-                    <div class="wc-status-chip wc-status-chip--ok" data-status="{{ dailyactual.Status }}">
-                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-                        <span>Approved</span>
-                    </div>
-                {% elif dailyactual and dailyactual.Status == 6 %}
-                    <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
-                        <i class="fa-solid fa-ban" aria-hidden="true"></i>
-                        <span>Deleted</span>
-                    </div>
-                {% elif dailyactual and dailyactual.Status == 2 %}
-                    <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
-                        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
-                        <span>Sent</span>
-                    </div>
-                {% elif dailyactual and dailyactual.Status == 3 %}
-                    <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
-                        <i class="fa-solid fa-clock" aria-hidden="true"></i>
-                        <span>Pending</span>
-                    </div>
-                {% elif dailyactual %}
-                    <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
-                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
-                        <span>Read Only</span>
-                    </div>
-                {% else %}
-                    <div class="wc-status-chip wc-status-chip--muted">
-                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                        <span>No Daily</span>
-                    </div>
-                {% endif %}
+                <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" href="/mobile/home/{{selectedLocation}}" aria-label="Back to home">
+                    <i class="fa-solid fa-house"></i>
+                </a>
+                <div class="wc-actions-mid">
+                    {% if editable and dailyactual %}
+                        <div class="wc-status-chip wc-status-chip--muted" id="wcReadyChip" data-rejected="{% if dailyactual.Status == 5 %}true{% else %}false{% endif %}">
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            <span id="wcReadyChipText">Checking…</span>
+                        </div>
+                    {% elif dailyactual and dailyactual.Status == 4 %}
+                        <div class="wc-status-chip wc-status-chip--ok" data-status="{{ dailyactual.Status }}">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                            <span>Approved</span>
+                        </div>
+                    {% elif dailyactual and dailyactual.Status == 6 %}
+                        <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
+                            <i class="fa-solid fa-ban" aria-hidden="true"></i>
+                            <span>Deleted</span>
+                        </div>
+                    {% elif dailyactual and dailyactual.Status == 2 %}
+                        <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
+                            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                            <span>Sent</span>
+                        </div>
+                    {% elif dailyactual and dailyactual.Status == 3 %}
+                        <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
+                            <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                            <span>Pending</span>
+                        </div>
+                    {% elif dailyactual %}
+                        <div class="wc-status-chip wc-status-chip--muted" data-status="{{ dailyactual.Status }}">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                            <span>Read Only</span>
+                        </div>
+                    {% else %}
+                        <div class="wc-status-chip wc-status-chip--muted">
+                            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                            <span>No Daily</span>
+                        </div>
+                    {% endif %}
+                </div>
                 {% if dailyactual %}
                     <button type="button" class="btn btn-outline-secondary tap-target wc-icon-btn wc-more-btn" id="wcActionsBtn" aria-label="Actions" aria-haspopup="dialog" aria-expanded="false">
                         <i class="fa-solid fa-ellipsis"></i>
@@ -369,25 +359,14 @@
   
       <div class="row mt-3 pt-2">
         <div class="col-sm-12">
-          <div class="card">
+          <div class="card wc-wo-card{% if dailyactual.woID and dailyactual.supervisor and dailyactual.supervisor != '0' %} wc-wo-card--collapsed{% endif %}" id="wcWoCard">
               <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Work Order Info. - {{selectedLoca}}
-                    {% if dailyactual %}
-                        {% if dailyactual.Status == 1 %}
-                            <span class="badge bg-secondary text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
-                        {% elif dailyactual.Status == 2 %}
-                            <span class="badge bg-info text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
-                        {% elif dailyactual.Status == 3 %}
-                            <span class="badge bg-warning text-dark align-content-center"> {{dailyactual.get_Status_display}} </span>
-                        {% elif dailyactual.Status == 4 %}
-                            <span class="badge bg-success text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
-                        {% elif dailyactual.Status == 5 %}
-                            <span class="badge bg-danger text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
-                        {% elif dailyactual.Status == 6 %}
-                            <span class="badge wc-badge-deleted text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
-                        {% endif %}
-                    {% endif %}
-                </h4>
+                <h4 class="mb-0">Work Order Info</h4>
+                {% if dailyactual %}
+                    <button type="button" class="btn btn-outline-secondary tap-target wc-wo-toggle" id="wcWoToggle" aria-label="Collapse work order details" aria-expanded="{% if dailyactual.woID and dailyactual.supervisor and dailyactual.supervisor != '0' %}false{% else %}true{% endif %}" aria-controls="wcWoDetails">
+                        <i class="fa-solid fa-chevron-up" id="wcWoToggleIcon"></i>
+                    </button>
+                {% endif %}
               </div>
               <div class="card-body">
                 {% if dailyactual.Status == 5 %}
@@ -410,6 +389,7 @@
                         {% endif %}
                     </div>
                 {% endif %}
+                <div class="wc-wo-details" id="wcWoDetails">
                 <!--Work Address-->
                 <div class="d-flex justify-content-left align-items-center">
                     <i class="fas fa-briefcase mr-2" style="padding-bottom: 15px;"></i>
@@ -451,7 +431,7 @@
                         {% endif %}
 
                         {% if editable %}
-                            <a class="btn btn-sm btn-outline-primary tap-target" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{dailyactual.day|date:'d'}}/{{dailyactual.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass"></i> Change Supervisor</a>
+                            <a class="btn btn-outline-secondary tap-target wc-icon-btn wc-wo-edit" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{dailyactual.day|date:'d'}}/{{dailyactual.id}}/{{selectedLocation}}" aria-label="Change supervisor"><i class="fa-solid fa-pen"></i></a>
                         {% endif %}
                     </div>
                     <!--Payment and Vehicle-->
@@ -475,6 +455,33 @@
                                 <i class="fa-solid fa-user-slash" aria-hidden="true"></i> No supervisor — select one to add employees and production
                             </p>
                         {% endif %}
+                {% endif %}
+                </div>
+                {% if dailyactual %}
+                <div class="wc-wo-resume" id="wcWoResume" hidden>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
+                        <p class="mb-0 flex-grow-1 text-truncate" style="min-width:0">
+                            {% if dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}}{% else %}No Work Order Selected{% endif %}
+                        </p>
+                    </div>
+                    {% if dailyactual.woID %}
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-map-marker-alt" aria-hidden="true"></i>
+                        <p class="mb-0 flex-grow-1 text-truncate" style="min-width:0">{{dailyactual.woID.JobAddress}}</p>
+                    </div>
+                    {% endif %}
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <span class="wc-inline-note wc-inline-note--muted">
+                            <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+                            {% for sup in superV %}{% if sup.employeeID|slugify == dailyactual.supervisor %} {{sup.first_name}} {{sup.last_name}}{% endif %}{% endfor %}{% if not dailyactual.supervisor or dailyactual.supervisor == "0" %} No Supervisor{% endif %}
+                        </span>
+                        <span class="wc-inline-note wc-inline-note--muted">
+                            <i class="fa-solid fa-dollar-sign" aria-hidden="true"></i>{% if dailyactual.split_paymet %} Split{% else %} NO Split{% endif %}
+                            {% if dailyactual.own_vehicle > 0 %}<i class="fa-solid fa-car ms-2" aria-hidden="true"></i> {{dailyactual.own_vehicle}}%{% endif %}
+                        </span>
+                    </div>
+                </div>
                 {% endif %}
               </div>
           </div>

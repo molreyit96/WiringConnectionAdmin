@@ -219,10 +219,25 @@
         if (!d.hasWO) blockers.push('Select a Work Order.');
         if (!d.hasSup) blockers.push('Select a Supervisor.');
         if (!d.hasEmp) blockers.push('Add at least one employee.');
-        if (!d.hasItem) blockers.push('Add at least one item.');
         if (d.hasEmp && d.hasItem && d.totalPay !== 100) blockers.push('Total % to Pay must equal 100.');
-        if (d.hasWO && d.woCount > 0) blockers.push('This WO is already used in another Daily today.');
         return blockers;
+    }
+
+    function runSendWarnings() {
+        var d = window.wcPrecheck;
+        if (!d) return [];
+        var warnings = [];
+        if (!d.hasItem) warnings.push('You have not selected any Items.');
+        if (d.hasWO && d.woCount > 0) warnings.push('This WO is already used in another Daily today.');
+        return warnings;
+    }
+
+    function doSend() {
+        if (window.wcConfirm && window.send_payroll) {
+            window.wcConfirm('Are you sure you want to send this daily for approval?', function () {
+                window.send_payroll(window.wcPrecheck.dailyId, window.wcPrecheck.locId, 1);
+            });
+        }
     }
 
     function handleSend() {
@@ -232,11 +247,14 @@
             showSendValid(blockers);
             return;
         }
-        if (window.wcConfirm && window.send_payroll) {
-            window.wcConfirm('Are you sure you want to send this daily for approval?', function () {
-                window.send_payroll(window.wcPrecheck.dailyId, window.wcPrecheck.locId, 1);
+        var warnings = runSendWarnings();
+        if (warnings.length && window.wcConfirm) {
+            window.wcConfirm(warnings.join(' '), function () {
+                doSend();
             });
+            return;
         }
+        doSend();
     }
 
     function initActionsSheet() {
@@ -296,12 +314,44 @@
         }
     }
 
+    /* ---- Work Order Info card collapse/expand ---- */
+    var woCard = null;
+    var woDetails = null;
+    var woResume = null;
+    var woToggle = null;
+    var woToggleIcon = null;
+
+    function applyWoCardState(collapsed) {
+        if (!woCard) return;
+        woCard.classList.toggle('wc-wo-card--collapsed', collapsed);
+        if (woDetails) woDetails.setAttribute('hidden', collapsed ? '' : 'hidden');
+        if (woResume) woResume.setAttribute('hidden', collapsed ? 'hidden' : '');
+        if (woToggle) woToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        if (woToggleIcon) woToggleIcon.className = collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+    }
+
+    function initWoCard() {
+        woCard = document.getElementById('wcWoCard');
+        woDetails = document.getElementById('wcWoDetails');
+        woResume = document.getElementById('wcWoResume');
+        woToggle = document.getElementById('wcWoToggle');
+        woToggleIcon = document.getElementById('wcWoToggleIcon');
+        if (!woCard || !woDetails) return;
+        if (woToggle) {
+            woToggle.addEventListener('click', function () {
+                applyWoCardState(!woCard.classList.contains('wc-wo-card--collapsed'));
+            });
+        }
+        applyWoCardState(woCard.classList.contains('wc-wo-card--collapsed'));
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initTabs();
         initDocSubs();
         initSwipe();
         initScrollElevation();
         initActionsSheet();
+        initWoCard();
         updateReadyChip();
     });
 })();

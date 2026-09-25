@@ -270,7 +270,7 @@ a {
     margin-top: 62px;
     background: var(--wc-surface);
     border-bottom: 1px solid var(--wc-border);
-    padding: .35rem .75rem .45rem;
+    padding: .45rem .75rem .55rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     transition: box-shadow 0.2s ease;
 }
@@ -295,12 +295,18 @@ a {
     min-width: 0;
 }
 .wc-actions-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: .5rem;
+    padding: .3rem 0;
+    border-top: 1px dashed var(--wc-border);
+}
+.wc-actions-mid {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    height: 44px;
-    border-top: 1px dashed var(--wc-border);
+    justify-content: center;
+    min-width: 0;
 }
 .wc-status-chip {
     display: inline-flex;
@@ -449,6 +455,7 @@ body.wc-sheet-open {
     align-items: center;
     gap: .5rem;
     height: 46px;
+    margin-bottom: 2px;
 }
 .wc-icon-btn {
     width: 44px;
@@ -462,6 +469,21 @@ body.wc-sheet-open {
     font-weight: 700;
     color: var(--wc-ink);
     white-space: nowrap;
+}
+.wc-day-loc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    max-width: 180px;
+    padding: .15rem .6rem;
+    border-radius: 999px;
+    background: var(--wc-surface-2);
+    border: 1px solid var(--wc-border);
+    color: var(--wc-accent);
+    font-size: .78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .wc-add-crew-pill {
     background: transparent;
@@ -512,7 +534,7 @@ body.wc-sheet-open {
 /* ---- Crew screen: section tabs ---- */
 .wc-tab-row {
     position: sticky;
-    top: 210px;
+    top: 224px;
     z-index: 1027;
     display: flex;
     gap: .35rem;
@@ -553,6 +575,34 @@ body.wc-sheet-open {
 }
 .wc-tab-panel.is-visible {
     animation: wc-fadein .15s ease;
+}
+
+/* ---- Work Order Info card ---- */
+.wc-wo-toggle {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.wc-wo-edit {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 10px;
+}
+.wc-wo-resume {
+    border-top: 1px dashed var(--wc-border);
+    padding-top: .6rem;
+    margin-top: .4rem;
+    font-size: .88rem;
+    color: var(--wc-ink-2);
+}
+.wc-wo-resume i {
+    color: var(--wc-accent);
 }
 
 /* ---- Review note (rejection / deletion / approval) ---- */
