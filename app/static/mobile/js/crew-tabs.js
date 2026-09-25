@@ -289,10 +289,10 @@
         var blockers = runSendPrecheck();
         if (blockers.length) {
             chip.className = 'wc-status-chip wc-status-chip--warn';
-            text.textContent = 'Not ready';
+            text.textContent = 'Draft · Not ready';
         } else {
             chip.className = 'wc-status-chip wc-status-chip--ok';
-            text.textContent = 'Ready to send';
+            text.textContent = 'Draft · Ready to send';
         }
     }
 

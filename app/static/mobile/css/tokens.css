@@ -554,10 +554,43 @@ body.wc-sheet-open {
 .wc-tab-panel.is-visible {
     animation: wc-fadein .15s ease;
 }
-.wc-status-banner {
-    margin-bottom: 0;
+
+/* ---- Review note (rejection / deletion / approval) ---- */
+.wc-review-note {
+    padding: .6rem .8rem;
     border-radius: .75rem;
-    font-size: .9rem;
+    border: 1px solid var(--wc-border);
+    background: var(--wc-surface-2);
+    font-size: .88rem;
+    line-height: 1.5;
+}
+.wc-review-note-title {
+    margin: 0 0 .15rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+.wc-review-note-text {
+    color: var(--wc-ink-2);
+}
+.wc-review-note--danger {
+    border-color: var(--wc-danger);
+    color: var(--wc-danger);
+}
+.wc-review-note--danger .wc-review-note-text {
+    color: var(--wc-danger);
+}
+.wc-review-note--muted {
+    border-color: var(--wc-border);
+    color: var(--wc-ink-2);
+}
+.wc-review-note--ok {
+    border-color: var(--wc-ok);
+    color: var(--wc-ok);
+}
+.wc-review-note--ok .wc-review-note-text {
+    color: var(--wc-ok);
 }
 
 @keyframes wc-fadein {
