@@ -102,16 +102,23 @@ body {
 
 /* ---- Filled button in the card-title (header) palette ---- */
 .wc-btn-header {
-    background-color: var(--wc-header);
-    border-color: var(--wc-header-bar);
-    color: var(--wc-header-ink);
+    background-color: var(--wc-header) !important;
+    border-color: var(--wc-header-bar) !important;
+    color: var(--wc-header-ink) !important;
 }
 .wc-btn-header:hover,
 .wc-btn-header:focus,
 .wc-btn-header:active {
-    background-color: var(--wc-header-ink);
-    border-color: var(--wc-header-ink);
-    color: var(--wc-header);
+    background-color: var(--wc-header-ink) !important;
+    border-color: var(--wc-header-ink) !important;
+    color: var(--wc-header) !important;
+}
+.wc-btn-header:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    background-color: var(--wc-ink-2) !important;
+    border-color: var(--wc-ink-2) !important;
+    color: #ffffff !important;
 }
 
 .badge.bg-success {
