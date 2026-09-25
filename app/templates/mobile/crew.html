@@ -371,9 +371,45 @@
         <div class="col-sm-12">
           <div class="card">
               <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Work Order Info. - {{selectedLoca}}</h4>
+                <h4 class="mb-0">Work Order Info. - {{selectedLoca}}
+                    {% if dailyactual %}
+                        {% if dailyactual.Status == 1 %}
+                            <span class="badge bg-secondary text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                        {% elif dailyactual.Status == 2 %}
+                            <span class="badge bg-info text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                        {% elif dailyactual.Status == 3 %}
+                            <span class="badge bg-warning text-dark align-content-center"> {{dailyactual.get_Status_display}} </span>
+                        {% elif dailyactual.Status == 4 %}
+                            <span class="badge bg-success text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                        {% elif dailyactual.Status == 5 %}
+                            <span class="badge bg-danger text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                        {% elif dailyactual.Status == 6 %}
+                            <span class="badge wc-badge-deleted text-white align-content-center"> {{dailyactual.get_Status_display}} </span>
+                        {% endif %}
+                    {% endif %}
+                </h4>
               </div>
               <div class="card-body">
+                {% if dailyactual.Status == 5 %}
+                    <div class="wc-review-note wc-review-note--danger mb-3">
+                        <p class="wc-review-note-title"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Rejected{% if dailyactual.rejected_by %} by {{ dailyactual.rejected_by }} — {{ dailyactual.rejected_date|date:"M j, Y g:i A" }}{% endif %}</p>
+                        <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
+                    </div>
+                {% elif dailyactual.Status == 6 %}
+                    <div class="wc-review-note wc-review-note--muted mb-3">
+                        <p class="wc-review-note-title"><i class="fa-solid fa-ban" aria-hidden="true"></i> Deleted{% if dailyactual.deleted_by %} by {{ dailyactual.deleted_by }} — {{ dailyactual.deleted_date|date:"M j, Y g:i A" }}{% endif %}</p>
+                        {% if dailyactual.comments %}
+                        <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
+                        {% endif %}
+                    </div>
+                {% elif dailyactual.Status == 4 %}
+                    <div class="wc-review-note wc-review-note--ok mb-3">
+                        <p class="wc-review-note-title"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Approved{% if dailyactual.approved_by %} by {{ dailyactual.approved_by }} — {{ dailyactual.approved_date|date:"M j, Y g:i A" }}{% endif %}</p>
+                        {% if dailyactual.comments %}
+                        <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
                 <!--Work Address-->
                 <div class="d-flex justify-content-left align-items-center">
                     <i class="fas fa-briefcase mr-2" style="padding-bottom: 15px;"></i>
@@ -461,26 +497,6 @@
         </div>
 
         {% if dailyactual %}
-
-        <!-- Review note (rejection / deletion / approval) -->
-        {% if dailyactual.Status == 5 %}
-            <div class="wc-review-note wc-review-note--danger mt-3">
-                <p class="wc-review-note-title"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Rejected{% if dailyactual.rejected_by %} by {{ dailyactual.rejected_by }} — {{ dailyactual.rejected_date|date:"M j, Y g:i A" }}{% endif %}</p>
-                <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
-            </div>
-        {% elif dailyactual.Status == 6 %}
-            <div class="wc-review-note wc-review-note--muted mt-3">
-                <p class="wc-review-note-title"><i class="fa-solid fa-ban" aria-hidden="true"></i> Deleted{% if dailyactual.deleted_by %} by {{ dailyactual.deleted_by }} — {{ dailyactual.deleted_date|date:"M j, Y g:i A" }}{% endif %}</p>
-                {% if dailyactual.comments %}
-                <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
-                {% endif %}
-            </div>
-        {% elif dailyactual.Status == 4 and dailyactual.comments %}
-            <div class="wc-review-note wc-review-note--ok mt-3">
-                <p class="wc-review-note-title"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Approved by {{ dailyactual.approved_by }} — {{ dailyactual.approved_date|date:"M j, Y g:i A" }}</p>
-                <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
-            </div>
-        {% endif %}
 
         <!-- Employees panel -->
         <div class="row mt-3 wc-tab-panel {% if section == 'employees' %}is-visible{% endif %}" id="panel-employees" role="tabpanel" aria-labelledby="tab-employees" {% if section != 'employees' %}hidden{% endif %}>
