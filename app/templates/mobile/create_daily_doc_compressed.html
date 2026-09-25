@@ -480,22 +480,22 @@
                 
                 <!-- Upload Controls -->
                 <div class="upload-controls">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('id_files').click()">
+                    <button type="button" class="btn btn-outline-secondary tap-target" onclick="document.getElementById('id_files').click()">
                         📎 Select
                     </button>
-                    <button type="button" class="btn btn-primary" id="uploadBtn">
+                    <button type="button" class="btn btn-primary tap-target" id="uploadBtn">
                         📤 Upload All
                     </button>
-                    <button type="button" class="btn btn-warning btn-sm" id="pauseBtn" style="display:none;">
+                    <button type="button" class="btn btn-warning tap-target" id="pauseBtn" style="display:none;">
                         ⏸ Pause
                     </button>
-                    <button type="button" class="btn btn-danger btn-sm" id="cancelBtn" style="display:none;">
+                    <button type="button" class="btn btn-danger tap-target" id="cancelBtn" style="display:none;">
                         ❌ Cancel
                     </button>
-                    <button type="button" class="btn btn-success btn-sm" id="retryBtn" style="display:none;">
+                    <button type="button" class="btn btn-success tap-target" id="retryBtn" style="display:none;">
                         🔄 Retry
                     </button>
-                    <a type="button" class="btn btn-danger btn-sm" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}">
+                    <a type="button" class="btn btn-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}">
                         ✕ Close
                     </a>
                 </div>
@@ -549,13 +549,26 @@
                  CLOSE BUTTON (Bottom - Fallback)
             ========================================== -->
             <div class="d-flex justify-content-center mt-3 mb-3">
-                <a type="button" class="btn btn-outline-danger btn-sm" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}">
+                <a type="button" class="btn btn-outline-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}">
                     ✕ Close & Return
                 </a>
             </div>
             
         </div>    
     </form>
+</div>
+
+<!-- ==========================================
+     CONFIRM DIALOG (non-Bootstrap)
+========================================== -->
+<div id="wcConfirmOverlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.4);">
+    <div style="position:absolute; left:0; right:0; bottom:0; padding:20px 16px calc(16px + env(safe-area-inset-bottom)); background:var(--wc-card, #fff); border-radius:16px 16px 0 0;">
+        <p id="wcConfirmMsg" style="margin:0 0 16px; font-size:1rem; text-align:center; color:var(--wc-text, #1E2530);"></p>
+        <div class="d-flex gap-2">
+            <button type="button" data-wcno class="btn btn-outline-secondary btn-lg flex-grow-1">Cancel</button>
+            <button type="button" data-wcyes class="btn btn-danger btn-lg flex-grow-1">Confirm</button>
+        </div>
+    </div>
 </div>
 
 <!-- ==========================================
@@ -1149,7 +1162,7 @@ class UploadManager {
     }
     
     cancelUpload() {
-        if (confirm('Are you sure you want to cancel the upload?')) {
+        wcConfirm('Are you sure you want to cancel the upload?', () => {
             this.cancelled = true;
             this.uploading = false;
             this.paused = false;
@@ -1166,7 +1179,7 @@ class UploadManager {
             this.progressBar.className = 'progress-bar bg-danger';
             
             this.fabUploadBtn.classList.add('show');
-        }
+        });
     }
     
     async retryFailed() {
@@ -1232,6 +1245,24 @@ function initUploadManager() {
         };
         console.log('🚀 Upload Manager initialized (fallback)');
     }
+}
+
+function wcConfirm(message, callback) {
+    const overlay = document.getElementById('wcConfirmOverlay');
+    document.getElementById('wcConfirmMsg').textContent = message;
+    overlay.style.display = 'block';
+    overlay.querySelector('[data-wcyes]').onclick = null;
+    overlay.querySelector('[data-wcno]').onclick = null;
+    overlay.querySelector('[data-wcyes]').onclick = function () {
+        overlay.style.display = 'none';
+        if (callback) callback();
+    };
+    overlay.querySelector('[data-wcno]').onclick = function () {
+        overlay.style.display = 'none';
+    };
+    overlay.onclick = function (e) {
+        if (e.target === overlay) overlay.style.display = 'none';
+    };
 }
 </script>
 {% endblock %}

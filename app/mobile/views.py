@@ -84,21 +84,32 @@ def mobile_home(request, LocID):
     rejectedDailysLocation = DailyMob.objects.filter(Status=5, created_by=request.user.username, Period=per, Location=loca ).order_by('-rejected_date')
     locationListRejected = DailyMob.objects.filter(Status=5, created_by=request.user.username, Period=per ).values_list('Location__name', flat=True).distinct()
 
+    rejectedCountByLocation = {}
+    for row in rejectedDailys.values('Location_id'):
+        lid = row['Location_id']
+        rejectedCountByLocation[lid] = rejectedCountByLocation.get(lid, 0) + 1
+
     context ={}
     context["period"] = per    
     context["emp"]= emp
     context["rejectedDailys"] = rejectedDailysLocation
     context["totalRejected"] = rejectedDailys.count()
     context["locationListRejected"] =  ", ".join(locationListRejected)
+    context["selectedLocationName"] = loca.name if loca else emp.Location.name if emp.Location else ""
     
 
     locaList = catalogModel.employeeLocation.objects.filter(employeeID = emp)
                 
     locationList = []
-    locationList.append({'LocationID': emp.Location.LocationID, 'name':emp.Location.name })
+    seenLocations = set()
+    if emp.Location:
+        locationList.append({'LocationID': emp.Location.LocationID, 'name':emp.Location.name, 'rejectedCount': rejectedCountByLocation.get(emp.Location.LocationID, 0) })
+        seenLocations.add(emp.Location.LocationID)
     
     for i in locaList:
-        locationList.append({'LocationID': i.LocationID.LocationID, 'name': i.LocationID.name} )
+        if i.LocationID and i.LocationID.LocationID not in seenLocations:
+            locationList.append({'LocationID': i.LocationID.LocationID, 'name': i.LocationID.name, 'rejectedCount': rejectedCountByLocation.get(i.LocationID.LocationID, 0)} )
+            seenLocations.add(i.LocationID.LocationID)
 
     context["locationList"] = locationList
 
@@ -223,7 +234,7 @@ def mobile_home(request, LocID):
         day = fullDate.strftime("%d")
 
         #obtengo la cantidad de Items asociados
-        dItems = DailyMob.objects.filter(Period = per, Location = loca, day = fullDate)
+        dItems = DailyMob.objects.filter(Period = per, Location = loca, day = fullDate, created_by = user)
         totalItems = 0
         type ="primary"
         
@@ -299,6 +310,7 @@ def crew(request, perID, dID, crewID, LocID):
     loca = catalogModel.Locations.objects.filter(LocationID = LocID).first()
 
     twTitle = ''
+    selectedDateRaw = None
 
 
     #Validate if the Location receiver is valid for the current user
@@ -389,6 +401,7 @@ def crew(request, perID, dID, crewID, LocID):
         if dID == day:
             selectedDay = True
             selectedDate = fullDate
+            selectedDateRaw = fullDate
             twTitle +=  fullDate.strftime("%A").upper() + ', ' + fullDate.strftime("%B %d, %Y").upper()
         
         
@@ -526,6 +539,15 @@ def crew(request, perID, dID, crewID, LocID):
     context["week1"] = week1
     context["message"] = message
     context["selectedDate"] = twTitle
+    context["selectedDateRaw"] = selectedDateRaw
+    dayRel = ""
+    if selectedDateRaw:
+        sd = selectedDateRaw.date() if hasattr(selectedDateRaw, 'date') else selectedDateRaw
+        if sd == today:
+            dayRel = "Today"
+        elif sd == yesterday:
+            dayRel = "Yesterday"
+    context["dayRel"] = dayRel
     context["superV"] = superV
     context["selectedCrew"] = int(crewID)
     context["selectedDay"] = int(dID)

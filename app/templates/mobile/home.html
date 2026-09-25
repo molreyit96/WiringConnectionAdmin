@@ -4,210 +4,353 @@
 {% load humanize %}
 {% block container %}
 
-<script>
-    function change_location(sel) {
-        var location = sel.options[sel.selectedIndex].value;
-        console.log(location);
-        var url = "/mobile/home/" + location;
-        window.location.href = url; 
-        
-    }   
-</script>
+<style>
+    /* ---- Location picker chips ---- */
+    .loc-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .55rem .9rem;
+        border-radius: 2rem;
+        border: 1px solid var(--wc-border);
+        background: var(--wc-surface);
+        color: var(--wc-ink);
+        font-size: .9rem;
+        font-weight: 500;
+        text-decoration: none;
+        min-height: 44px;
+        max-width: 100%;
+    }
+    .loc-chip .loc-chip-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 12rem;
+    }
+    .loc-chip--on {
+        background: var(--wc-accent);
+        border-color: var(--wc-accent);
+        color: var(--wc-on-accent);
+    }
 
-<div class="container">
+    /* ---- Period info tiles ---- */
+    .info-tile {
+        background: var(--wc-wash);
+        border: 1px solid var(--wc-border);
+        border-radius: .8rem;
+        padding: .6rem .5rem;
+    }
+    .info-tile span {
+        display: block;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+        color: var(--wc-ink-2);
+    }
+    .info-tile strong {
+        font-size: 1rem;
+        color: var(--wc-ink);
+    }
+
+    /* ---- Week segmented strip ---- */
+    .day-strip {
+        display: flex;
+        overflow-x: auto;
+        gap: .6rem;
+        padding: 1.1rem .6rem .85rem;
+        -webkit-overflow-scrolling: touch;
+    }
+    .day-pill {
+        position: relative;
+        flex: 0 0 auto;
+        min-width: 5.5em;
+        min-height: 3.5em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .1rem;
+        padding: .55rem .6rem;
+        border-radius: .9rem;
+        border: 1px solid var(--wc-border);
+        background: var(--wc-surface);
+        text-align: center;
+        text-decoration: none;
+        color: var(--wc-ink);
+    }
+    .day-pill .day-short {
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+    /* Read-only (inactive) days: dashed + eye icon - still tappable */
+    .day-pill--view {
+        border-style: dashed;
+        background: var(--wc-surface-2);
+        color: var(--wc-ink-2);
+    }
+    .day-view-icon {
+        position: absolute;
+        top: .3rem;
+        left: .35rem;
+        font-size: .7rem;
+        opacity: .75;
+    }
+
+    .day-total {
+        position: absolute;
+        top: -0.5rem;
+        right: -0.5rem;
+        min-width: 1.6rem;
+        height: 1.4rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .72rem;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 0 .45rem;
+        background: var(--wc-ink-2);
+        color: #fff;
+        line-height: 1;
+        border: 2px solid var(--wc-surface);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+    }
+    .day-pill--selected {
+        background: var(--wc-accent);
+        border-color: var(--wc-accent);
+        color: var(--wc-on-accent);
+    }
+    .day-pill--selected .day-total {
+        background: var(--wc-on-accent);
+        color: var(--wc-accent);
+    }
+    .day-pill--enabled {
+        border-color: var(--wc-accent);
+        color: var(--wc-ink);
+    }
+    .day-pill--enabled .day-total {
+        background: var(--wc-ok);
+    }
+    .day-pill--danger {
+        border-color: var(--wc-danger);
+        color: var(--wc-danger);
+    }
+    .day-pill--danger .day-total {
+        background: var(--wc-danger);
+    }
+    .day-pill--muted {
+        opacity: .55;
+    }
+    .day-warn-icon {
+        position: absolute;
+        top: .3rem;
+        left: .35rem;
+        font-size: .7rem;
+        color: var(--wc-danger);
+    }
+
+    /* ---- Rejected rows ---- */
+    .rejected-row {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .6rem 0;
+        border-bottom: 1px solid var(--wc-border);
+    }
+    .loc-chip-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.4rem;
+        height: 1.25rem;
+        padding: 0 .35rem;
+        border-radius: 999px;
+        background: var(--wc-danger);
+        color: #fff;
+        font-size: .72rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .rejected-note {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--wc-danger);
+    }
+</style>
+
+<div class="container pb-5 mb-4">
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
-        {%if totalRejected > 0 or totalDeleted > 0%}
-            <div class="row mt-5 pt-3">             
-                <div class="col-sm-12">                                
-                    <div class="alert alert-danger" role="alert"> 
-                        {%if totalRejected > 0 %}
-                            <p>You  have {{totalRejected}} rejected dailies for {{locationListRejected}}</p>   
-                        {%elif totalDeleted > 0%}                                             
-                            <p>You  have {{totalDeleted}} deleted dailies</p>  
+
+        <div class="row pt-3" style="margin-top: 5.5rem;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            {% for loc in locationList %}
+                                {% if loc.LocationID|slugify == selectedLocation|slugify %}
+                                    <a class="loc-chip loc-chip--on" href="/mobile/home/{{loc.LocationID}}" title="{{loc.name}}">
+                                        <i class="fas fa-map-marker-alt"></i> <span class="loc-chip-label">{{loc.name}}</span>
+                                        {% if loc.rejectedCount %}<span class="loc-chip-badge">{{loc.rejectedCount}}</span>{% endif %}
+                                    </a>
+                                {% else %}
+                                    <a class="loc-chip" href="/mobile/home/{{loc.LocationID}}" title="{{loc.name}}">
+                                        <i class="fas fa-map-marker-alt"></i> <span class="loc-chip-label">{{loc.name}}</span>
+                                        {% if loc.rejectedCount %}<span class="loc-chip-badge">{{loc.rejectedCount}}</span>{% endif %}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <div class="row g-2 text-center">
+                            <div class="col-6">
+                                <div class="info-tile">
+                                    <span>Period</span>
+                                    <strong>
+                                        {% if period and period.periodID == -1 %}No Active Period{% else %}{{period.periodID}}{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-tile">
+                                    <span>Week</span>
+                                    <strong>
+                                        {% if period and period.periodID == -1 %}No Active Period{% else %}{{period.weekRange}}{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-tile">
+                                    <span>From</span>
+                                    <strong>{{period.fromDate|date:"m-d-Y"}}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-tile">
+                                    <span>To</span>
+                                    <strong>{{period.toDate|date:"m-d-Y"}}</strong>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="info-tile">
+                                    <span>Pay Date</span>
+                                    <strong>
+                                        {% if period and period.periodID == -1 %}No Active Period{% else %}{{period.payDate|date:"Y-m-d"}}{% endif %}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if message %}
+                            <div class="alert alert-warning py-2 mt-3 mb-0">{{message}}</div>
                         {% endif %}
-                    </div>                                                                    
+                    </div>
                 </div>
             </div>
-            <div class="row"> 
-        {% else %}
-            <div class="row mt-5 pt-3">
-        {%endif%}
-                
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body">
-                  {% comment %} <h5 class="card-title">Welcome {{emp.first_name}} {{emp.last_name}}</h5> {% endcomment %}
-                   <p class="card-text"></p>
-                   <ul class="list-unstyled">
-                        <li class="mb-2 d-flex justify-content-between">                                          
-                            <div>
-                                <i class="fas fa-map-marker-alt"></i> 
-                                
-                                <select name="location" id="location" onchange="change_location(this);">
-                                
-                                    {% for loc in locationList %}
-                                        {% if loc.LocationID|slugify == selectedLocation|slugify %}
-                                            <option value="{{loc.LocationID}}" selected>{{loc.name}}</option>
-                                        {% else %}
-                                            <option value="{{loc.LocationID}}">{{loc.name}}</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div><i class="fas fa-calendar-alt"></i> <strong>Period: </strong>
-                                {% if period and period.periodID == -1 %}
-                                    No Active Period
-                                {% else %}
-                                    {{ period.periodID }}
-                                {% endif %}
-                            </div>
-                            
-                            <div><i class="fas fa-calendar-week"></i> <strong>Week: </strong> 
-                                 {% if period and period.periodID == -1 %}
-                                    No Active Period
-                                {% else %}
-                                    {{period.weekRange}} 
-                                {% endif %}
-                            
-                            </div>
-                        </li> 
-
-                     <li class="mb-2 d-flex justify-content-between">                                          
-         
-                        
-                      </li>
-                
-                    <li class="mb-2 d-flex">
-                      <div style="margin-right: 25px;"><i class="fas fa-calendar-day"></i> <strong>From:</strong>  {{period.fromDate|date:"m-d-Y"}}</div>
-                      <div class="pl-3"><i class="fas fa-calendar-day"></i> <strong>To:</strong>  {{period.toDate|date:"m-d-Y"}}</div>
-                    </li>
-
-                    <li class="mb-2">
-                      <i class="fas fa-money-check-alt"></i> <strong>Pay Date:</strong> 
-                      {% if period and period.periodID == -1 %}
-                            No Active Period
-                      {% else %}
-                            {{period.payDate|date:"Y-m-d"}}
-                      {% endif %}  
-                    </li> 
-                  </ul>
-                </div>
-              </div>
-              {{message}}
-            </div>   
         </div>
 
-        <div class="col-sm-12">
-          <div class="card mt-3">
-              <h6 class="card-header card-header-wc">Week 1</h6>
-              <div class="card-body">
-                  <div class="row">
-                      <div class="col-sm-12">
-                          {% for item in week1 %}                                                                        
-                              {% if item.selected %}
-                                  <a class="btn btn-success position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
-                                      {{item.shortDate}}                                            
-                                  </a> 
-                              {% else %}
-                                  
+        <div class="col-12">
+            <div class="card mt-3">
+                <h6 class="card-header card-header-wc">Week 1</h6>
+                <div class="card-body">
+                    <div class="day-strip">
+                        {% for item in week1 %}
+                            {% if item.selected %}
+                                <a class="day-pill {% if item.type == 'danger' %}day-pill--danger{% else %}day-pill--selected{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                    {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% endif %}
+                                    <span class="day-short">{{item.shortDate}}</span>
+                                    {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
+                                </a>
+                            {% elif item.btn_enabled %}
+                                <a class="day-pill {% if item.type == 'danger' %}day-pill--danger{% else %}day-pill--enabled{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                    {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% endif %}
+                                    <span class="day-short">{{item.shortDate}}</span>
+                                    {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
+                                </a>
+                            {% else %}
+                                <a class="day-pill day-pill--view {% if item.type == 'danger' %}day-pill--danger{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                    {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% else %}<i class="fa-solid fa-eye day-view-icon"></i>{% endif %}
+                                    <span class="day-short">{{item.shortDate}}</span>
+                                    {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                                  {% if item.btn_enabled %}
-                                        <a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
-                                            {{item.shortDate}}
-                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
-                                            {{item.Total|intcomma}}                                            
-                                            </span>
-                                        </a>
-                                    {% else %}
-                                        <a class="btn btn-info position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
-                                            {{item.shortDate}}
-                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
-                                            {{item.Total|intcomma}}                                            
-                                            </span>
-                                        </a>
-                                    {% endif %}  
-                              {% endif %}                                       
-                          {% endfor %}  
-                          
-                          <input class="form-control" type="text" placeholder="day Selected" aria-label="day Selected" id="daySelected" style="display: none">                             
-                      </div>
-                  </div>                               
-              </div> 
-          </div>
-      </div>     
-      <div class="col-sm-12 pb-5 mb-3">
-          <div class="card mt-3 ">
-              <h6 class="card-header card-header-wc">Week 2</h6>
-              <div class="card-body">
-                  <div class="row">
-                      <div class="col-sm-12"> 
-                                                
-                            
+        <div class="col-12">
+            <div class="card mt-3">
+                <h6 class="card-header card-header-wc">Week 2</h6>
+                <div class="card-body">
+                    <div class="day-strip">
+                        {% for item in week2 %}
+                            {% if item.selected %}
+                                <a class="day-pill {% if item.type == 'danger' %}day-pill--danger{% else %}day-pill--selected{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                    {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% endif %}
+                                    <span class="day-short">{{item.shortDate}}</span>
+                                    {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
+                                </a>
+                            {% elif item.btn_enabled %}
+                                <a class="day-pill {% if item.type == 'danger' %}day-pill--danger{% else %}day-pill--enabled{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                    {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% endif %}
+                                    <span class="day-short">{{item.shortDate}}</span>
+                                    {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
+                                </a>
+                            {% else %}
+                                <a class="day-pill day-pill--view {% if item.type == 'danger' %}day-pill--danger{% endif %}" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}">
+                                    {% if item.type == 'danger' %}<i class="fa-solid fa-triangle-exclamation day-warn-icon"></i>{% else %}<i class="fa-solid fa-eye day-view-icon"></i>{% endif %}
+                                    <span class="day-short">{{item.shortDate}}</span>
+                                    {% if item.Total %}<span class="day-total">{{item.Total|intcomma}}</span>{% endif %}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                          {% for item in week2 %}                                 
-                              
-                              {% if item.selected %}
-                                  <a class="btn btn-success position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
-                                      {{item.shortDate}}                                            
-                                  </a> 
-                              {% else %}
-                                 
-
-                                    {% if item.btn_enabled %}
-                                        <a class="btn btn-{{item.type}} position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
-                                            {{item.shortDate}}
-                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
-                                            {{item.Total|intcomma}}                                            
-                                            </span>
-                                        </a>
-                                    {% else %}
-                                        <a class="btn btn-info position-relative px-2 mx-2 my-2" style="text-align:center !important; width: 5.5em;" href="/mobile/crew/{{item.actual_period.id}}/{{item.day}}/0/{{selectedLocation}}"> 
-                                            {{item.shortDate}}
-                                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:0.7rem;">
-                                            {{item.Total|intcomma}}                                            
-                                            </span>
-                                        </a>
-                                    {% endif %} 
-
-                                     
-
-
-                              {% endif %}                                       
-                          {% endfor %}  
-                      </div>
-                  </div>                   
-              </div> 
-          </div>
-      </div>      
-
-
-      <!-- Rejected Dailys    -->
-
-      <div class="col-sm-12 pb-5 mb-3">
-          <div class="card mt-3 ">
-              <h6 class="card-header card-header-wc">Rejected</h6>
-              <div class="card-body">
-                  <div class="row">
-                      <div class="col-sm-12">                                                       
-                          {% for item in rejectedDailys %}      
-                           <div class="d-flex justify-content-left align-items-bottom">
-                                <i class="fas fa-briefcase mr-2" style="padding-bottom: 15px;"></i> 
-                                <p id="address" name="address" style="margin-left: 10px; margin-bottom: 0;">
-                                    {{item.woID.prismID}} - {{item.woID.workOrderId}} - {{item.woID.PO}}<br>
-                                    <small><i class="far fa-calendar-alt"></i> {{item.day|date:"m-d-Y"}} &nbsp;|&nbsp; <i class="fas fa-map-marker-alt"></i> {{item.Location.name}} &nbsp;|&nbsp; <i class="fas fa-calendar-week"></i> Period: {{item.Period.periodID}}</small><br>
-                                    {% if item.comments %}<small><i class="fas fa-comment"></i> {{item.comments}}</small>{% endif %}
-                                </p>
-                                <a href="/mobile/crew/{{item.Period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{item.Location.LocationID}}"><i class="fa fa-pen-to-square" style="padding-bottom: 15px; color: green; padding-bottom: 15px; margin-left: 10px;"></i></a>                                                                  
+        {% if rejectedDailys %}
+            <!-- Rejected Dailys -->
+            <div class="col-12">
+                <div class="card mt-3">
+                    <h6 class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                        <span>Rejected</span>
+                        <span class="rejected-note">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            {{rejectedDailys|length}} rejected for {{selectedLocationName}}
+                        </span>
+                    </h6>
+                    <div class="card-body">
+                        {% for item in rejectedDailys %}
+                            <div class="rejected-row">
+                                <i class="fas fa-briefcase" style="color: var(--wc-danger);"></i>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{item.woID.prismID}} - {{item.woID.workOrderId}} - {{item.woID.PO}}</p>
+                                    <small class="text-muted" style="color: var(--wc-ink-2) !important;">
+                                        <i class="far fa-calendar-alt"></i> {{item.day|date:"m-d-Y"}} &nbsp;|&nbsp;
+                                        <i class="fas fa-map-marker-alt"></i> {{item.Location.name}} &nbsp;|&nbsp;
+                                        <i class="fas fa-calendar-week"></i> Period: {{item.Period.periodID}}
+                                    </small>
+                                    {% if item.comments %}
+                                        <br><small><i class="fas fa-comment" style="color: var(--wc-accent-2);"></i> {{item.comments}}</small>
+                                    {% endif %}
+                                </div>
+                                <a href="/mobile/crew/{{item.Period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{item.Location.LocationID}}" class="btn btn-outline-secondary btn-sm tap-target">
+                                    <i class="fa fa-pen-to-square"></i>
+                                </a>
                             </div>
-                          {% endfor %}                                       
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
-                      </div>
-                  </div>                   
-              </div> 
-          </div>
-      </div> 
-
-  </form>       
+    </form>
 </div>
 {% endblock %}

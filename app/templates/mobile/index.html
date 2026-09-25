@@ -127,6 +127,42 @@
 
   }
 
+    .wc-dashboard-panel {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 62px;
+      z-index: 1029;
+      background-color: var(--wc-bg);
+      overflow-y: auto;
+    }
+    .wc-dashboard-panel-inner {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .6rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .wc-dashboard-icon {
+      font-size: 2.5rem;
+      color: var(--wc-ink-2);
+    }
+    .wc-dashboard-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--wc-ink);
+      margin-bottom: 0;
+    }
+    .wc-dashboard-hint {
+      color: var(--wc-ink-2);
+      font-size: .9rem;
+      margin-bottom: 0;
+    }
+
   </style>
 
 </head>
@@ -137,14 +173,19 @@
     <div class="">
       <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top d-flex justify-content-between" id="mainNav">
         <div>
-          <a class="navbar-brand" href="#">
+          <a class="navbar-brand" href="/mobile/">
             <img src="{% static 'images/WC_logo.jpg' %}" width="100" height="35" class="d-inline-block align-top" alt="">
           </a>
         </div>
-        
 
         <div class="r-header">
-            <i class="icon ion-md-contact lead"></i> {{ user.username }}  -  {{ emp }}	
+          <div class="d-flex align-items-center">
+            <i class="icon ion-md-contact lead me-2"></i> <span>{{ user.username }} - {{ emp }}</span>
+            <button type="button" id="theme-toggle" class="btn btn-outline-secondary btn-sm ms-2 tap-target p-0" style="width: 32px; height: 32px;" aria-label="Toggle theme">
+              <i class="fa-solid fa-sun icon-theme-sun"></i>
+              <i class="fa-solid fa-moon icon-theme-moon" style="display: none;"></i>
+            </button>
+          </div>
         </div>
       </nav>
     </div>
@@ -153,14 +194,27 @@
     {% endblock %}
   </div>
 
+  <!-- Dashboard placeholder (frontend-only; content to be defined) -->
+  <div id="wc-dashboard-panel" class="wc-dashboard-panel" style="display: none;">
+    <div class="wc-dashboard-panel-inner">
+      <i class="fa-solid fa-chart-pie wc-dashboard-icon"></i>
+      <p class="wc-dashboard-title">Dashboard</p>
+      <p class="wc-dashboard-hint">Content to be defined in a future iteration.</p>
+    </div>
+  </div>
+
   <nav class="navbar navbar-expand-lg navbar-light footer-nav fixed-bottom">
-    <div class="container-fluid">
-      <a class="btn btn-link nav-link" type="button" href="/mobile/">
-        <i class="fa fa-home"></i>
+    <div class="container-fluid d-flex">
+      <a class="btn btn-link nav-link active tap-target" type="button" href="/mobile/">
+        <i class="fa fa-home"></i><span class="ms-1">Home</span>
       </a>
 
-      <a class="btn btn-link nav-link btn-exit" type="button" href="/logout/">
-        <i class="fa fa-sign-out-alt"></i>
+      <button type="button" class="btn btn-link nav-link tap-target" id="wc-dashboard-tab">
+        <i class="fa-solid fa-chart-pie"></i><span class="ms-1">Dashboard</span>
+      </button>
+
+      <a class="btn btn-link nav-link btn-exit tap-target" type="button" href="/logout/">
+        <i class="fa fa-sign-out-alt"></i><span class="ms-1">Exit</span>
       </a>
     </div>
   </nav>
@@ -187,8 +241,28 @@
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
     <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
   
+   <!-- Theme (dark/light) -->
+   <script src="{% static 'mobile/js/theme.js' %}"></script>
+
+   <!-- Dashboard tab (placeholder) -->
+   <script>
+     (function () {
+       var tab = document.getElementById('wc-dashboard-tab');
+       var panel = document.getElementById('wc-dashboard-panel');
+       if (!tab || !panel) return;
+       tab.addEventListener('click', function () {
+         var isOpen = panel.style.display !== 'none';
+         panel.style.display = isOpen ? 'none' : 'block';
+         tab.classList.toggle('active', !isOpen);
+       });
+     })();
+   </script>
+
+   {% block extra_js %}{% endblock %}
+
    <!-- Datatables Script -->
   <script>
+    if ($("#orders").length) {
     $("#orders").DataTable(
       {
       
@@ -208,8 +282,10 @@
           }
         }
       }
-    );  
+    );
+    }
 
+    if ($("#orders2").length) {
     $("#orders2").DataTable({
       
       "pagingType": "simple_numbers",
@@ -227,8 +303,8 @@
           "previous": "<"
         }
       }
+    });
     }
-  );  
   // Restrict search input to numbers only
   $('#orders2_filter input').on('keypress', function(event) {
     var charCode = event.which ? event.which : event.keyCode;
@@ -242,6 +318,3 @@
 </body>
 
 </html>
-
-
-

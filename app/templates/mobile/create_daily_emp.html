@@ -1,49 +1,34 @@
 {% extends 'mobile/index.html' %} 
 {%load static%}
-{% block title %} Order List {% endblock %} 
+{% block title %} Add Employee {% endblock %} 
 {% load humanize %}
 {% block container %}
 {% load widget_tweaks%}
 
 
-<div class="container">
+<div class="container pb-5 mb-4">
     
     <form method='post' enctype="multipart/form-data" id="daily_emp">
         {% csrf_token %}
 
-
-            <div class="row mt-5 pt-2" id="employees">
-                <div class="col-sm-12">                                     
-                    <table id="orders" class="table table-sm table-bordered table-striped">
-                        <thead class="table-primary">
-                            <tr>
-                                <th scope="col" style="width: 7%">EID</th>
-                                <th scope="col" style="width: 20%">Name</th>                                                  
-                                <th scope="col" style="width: 3%"></th>
-                            </tr>              
-                        </thead>
-                        <tbody>   
-                           
-                            {% for data in empList %}                                
-                                <tr>
-                                    <td>{{data.employeeID}}</td>
-                                    <td>{{data.first_name}} {{data.last_name}}</td>                                                                                                      
-                                    <td> <a href="#" onclick="selectEmp({{data.employeeID}},'{{data}}')"><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a></td>
-                                    <!--<td> <a href="/update_employee/{{data.employeeID}}"><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a></td>-->
-                                </tr>                                             
-                            {% endfor %}
-                        </tbody>                              
-                    </table>
-                    <div class="d-flex justify-content-center pt-2">               
-                        <a type="button" class="btn btn-danger" href="/mobile/crew/{{daily.Period.id}}/{{daily.day|date:'d'}}/{{daily.crew}}/{{selectedLocation}}">Close</a>     
+            <div class="row mx-0" id="employees">
+                <div class="col-12">
+                    <h6 class="mt-4 mb-3"><i class="fas fa-user-plus"></i> Select Employee</h6>
+                    <input type="search" id="empSearch" class="form-control form-control-lg mb-2" placeholder="Search by name or ID..." autocomplete="off">
+                    <div id="empResults" class="picker-list"></div>
+                    <div class="py-2">
+                        <a type="button" class="btn btn-danger" href="/mobile/crew/{{daily.Period.id}}/{{daily.day|date:'d'}}/{{daily.crew}}/{{selectedLocation}}">Close</a>
                     </div>
                 </div>
             </div>
+
             <script>
+                var EMP_DATA = [
+                    {% for d in empList %}{"id": {{d.employeeID}}, "text": "{{ d.first_name|escapejs }}, {{ d.last_name|escapejs }}"},{% endfor %}
+                ];
+
                 function selectEmp(emp, emp_name)
                 {
-                    console.log("Se Selecciono un Empleado" + emp);
-
                     var element = document.getElementById("employees");
                     element.style.display = "none";
 
@@ -55,22 +40,17 @@
 
                     var element3 = document.getElementById("EmployeeID");
                     element3.value = emp    
-                    
+
                     var element4 = document.getElementById("EmployeeName");
                     element4.value = emp_name    
-
-
-
                 }
-
-                $("#orders").DataTable();  
             </script>
+
             <div id="forma" style="display: none;" class="mt-4 pt-5">
                 <div class="row">                   
                     <div class="col-sm-12">
                         <div class="mb-3">
                             <label for="EmployeeName" class="form-label">Employee</label>
-                            <!--{% render_field form.EmployeeID class="form-control" id="selEmp"%}-->
                             <input type="text" name="EmployeeName" id="EmployeeName" class="form-control" disabled>
                             <div class="invalid-feedback">{{ form.EmployeeID.errors|first }}</div>                        
                             
@@ -113,7 +93,7 @@
                                 {% render_field form.start_time class="form-control" name="start_time" id="start_time" placeholder="E.g. 800" onchange='setTime()' %}
                                 <div class="invalid-feedback">{{ form.start_time.errors|first }}</div>
                             </div>                       
-                            <p id="start_time_text" class="my-5" style="color:darkblue">  </p>
+                            <p id="start_time_text" class="my-5" style="color:var(--wc-accent-2)">  </p>
                         </div>
                         
                     </div>
@@ -168,7 +148,7 @@
                                 <div class="invalid-feedback">{{ form.start_lunch_time.errors|first }}</div>
                             </div>
                        
-                            <p id="start_lunch_time_text" class="my-5" style="color:darkblue"> 
+                            <p id="start_lunch_time_text" class="my-5" style="color:var(--wc-accent-2)"> 
                             </p>
                         </div>
                     </div>
@@ -224,7 +204,7 @@
                                 <div class="invalid-feedback">{{ form.end_lunch_time.errors|first }}</div>
                             </div>
                         
-                            <p id="end_lunch_time_text" class="my-5" style="color:darkblue"> 
+                            <p id="end_lunch_time_text" class="my-5" style="color:var(--wc-accent-2)"> 
                             </p>
                         </div>
                     </div>
@@ -277,7 +257,7 @@
                                 <div class="invalid-feedback">{{ form.end_time.errors|first }}</div>
                             </div>
                     
-                            <p id="end_time_text" class="my-5" style="color:darkblue"> 
+                            <p id="end_time_text" class="my-5" style="color:var(--wc-accent-2)"> 
                             </p>
                         </div>
                     </div>
@@ -347,8 +327,20 @@
  
         
         
-   
+    
     </form>
 
 </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'mobile/js/picker.js' %}"></script>
+<script>
+    initSearchPicker({
+        inputEl: document.getElementById("empSearch"),
+        listEl: document.getElementById("empResults"),
+        data: EMP_DATA,
+        maxResults: 50,
+        onPick: function(item) { selectEmp(item.id, item.text); }
+    });
+</script>
 {% endblock %}

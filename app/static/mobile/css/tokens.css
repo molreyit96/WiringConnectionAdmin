@@ -1,46 +1,263 @@
+/* =========================================================
+   WC Mobile tokens — Palette A "Conductor"
+   Light (default) + Dark (data-theme="dark" on <html>)
+   ========================================================= */
+
 :root {
-    --wc-ink: #1f2937;
-    --wc-accent: #0e7490;
-    --wc-accent-dark: #155e75;
-    --wc-bg: #f8fafc;
-    --wc-ok: #16a34a;
-    --wc-danger: #dc2626;
-    --wc-header: var(--wc-accent);
-    --wc-header-ink: #ffffff;
+    --wc-bg: #eef2f5;
+    --wc-surface: #ffffff;
+    --wc-surface-2: #f6f8fa;
+    --wc-ink: #1e2530;
+    --wc-ink-2: #475466;
+    --wc-border: #d5dce3;
+
+    --wc-accent: #0b57a4;
+    --wc-accent-dark: #084a8f;
+    --wc-accent-2: #1a5fb0;
+
+    --wc-ok: #1e7a3c;
+    --wc-warn: #b25e00;
+    --wc-danger: #c63b30;
+
+    --wc-header: #e8eef7;
+    --wc-header-ink: #084a8f;
+    --wc-header-bar: var(--wc-accent);
+    --wc-on-accent: #ffffff;
+
+    --wc-wash: #eef3f9;
 }
 
+[data-theme="dark"] {
+    --wc-bg: #10151b;
+    --wc-surface: #1a222b;
+    --wc-surface-2: #202a34;
+    --wc-ink: #e8edf2;
+    --wc-ink-2: #a7b4c2;
+    --wc-border: #2c3742;
+
+    --wc-accent: #2dd4bf;
+    --wc-accent-dark: #14b8a6;
+    --wc-accent-2: #5eead4;
+
+    --wc-ok: #58c97b;
+    --wc-warn: #e0a35c;
+    --wc-danger: #e57368;
+
+    --wc-header: #0f2e2b;
+    --wc-header-ink: #5eead4;
+    --wc-header-bar: var(--wc-accent);
+    --wc-on-accent: #10151b;
+
+    --wc-wash: #142a27;
+}
+
+/* ---- App surface ---- */
+body {
+    background-color: var(--wc-bg) !important;
+    color: var(--wc-ink);
+}
+
+.card {
+    background-color: var(--wc-surface) !important;
+    color: var(--wc-ink);
+}
+
+/* ---- Primary / conductive actions ---- */
 .btn-primary {
-    background-color: var(--wc-accent);
-    border-color: var(--wc-accent);
+    background-color: var(--wc-accent) !important;
+    border-color: var(--wc-accent) !important;
+    color: var(--wc-on-accent) !important;
 }
 
 .btn-primary:hover,
 .btn-primary:focus,
-.btn-primary:active {
-    background-color: var(--wc-accent-dark);
-    border-color: var(--wc-accent-dark);
+.btn-primary:active,
+.btn-primary:not(:disabled):not(.disabled).active {
+    background-color: var(--wc-accent-dark) !important;
+    border-color: var(--wc-accent-dark) !important;
+    color: var(--wc-on-accent) !important;
 }
 
+/* ---- Status ---- */
+.btn-success {
+    background-color: var(--wc-ok) !important;
+    border-color: var(--wc-ok) !important;
+}
+
+.btn-danger {
+    background-color: var(--wc-danger) !important;
+    border-color: var(--wc-danger) !important;
+}
+
+.btn-outline-secondary {
+    border-color: var(--wc-ink-2) !important;
+    color: var(--wc-ink-2) !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    background-color: var(--wc-ink-2) !important;
+    color: #ffffff !important;
+}
+
+.badge.bg-success {
+    background-color: var(--wc-ok) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--wc-danger) !important;
+}
+
+/* ---- Links ---- */
+a {
+    color: var(--wc-accent-2);
+}
+
+/* ---- Form controls ---- */
+.form-control,
+.form-select {
+    background-color: var(--wc-surface) !important;
+    border-color: var(--wc-border) !important;
+    color: var(--wc-ink) !important;
+}
+
+.form-control::placeholder {
+    color: var(--wc-ink-2);
+    opacity: 0.8;
+}
+
+/* ---- Section headers (soft accent wash + left accent bar) ---- */
 .card-header-wc {
     background-color: var(--wc-header) !important;
     color: var(--wc-header-ink) !important;
+    border-bottom: 1px solid var(--wc-border) !important;
+    border-left: 4px solid var(--wc-header-bar);
 }
 
-/* Contraste de contenido DENTRO del header-ink: iconos/links en blanco (≥7:1) */
+/* Contraste de contenido DENTRO del header-wash: iconos/links usan tinta del header */
 .card-header-wc a,
 .card-header-wc a * {
     color: var(--wc-header-ink) !important;
 }
 
-/* Badges de estado dentro del header-ink: píldora clara (texto cian sobre blanco ≥5.3:1) */
+/* Badges de estado dentro del header-wash: píldora con tinta del header */
 .card-header-wc .badge {
-    background-color: rgba(255, 255, 255, 0.92) !important;
+    background-color: var(--wc-header-ink) !important;
     color: var(--wc-header) !important;
 }
 
-/* Botones dentro del header-ink: contorno claro con tinta blanca, sin desbordar el header */
+/* Botones dentro del header-wash: contorno con tinta del header */
 .card-header-wc .btn:not(.btn-light):not(.btn-outline-light) {
     color: var(--wc-header-ink) !important;
-    border-color: rgba(255, 255, 255, 0.55) !important;
+    border-color: currentColor !important;
     background-color: transparent !important;
+}
+
+/* ---- App chrome ---- */
+.navbar {
+    background-color: var(--wc-surface) !important;
+    color: var(--wc-ink) !important;
+}
+.navbar .r-header span,
+.navbar .r-header .ion-md-contact {
+    color: var(--wc-ink) !important;
+}
+.navbar .navbar-brand img {
+    border: 1px solid var(--wc-border);
+}
+
+.footer-nav {
+    background-color: var(--wc-surface) !important;
+    border-top: 1px solid var(--wc-border) !important;
+}
+
+.footer-nav .btn {
+    color: var(--wc-ink-2) !important;
+}
+
+.footer-nav .btn.active {
+    color: var(--wc-accent) !important;
+}
+
+.btn-exit {
+    color: var(--wc-danger) !important;
+}
+
+/* ---- Tap targets (app feel) ---- */
+.tap-target {
+    min-height: 48px;
+    min-width: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ---- Search-first picker ---- */
+.picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    max-height: 55vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: .25rem 0 .75rem;
+}
+
+.picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: .7rem .9rem;
+    border: 1px solid var(--wc-border);
+    border-radius: .9rem;
+    background: var(--wc-surface);
+    color: var(--wc-ink);
+    text-align: left;
+    font-size: .95rem;
+}
+
+.picker-row:active {
+    background: var(--wc-surface-2);
+}
+
+.picker-row[aria-disabled="true"] {
+    opacity: .5;
+}
+
+.picker-row .picker-name {
+    font-weight: 600;
+}
+
+.picker-row .picker-sub {
+    display: block;
+    font-size: .78rem;
+    color: var(--wc-ink-2);
+}
+
+.picker-empty,
+.picker-count {
+    color: var(--wc-ink-2);
+    text-align: center;
+    font-size: .85rem;
+    padding: .35rem 0;
+}
+
+/* ---- Sticky action bar (app pattern) ---- */
+.action-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 60px;
+    z-index: 1030;
+    display: flex;
+    gap: .6rem;
+    padding: .6rem 1rem;
+    background: var(--wc-surface);
+    border-top: 1px solid var(--wc-border);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.action-bar .btn {
+    min-height: 48px;
 }

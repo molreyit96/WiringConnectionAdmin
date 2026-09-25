@@ -26,10 +26,10 @@
                                 <tr>
                                     <td>{{order.prismID}}-{{order.workOrderId}}-{{order.PO}}</td>                                    
 
-                                    <td>
-                                        <a href="/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"><i class="fa-solid fa-circle-arrow-right" style="color: green;"></i></a>                                        
-                                        
-                                    </td>                                   
+<td width="35%">
+                                    <a class="btn btn-sm btn-outline-success tap-target" href="/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"><i class="fa-solid fa-circle-arrow-right"></i></a>                                        
+                                    
+                                </td>
                                 </tr>   
                         {% endfor %}
                     </tbody>                              
@@ -37,7 +37,7 @@
             </div>
         </div>
         <div class="d-flex justify-content-center mt-2 pt-2">         
-                <a type="button" class="btn btn-danger" href="/mobile/crew/{{period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}">Close</a>          
+                <a type="button" class="btn btn-danger btn-lg tap-target" href="/mobile/crew/{{period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}">Close</a>          
         </div>
     </form>
 </div>

@@ -234,13 +234,42 @@
     border-color: #6c757d;
 }
 
+    .crew-day-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--wc-ink);
+        line-height: 1.2;
+    }
+    .crew-day-rel {
+        display: inline-flex;
+        align-items: center;
+        padding: .15rem .6rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        background: var(--wc-accent);
+        color: var(--wc-on-accent);
+        white-space: nowrap;
+    }
+    .crew-day-year {
+        font-size: .95rem;
+        font-weight: 500;
+        color: var(--wc-ink-2);
+    }
+
 </style>
 
 <div class="container">
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="mt-5 pt-4 d-flex justify-content-center">
-            <h4>{{selectedDate}}</h4>
+        <div class="pt-4 text-center" style="margin-top: 5.5rem;">
+            <div class="d-flex align-items-center justify-content-center gap-2">
+                <h4 class="crew-day-title mb-0">{{selectedDateRaw|date:"l, F jS"}}</h4>
+                {% if dayRel %}<span class="crew-day-rel">{{dayRel}}</span>{% endif %}
+            </div>
+            <span class="crew-day-year">{{selectedDateRaw|date:"Y"}}</span>
         </div>
         <div class="d-flex justify-content-between">             
             <div>              
@@ -248,8 +277,8 @@
                 {% if selectedDay > 0 %}
                     {%if emp.is_superAdmin  or user.is_staff  or period.status == 1 or period.status == 0%}        
                             {% if AddCrew %}                  
-                                <a class="btn btn-success px-2" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}" style="height: 3em; margin-bottom: 0.5em;">
-                                    <i class="fa-solid fa-user-plus" style="height: 0.5em;"></i> 
+                                <a class="btn btn-success tap-target" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}" style="height: 3em; margin-bottom: 0.5em;">
+                                    <i class="fa-solid fa-user-plus"></i> Crew
                                 </a>    
                             {% endif %}                  
                     {%endif%}
@@ -257,20 +286,20 @@
 
                 {% for item in crew %}                         
                     {% if item.crew == selectedCrew %}
-                        <a class="btn btn-warning px-2" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em;"> <i class="fa-solid fa-users" style="height: 0.5em;"></i>  {{item.crew_by_user}}</a>
+                        <a class="btn btn-warning tap-target" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em;"> <i class="fa-solid fa-users"></i>  {{item.crew_by_user}}</a>
                     {%else%}
                         {% if item.Status == 5 or item.Status == 6%}
-                                <a class="btn btn-danger px-2" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em; color:white;"><i class="fa-solid fa-users" style="height: 0.5em;"></i>  {{item.crew_by_user}}</a>
+                                <a class="btn btn-danger tap-target" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em; color:white;"><i class="fa-solid fa-users"></i>  {{item.crew_by_user}}</a>
                         {%else%}
-                                <a class="btn btn-info px-2" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em;"><i class="fa-solid fa-users" style="height: 0.5em;"></i>  {{item.crew_by_user}}</a>
+                                <a class="btn btn-info tap-target" href="/mobile/crew/{{period.id}}/{{item.day|date:'d'}}/{{item.crew}}/{{selectedLocation}}" role="button" style="height: 3em; margin-bottom: 0.5em;"><i class="fa-solid fa-users"></i>  {{item.crew_by_user}}</a>
                         {%endif%} 
                     {%endif%} 
                 {%endfor%}                        
             </div>
 
             <div>
-                <a class="btn btn-danger px-2" href="/mobile/home/{{selectedLocation}}" style="height: 3em; margin-bottom: 0.5em;">
-                    <i class="fa-solid fa-circle-left" style="height: 0.5em;"></i> 
+                <a class="btn btn-danger tap-target" href="/mobile/home/{{selectedLocation}}" style="height: 3em; margin-bottom: 0.5em;">
+                    <i class="fa-solid fa-circle-left"></i> 
                 </a> 
             </div>
         </div>
@@ -294,7 +323,7 @@
 
                             {% if dailyUrl.pdfDaily %}
                                 <a href="{{ dailyUrl.pdfDaily.url }}" 
-                                class="btn btn-primary" 
+                                class="btn btn-primary tap-target" 
                                 download>
                                     <i class="fas fa-file-pdf"></i> Download
                                 </a>
@@ -303,7 +332,7 @@
                                 {% if AddCrew or item.Status == 5 %}
                                     {%if item.Status == 1 or item.Status == 5 %}
                                         {% if item.woID and item.supervisor and item.supervisor != "0" and dailyEmp %}
-                                            <a class="btn p-0" onclick="send_payroll({{item.id}},{{selectedLocation}},{{dailyItem|length}})"><i class="fa-solid fa-paper-plane fa-xl" style="color: green;"></i></a>
+                                            <a class="btn btn-success tap-target" onclick="send_payroll({{item.id}},{{selectedLocation}},{{dailyItem|length}})"><i class="fa-solid fa-paper-plane"></i> Send</a>
                                         {%endif%}
                                     {%endif%}
                                 {%endif%}
@@ -371,7 +400,7 @@
                                 {% if AddCrew  or item.Status == 5 %}                                
                                     {% if emp.is_superAdmin  or user.is_staff  or period.status == 1  or period.status == 0 %}    
                                         {%if item.Status == 1 or item.Status == 5%}                                                                
-                                            <a class="btn  pt-1" href="/mobile/update_supervisor/{{period.id}}/{{item.day|date:'d'}}/{{item.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass" style="color: blue;"></i></a>
+                                            <a class="btn btn-sm btn-outline-primary tap-target" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{item.day|date:'d'}}/{{item.id}}/{{selectedLocation}}" ><i class="fa-sharp fa-solid fa-magnifying-glass"></i> Change Supervisor</a>
                                         {%endif%}
                                     {%endif%}
                                 {%endif%}
@@ -424,7 +453,7 @@
                                     {% if item.supervisor and item.supervisor != "0" and item.woID %}
                                         {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
                                             {%if item.Status == 1 or item.Status == 5%}
-                                                <a href="/mobile/create_daily_emp/{{item.id}}/{{selectedLocation}}" ><i class="fa-solid fa-user-plus"></i></a>
+                                                <a href="/mobile/create_daily_emp/{{item.id}}/{{selectedLocation}}" class="btn btn-primary tap-target"><i class="fa-solid fa-user-plus"></i> Add</a>
                                             {%endif%}
                                         {%endif%}
                                     {% endif %}
@@ -487,7 +516,7 @@
                                     {% if item.supervisor and item.supervisor != "0" and item.woID %}
                                         {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
                                             {%if item.Status == 1 or item.Status == 5%}
-                                                <a href="/mobile/create_daily_item/{{item.id}}/{{selectedLocation}}"><i class="fa-solid fa-circle-plus"></i></a>
+                                                <a href="/mobile/create_daily_item/{{item.id}}/{{selectedLocation}}" class="btn btn-primary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                             {%endif%}
                                         {%endif%}
                                     {% endif %}
@@ -568,7 +597,7 @@
                                             {% if item.supervisor and item.supervisor != "0" and item.woID %}
                                                 {% if emp.is_superAdmin  or user.is_staff or period.status == 1 %}
                                                     {%if item.Status == 1 or item.Status == 5%}
-                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/1" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/1" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                                     {%endif%}
                                                 {%endif%}
                                             {% endif %}
@@ -620,7 +649,7 @@
                                             {% if item.supervisor and item.supervisor != "0" and item.woID %}
                                                 {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
                                                     {%if item.Status == 1 or item.Status == 5%}
-                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/2" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/2" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                                     {%endif%}
                                                 {%endif%}
                                             {% endif %}                                            
@@ -671,7 +700,7 @@
                                             {% if item.supervisor and item.supervisor != "0" and item.woID %}
                                                 {% if emp.is_superAdmin  or user.is_staff or period.status == 1  or period.status == 0 %}
                                                     {%if item.Status == 1 or item.Status == 5%}
-                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/3" class="pl-3"><i class="fa-solid fa-circle-plus"></i></a>
+                                                        <a href="/mobile/create_daily_docs_compressed/{{item.id}}/{{selectedLocation}}/3" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                                     {%endif%}
                                                 {%endif%}
                                             {% endif %}
@@ -755,10 +784,10 @@
                         {% if emp.is_superAdmin  or user.is_staff  or period.status == 1  or period.status == 0 %}
                             {%if item.Status == 1 or item.Status == 5 %}                                                                
                                 <div class="d-flex justify-content-center mt-3 mb-5 pb-5">
-                                    <a class="btn btn-danger"
+                                    <a class="btn btn-danger tap-target px-4"
                                     data-bs-toggle="tooltip" data-bs-placement="top"                                  
                                     onclick="delete_daily({{item.id}},{{selectedLocation}})" >
-                                        <i class="fa-solid fa-trash-can"></i></a>
+                                        <i class="fa-solid fa-trash-can"></i> Delete Daily</a>
                                 </div>   
                                 {% comment %} <a class="btn btn-danger px-2" hx-get="/delete_daily/{{item.id}}/{{selectedLocation}}" hx-target="#dialog"><i class="fa-solid fa-trash-can"></i></a> {% endcomment %}
                             {%endif%}
@@ -767,6 +796,21 @@
                 {%endif%}
             {%endfor%}
         {%endif%}   
+
+        <!-- WC Confirm Modal (bottom-sheet style) -->
+        <div class="modal fade" id="wcConfirmModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body pt-4 pb-0">
+                        <p id="wcConfirmMsg" class="text-center mb-4" style="font-size: 1rem;">Are you sure?</p>
+                        <div class="d-flex gap-2 pb-2">
+                            <button type="button" class="btn btn-outline-secondary btn-lg flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger btn-lg flex-grow-1" id="wcConfirmOk">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Preview Modal -->
             <div class="modal fade preview-modal" id="previewModal" tabindex="-1" aria-hidden="true">
@@ -833,25 +877,24 @@
                         alert('There is no comment to clear.');
                         return;
                     }
-                    if (!confirm('Are you sure you want to remove this comment?')) {
-                        return;
-                    }
-                    $('#comment').val('').trigger('input');
-                    $.ajax({
-                        url: '/mobile/save_daily_comment/{{ dailyactual.id }}',
-                        type: 'POST',
-                        data: {
-                            comment: '',
-                            csrfmiddlewaretoken: '{{ csrf_token }}'
-                        },
-                        success: function(response) {
-                            alert('Comment cleared.');
-                            initialComment = '';
-                            updateButtonState();
-                        },
-                        error: function(xhr) {
-                            alert('Error clearing comment.');
-                        }
+                    wcConfirm('Are you sure you want to remove this comment?', function () {
+                        $('#comment').val('').trigger('input');
+                        $.ajax({
+                            url: '/mobile/save_daily_comment/{{ dailyactual.id }}',
+                            type: 'POST',
+                            data: {
+                                comment: '',
+                                csrfmiddlewaretoken: '{{ csrf_token }}'
+                            },
+                            success: function(response) {
+                                alert('Comment cleared.');
+                                initialComment = '';
+                                updateButtonState();
+                            },
+                            error: function(xhr) {
+                                alert('Error clearing comment.');
+                            }
+                        });
                     });
                 });
 
@@ -1042,59 +1085,63 @@
         }
         
         
+        // Reusable confirmation (bottom-sheet)
+        var wcConfirmModal = null;
+        var wcConfirmCallback = null;
+        function wcConfirm(message, callback) {
+            if (!wcConfirmModal) {
+                wcConfirmModal = new bootstrap.Modal(document.getElementById('wcConfirmModal'));
+            }
+            document.getElementById('wcConfirmMsg').textContent = message;
+            wcConfirmCallback = callback;
+            wcConfirmModal.show();
+        }
+        document.getElementById('wcConfirmOk').addEventListener('click', function () {
+            wcConfirmModal.hide();
+            if (wcConfirmCallback) wcConfirmCallback();
+            wcConfirmCallback = null;
+        });
+
         function delete_daily(id, selectedLocation){
             event.preventDefault();
-            if (confirm(`Are you sure to remove this Daily?`))
-            {           
+            wcConfirm('Are you sure to remove this Daily?', function () {
                 window.location.href = `/mobile/delete_daily/${id}/${selectedLocation}`;
-        
-                
-            }  
+            });
         };
         
         
         function delete_daily_emp(id, selectedLocation){
             event.preventDefault();
-            if (confirm(`Are you sure to remove this Employee?`))
-            {           
+            wcConfirm('Are you sure to remove this Employee?', function () {
                 window.location.href = `/mobile/delete_daily_emp/${id}/${selectedLocation}`;
-        
-                
-            }  
+            });
         };
         
         function delete_daily_item(id, selectedLocation){
             event.preventDefault();
-            if (confirm(`Are you sure to remove this Item?`))
-            {           
+            wcConfirm('Are you sure to remove this Item?', function () {
                 window.location.href = `/mobile/delete_daily_item/${id}/${selectedLocation}`;
-        
-                
-            }  
+            });
         };
         
         function delete_daily_docs(id, selectedLocation){
             event.preventDefault();
-            if (confirm(`Are you sure to remove this attachment?`))
-            {           
+            wcConfirm('Are you sure to remove this attachment?', function () {
                 window.location.href = `/mobile/delete_daily_docs/${id}/${selectedLocation}`;
-        
-                
-            }  
+            });
         };
         
         function send_payroll(id, selectedLocation, dailyItem){
             event.preventDefault();
-            if (dailyItem==0)
+            if (dailyItem==0){
                 alert(`There are no items in this daily`);
-
-            if (confirm(`Are you sure you want to send this daily for approval?`))
-            {           
+                return;
+            }
+            wcConfirm('Are you sure you want to send this daily for approval?', function () {
                 console.log(id);
                 console.log(selectedLocation);
                 window.location.href = `/mobile/send_payroll/${id}/${selectedLocation}`;
-            
-            }  
+            });
         };
 
         
