@@ -317,7 +317,6 @@
     /* ---- Work Order Info card collapse/expand ---- */
     var woCard = null;
     var woDetails = null;
-    var woResume = null;
     var woToggle = null;
     var woToggleIcon = null;
 
@@ -325,7 +324,6 @@
         if (!woCard) return;
         woCard.classList.toggle('wc-wo-card--collapsed', collapsed);
         if (woDetails) woDetails.hidden = collapsed;
-        if (woResume) woResume.hidden = !collapsed;
         if (woToggle) {
             woToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
             woToggle.setAttribute('aria-label', collapsed ? 'Expand work order details' : 'Collapse work order details');
@@ -336,7 +334,6 @@
     function initWoCard() {
         woCard = document.getElementById('wcWoCard');
         woDetails = document.getElementById('wcWoDetails');
-        woResume = document.getElementById('wcWoResume');
         woToggle = document.getElementById('wcWoToggle');
         woToggleIcon = document.getElementById('wcWoToggleIcon');
         if (!woCard || !woDetails) return;

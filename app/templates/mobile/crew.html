@@ -361,7 +361,19 @@
         <div class="col-sm-12">
           <div class="card wc-wo-card{% if dailyactual.woID and dailyactual.supervisor and dailyactual.supervisor != '0' %} wc-wo-card--collapsed{% endif %}" id="wcWoCard">
               <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">Work Order Info</h4>
+                <h4 class="wc-wo-header-title mb-0">Work Order Info</h4>
+                <div class="wc-wo-header-resume" title="{% if dailyactual and dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}} - {{dailyactual.woID.JobAddress}}{% endif %}">
+                    <span class="wc-wo-resume-seg wc-wo-resume-wo flex-shrink-0">{% if dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}}{% else %}No Work Order{% endif %}</span>
+                    <span class="wc-wo-resume-sep flex-shrink-0" aria-hidden="true">·</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-addr" title="{% if dailyactual and dailyactual.woID %}{{dailyactual.woID.JobAddress}}{% endif %}">{% if dailyactual.woID %}{{dailyactual.woID.JobAddress}}{% else %}No address{% endif %}</span>
+                    <span class="wc-wo-resume-sep flex-shrink-0" aria-hidden="true">·</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-sup">{% for sup in superV %}{% if sup.employeeID|slugify == dailyactual.supervisor %}{{sup.first_name}} {{sup.last_name}}{% endif %}{% endfor %}{% if not dailyactual.supervisor or dailyactual.supervisor == "0" %}No Supervisor{% endif %}</span>
+                    <span class="wc-wo-resume-sep flex-shrink-0" aria-hidden="true">·</span>
+                    <span class="wc-wo-resume-seg wc-wo-resume-split flex-shrink-0">{% if dailyactual.split_paymet %}Split{% else %}NO Split{% endif %}</span>
+                    {% if dailyactual.woID and woCount > 0 %}
+                    <span class="wc-wo-resume-badge flex-shrink-0" title="Included in {{ woCount }} other Daily{{ woCount|pluralize }} today"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> {{ woCount }}</span>
+                    {% endif %}
+                </div>
                 {% if dailyactual %}
                     <button type="button" class="btn btn-outline-secondary tap-target wc-wo-toggle" id="wcWoToggle" aria-label="Collapse work order details" aria-expanded="{% if dailyactual.woID and dailyactual.supervisor and dailyactual.supervisor != '0' %}false{% else %}true{% endif %}" aria-controls="wcWoDetails">
                         <i class="fa-solid fa-chevron-up" id="wcWoToggleIcon"></i>
@@ -457,32 +469,7 @@
                         {% endif %}
                 {% endif %}
                 </div>
-                {% if dailyactual %}
-                <div class="wc-wo-resume" id="wcWoResume" hidden>
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-briefcase" aria-hidden="true"></i>
-                        <p class="mb-0 flex-grow-1 text-truncate" style="min-width:0">
-                            {% if dailyactual.woID %}{{dailyactual.woID.prismID}} - {{dailyactual.woID.workOrderId}} - {{dailyactual.woID.PO}}{% else %}No Work Order Selected{% endif %}
-                        </p>
-                    </div>
-                    {% if dailyactual.woID %}
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-map-marker-alt" aria-hidden="true"></i>
-                        <p class="mb-0 flex-grow-1 text-truncate" style="min-width:0">{{dailyactual.woID.JobAddress}}</p>
-                    </div>
-                    {% endif %}
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <span class="wc-inline-note wc-inline-note--muted">
-                            <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-                            {% for sup in superV %}{% if sup.employeeID|slugify == dailyactual.supervisor %} {{sup.first_name}} {{sup.last_name}}{% endif %}{% endfor %}{% if not dailyactual.supervisor or dailyactual.supervisor == "0" %} No Supervisor{% endif %}
-                        </span>
-                        <span class="wc-inline-note wc-inline-note--muted">
-                            <i class="fa-solid fa-dollar-sign" aria-hidden="true"></i>{% if dailyactual.split_paymet %} Split{% else %} NO Split{% endif %}
-                            {% if dailyactual.own_vehicle > 0 %}<i class="fa-solid fa-car ms-2" aria-hidden="true"></i> {{dailyactual.own_vehicle}}%{% endif %}
-                        </span>
-                    </div>
-                </div>
-                {% endif %}
+                
               </div>
           </div>
         </div>

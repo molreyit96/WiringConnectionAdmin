@@ -588,15 +588,47 @@ body.wc-sheet-open {
     justify-content: center;
     flex-shrink: 0;
 }
-.wc-wo-resume {
-    border-top: 1px dashed var(--wc-border);
-    padding-top: .6rem;
-    margin-top: .4rem;
-    font-size: .88rem;
-    color: var(--wc-ink-2);
+.wc-wo-header-resume {
+    display: none;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: .45rem;
+    margin-right: .5rem;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--wc-header-ink);
+    white-space: nowrap;
+    overflow: hidden;
 }
-.wc-wo-resume i {
-    color: var(--wc-accent);
+.wc-wo-card--collapsed .wc-wo-header-title {
+    display: none;
+}
+.wc-wo-card--collapsed .wc-wo-header-resume {
+    display: flex;
+}
+.wc-wo-resume-seg {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wc-wo-resume-sep {
+    color: var(--wc-header-ink);
+    opacity: .6;
+}
+.wc-wo-resume-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    flex-shrink: 0;
+    padding: .1rem .45rem;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, .22);
+    color: var(--wc-warn);
 }
 
 /* ---- Review note (rejection / deletion / approval) ---- */
