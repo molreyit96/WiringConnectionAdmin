@@ -466,19 +466,19 @@
         {% if dailyactual.Status == 5 %}
             <div class="wc-review-note wc-review-note--danger mt-3">
                 <p class="wc-review-note-title"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Rejected{% if dailyactual.rejected_by %} by {{ dailyactual.rejected_by }} — {{ dailyactual.rejected_date|date:"M j, Y g:i A" }}{% endif %}</p>
-                <p class="wc-review-note-text mb-0">Comments: {{ dailyactual.comments }}</p>
+                <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
             </div>
         {% elif dailyactual.Status == 6 %}
             <div class="wc-review-note wc-review-note--muted mt-3">
                 <p class="wc-review-note-title"><i class="fa-solid fa-ban" aria-hidden="true"></i> Deleted{% if dailyactual.deleted_by %} by {{ dailyactual.deleted_by }} — {{ dailyactual.deleted_date|date:"M j, Y g:i A" }}{% endif %}</p>
                 {% if dailyactual.comments %}
-                <p class="wc-review-note-text mb-0">Comments: {{ dailyactual.comments }}</p>
+                <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
                 {% endif %}
             </div>
         {% elif dailyactual.Status == 4 and dailyactual.comments %}
             <div class="wc-review-note wc-review-note--ok mt-3">
                 <p class="wc-review-note-title"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Approved by {{ dailyactual.approved_by }} — {{ dailyactual.approved_date|date:"M j, Y g:i A" }}</p>
-                <p class="wc-review-note-text mb-0">Comments: {{ dailyactual.comments }}</p>
+                <p class="wc-review-note-text mb-0">Reason: {{ dailyactual.comments }}</p>
             </div>
         {% endif %}
 
