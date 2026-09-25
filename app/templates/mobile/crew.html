@@ -294,7 +294,7 @@
 
             <div class="wc-actions-row">
                 <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" href="/mobile/home/{{selectedLocation}}" aria-label="Back to home">
-                    <i class="fa-solid fa-house"></i>
+                    <i class="fa-solid fa-arrow-left"></i>
                 </a>
                 <div class="wc-actions-mid">
                     {% if editable and dailyactual %}
@@ -431,7 +431,7 @@
                         {% endif %}
 
                         {% if editable %}
-                            <a class="btn btn-outline-secondary tap-target wc-icon-btn wc-wo-edit" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{dailyactual.day|date:'d'}}/{{dailyactual.id}}/{{selectedLocation}}" aria-label="Change supervisor"><i class="fa-solid fa-pen"></i></a>
+                            <a class="btn pt-1" style="margin-left: 10px;" href="/mobile/update_supervisor/{{period.id}}/{{dailyactual.day|date:'d'}}/{{dailyactual.id}}/{{selectedLocation}}" aria-label="Change supervisor"><i class="fa-solid fa-pen" style="color: blue;"></i></a>
                         {% endif %}
                     </div>
                     <!--Payment and Vehicle-->

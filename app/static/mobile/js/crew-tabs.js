@@ -324,9 +324,12 @@
     function applyWoCardState(collapsed) {
         if (!woCard) return;
         woCard.classList.toggle('wc-wo-card--collapsed', collapsed);
-        if (woDetails) woDetails.setAttribute('hidden', collapsed ? '' : 'hidden');
-        if (woResume) woResume.setAttribute('hidden', collapsed ? 'hidden' : '');
-        if (woToggle) woToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        if (woDetails) woDetails.hidden = collapsed;
+        if (woResume) woResume.hidden = !collapsed;
+        if (woToggle) {
+            woToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            woToggle.setAttribute('aria-label', collapsed ? 'Expand work order details' : 'Collapse work order details');
+        }
         if (woToggleIcon) woToggleIcon.className = collapsed ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
     }
 

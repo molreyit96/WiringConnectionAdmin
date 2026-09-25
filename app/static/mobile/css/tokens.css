@@ -588,12 +588,6 @@ body.wc-sheet-open {
     justify-content: center;
     flex-shrink: 0;
 }
-.wc-wo-edit {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border-radius: 10px;
-}
 .wc-wo-resume {
     border-top: 1px dashed var(--wc-border);
     padding-top: .6rem;
