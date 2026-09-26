@@ -356,6 +356,7 @@
         listEl: document.getElementById("empResults"),
         data: EMP_DATA,
         maxResults: 50,
+        renderRow: function(item) { return item.text; },
         onPick: function(item) { selectEmp(item.id, item.text); }
     });
 </script>
