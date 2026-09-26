@@ -32,7 +32,7 @@ from django.db.models import Sum, OuterRef, Subquery, Value, CharField, IntegerF
 from django.db.models.functions import Concat, Cast
 
 
-def crew_url(period_id, day, crew, loc_id, section=None, sub=None):
+def crew_url(period_id, day, crew, loc_id, section=None, sub=None, sent=None):
     if hasattr(day, 'strftime'):
         day_str = day.strftime("%d")
     else:
@@ -43,6 +43,8 @@ def crew_url(period_id, day, crew, loc_id, section=None, sub=None):
         params.append('section=' + section)
     if sub:
         params.append('sub=' + sub)
+    if sent:
+        params.append('sent=' + sent)
     if params:
         url += '?' + '&'.join(params)
     return HttpResponseRedirect(url)
@@ -570,6 +572,7 @@ def crew(request, perID, dID, crewID, LocID):
     context["selectedDay"] = int(dID)
     context["selectedLocation"] = LocID
     context["selectedLoca"] = loca
+    context["sent"] = request.GET.get('sent', '')
 
     return render(request, "mobile/crew.html", context)
 
@@ -1535,18 +1538,22 @@ def send_payroll(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
 
-    obj = get_object_or_404(DailyMob, id = id)
-    
-    if obj:
-        obj.send_date = datetime.now()    
+    obj = DailyMob.objects.filter(id = id).first()
+
+    if not obj:
+        return HttpResponseRedirect('/mobile/')
+
+    try:
+        obj.send_date = datetime.now()
         obj.Status = 2
-        obj.save()
-        
-        
+        obj.save(update_fields=['send_date', 'Status'])
+    except Exception:
+        return crew_url(obj.Period.id, obj.day, obj.crew, LocID, section='employees', sent='error')
+
     context["emp"] = emp
     context["id"] = id
-    
-    return crew_url(obj.Period.id, obj.day, obj.crew, LocID, section='employees') 
+
+    return crew_url(obj.Period.id, obj.day, obj.crew, LocID, section='employees', sent='ok') 
 
 
 @login_required(login_url='/home/')

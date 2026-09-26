@@ -233,11 +233,8 @@
     }
 
     function doSend() {
-        if (window.wcConfirm && window.send_payroll) {
-            window.wcConfirm('Are you sure you want to send this daily for approval?', function () {
-                window.send_payroll(window.wcPrecheck.dailyId, window.wcPrecheck.locId, 1);
-            });
-        }
+        if (!window.send_payroll || !window.wcPrecheck) return;
+        window.send_payroll(window.wcPrecheck.dailyId, window.wcPrecheck.locId);
     }
 
     function handleSend() {
@@ -247,14 +244,18 @@
             showSendValid(blockers);
             return;
         }
-        var warnings = runSendWarnings();
-        if (warnings.length && window.wcConfirm) {
-            window.wcConfirm(warnings.join(' '), function () {
-                doSend();
-            });
+        if (!window.wcConfirm) {
+            doSend();
             return;
         }
-        doSend();
+        var message = 'Are you sure you want to send this daily for approval?';
+        var warnings = runSendWarnings();
+        if (warnings.length) {
+            message = warnings.join(' ') + ' — ' + message;
+        }
+        window.wcConfirm(message, function () {
+            doSend();
+        });
     }
 
     function initActionsSheet() {

@@ -257,9 +257,60 @@
         display: none;
     }
 
+    .wc-sent-banner {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin: .75rem 0 .25rem;
+        padding: .6rem .75rem;
+        border-radius: .75rem;
+        font-size: var(--wc-type-sm);
+        font-weight: 500;
+        line-height: 1.3;
+    }
+    .wc-sent-banner i {
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .wc-sent-banner span {
+        flex-grow: 1;
+    }
+    .wc-sent-banner--ok {
+        background-color: var(--wc-ok);
+        border-color: var(--wc-ok);
+        color: #fff;
+    }
+    .wc-sent-banner--err {
+        background-color: var(--wc-danger);
+        border-color: var(--wc-danger);
+        color: #fff;
+    }
+    .wc-sent-banner-close {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.25rem;
+        line-height: 1;
+        padding: 0 .25rem;
+        cursor: pointer;
+    }
+
 </style>
 
 <div class="container">
+    {% if sent == "ok" %}
+    <div class="wc-sent-banner wc-sent-banner--ok" id="wcSentBanner" role="status">
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <span>Daily sent for approval.</span>
+        <button type="button" class="wc-sent-banner-close" aria-label="Dismiss" onclick="this.parentElement.remove()">&times;</button>
+    </div>
+    {% elif sent == "error" %}
+    <div class="wc-sent-banner wc-sent-banner--err" id="wcSentBanner" role="alert">
+        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+        <span>Could not send the daily. Try again.</span>
+        <button type="button" class="wc-sent-banner-close" aria-label="Dismiss" onclick="this.parentElement.remove()">&times;</button>
+    </div>
+    {% endif %}
     <form method='post' enctype="multipart/form-data">
         {% csrf_token %}
         <!-- Sticky context bar: centered date / crew switcher / actions -->
@@ -1055,6 +1106,11 @@
             wcConfirmCallback = null;
         });
 
+        // Blur any lingering focus when the validation modal hides (avoids aria-hidden warning)
+        document.getElementById('wcValidModal').addEventListener('hidden.bs.modal', function () {
+            this.contains(document.activeElement) && document.activeElement.blur();
+        });
+
         // Replace a failed media thumbnail with an 'unavailable' tile
         function wcBrokenDoc(img) {
             if (!img || img.dataset.wcBroken === '1') return;
@@ -1097,17 +1153,8 @@
             });
         };
         
-        function send_payroll(id, selectedLocation, dailyItem){
-            event.preventDefault();
-            if (dailyItem==0){
-                alert(`There are no items in this daily`);
-                return;
-            }
-            wcConfirm('Are you sure you want to send this daily for approval?', function () {
-                console.log(id);
-                console.log(selectedLocation);
-                window.location.href = `/mobile/send_payroll/${id}/${selectedLocation}`;
-            });
+        function send_payroll(id, selectedLocation){
+            window.location.href = `/mobile/send_payroll/${id}/${selectedLocation}`;
         };
 
         
