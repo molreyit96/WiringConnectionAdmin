@@ -4,15 +4,10 @@
 {%load humanize%}
 {% block container %}
 
- <!-- Bootstrap CSS -->
+<!-- Bootstrap CSS -->
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
- <!-- Font Awesome -->
- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- <!-- PDF.js -->
- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
 
-
- <style>    
+ <style>
     :root {
        --thumbnail-width: 200px;
        --thumbnail-height: 145px;
@@ -89,9 +84,25 @@
        transition: opacity 0.2s ease;
    }
    
-   .document-thumbnail:hover .overlay {
-       opacity: 1;
-   }
+.document-thumbnail:hover .overlay {
+        opacity: 1;
+    }
+
+    .wc-preview-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .75rem;
+        min-height: 40vh;
+        color: var(--wc-ink-2);
+        font-size: var(--wc-type-sm);
+    }
+    .wc-spinner--sm {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-width: 3px;
+    }
    
    .overlay-icon {
        color: white;
@@ -667,7 +678,7 @@
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
                                             <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" onerror="wcBrokenDoc(this)">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
                                         {% endif %}
                                         <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
                                     </div>
@@ -696,7 +707,7 @@
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
                                             <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" onerror="wcBrokenDoc(this)">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
                                         {% endif %}
                                         <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
                                     </div>
@@ -725,7 +736,7 @@
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
                                             <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" onerror="wcBrokenDoc(this)">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
                                         {% endif %}
                                         <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
                                     </div>
@@ -829,6 +840,10 @@
                     <div class="modal-content">
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         <div class="modal-body p-3"> <!-- Added padding -->
+                            <div id="wcPreviewLoader" class="wc-preview-loader d-none">
+                                <div class="wc-spinner wc-spinner--sm" aria-hidden="true"></div>
+                                <span>Loading PDF…</span>
+                            </div>
                             <img id="imagePreview" src="" class="modal-img d-none" style="max-height: 65vh;"> <!-- Reduced height -->
                             <div id="pdfPreview" class="w-100 d-none">
                                 <div class="d-flex justify-content-center">
@@ -852,7 +867,6 @@
             </div>
 
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script src="{% static 'mobile/js/crew-tabs.js' %}"></script>
             <script>
 
@@ -931,8 +945,63 @@
                 });
              
 
-                // Initialize PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+                // PDF.js is loaded on demand (only when a PDF is actually opened or a thumbnail is due).
+        // window.pdfjsLib is undefined until wcLoadPdfjs() resolves.
+        function wcLoadPdfjs() {
+            if (window.wcPdfjsPromise) return window.wcPdfjsPromise;
+            window.wcPdfjsPromise = new Promise(function (resolve, reject) {
+                var s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js';
+                s.onload = function () {
+                    var lib = window.pdfjsLib;
+                    if (lib) {
+                        lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+                    }
+                    resolve();
+                };
+                s.onerror = function () { window.wcPdfjsPromise = null; reject(new Error('pdf.js failed to load')); };
+                document.head.appendChild(s);
+            });
+            return window.wcPdfjsPromise;
+        }
+
+        function wcPreviewLoader(show) {
+            var el = document.getElementById('wcPreviewLoader');
+            if (el) el.classList.toggle('d-none', !show);
+        }
+
+        // Render PDF thumbnails only for the currently visible doc group.
+        window.wcRenderPdfThumbnails = function () {
+            var lib = window.pdfjsLib;
+            if (!lib || !lib.getDocument) return;
+            document.querySelectorAll('.document-thumbnail[data-type="pdf"]').forEach(function (thumbnail) {
+                if (thumbnail.dataset.wcRendered === '1') return;
+                if (!thumbnail.closest('[data-docgroup].is-visible')) return;
+                thumbnail.dataset.wcRendered = '1';
+                var pdfUrl = thumbnail.getAttribute('data-url');
+                var canvas = thumbnail.querySelector('canvas');
+                if (!canvas) return;
+                lib.getDocument(pdfUrl).promise.then(function (pdf) {
+                    return pdf.getPage(1);
+                }).then(function (page) {
+                    var viewport = page.getViewport({ scale: 0.5 });
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    return page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+                }).then(function () {
+                    var holder = thumbnail.querySelector('.pdf-thumbnail');
+                    if (holder) { holder.innerHTML = ''; holder.appendChild(canvas); }
+                    canvas.classList.remove('d-none');
+                }).catch(function (error) {
+                    console.error('PDF thumbnail error:', error);
+                });
+            });
+        };
+
+        window.wcEnsurePdfThumbs = function () {
+            if (!document.querySelector('.document-thumbnail[data-type="pdf"]')) return;
+            wcLoadPdfjs().then(window.wcRenderPdfThumbnails).catch(function () {});
+        };
         
         // Variables for PDF handling
         let pdfDoc = null;
@@ -950,43 +1019,14 @@
         const nextPageBtn = document.getElementById('nextPage');
         const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
         
-        // Generate PDF thumbnails
+        // Click handlers + kick off thumbnails when the docs panel is already visible
         document.addEventListener('DOMContentLoaded', function() {
-            const pdfThumbnails = document.querySelectorAll('.document-thumbnail[data-type="pdf"]');
-            
-            pdfThumbnails.forEach(thumbnail => {
-                const pdfUrl = thumbnail.getAttribute('data-url');
-                const canvas = thumbnail.querySelector('canvas');
-                
-                pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-                    return pdf.getPage(1);
-                }).then(function(page) {
-                    const viewport = page.getViewport({ scale: 0.5 });
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
-                    
-                    const renderContext = {
-                        canvasContext: canvas.getContext('2d'),
-                        viewport: viewport
-                    };
-                    
-                    page.render(renderContext).promise.then(function() {
-                        thumbnail.querySelector('.pdf-thumbnail').innerHTML = '';
-                        thumbnail.querySelector('.pdf-thumbnail').appendChild(canvas);
-                        canvas.classList.remove('d-none');
-                    });
-                }).catch(function(error) {
-                    console.error('PDF thumbnail error:', error);
-                });
-            });
-            
             // Set up click handlers for thumbnails
             document.querySelectorAll('.thumbnail-content').forEach(thumb => {
                 thumb.addEventListener('click', function() {
                     const parent = this.closest('.document-thumbnail');
                     const url = parent.getAttribute('data-url');
                     const type = parent.getAttribute('data-type');
-                    
                     if (type === 'pdf') {
                         showPdfPreview(url);
                     } else {
@@ -994,59 +1034,67 @@
                     }
                 });
             });
+
+            var docsPanel = document.getElementById('panel-docs');
+            if (docsPanel && !docsPanel.hasAttribute('hidden')) {
+                window.wcEnsurePdfThumbs();
+            }
         });
         
         // Show PDF in modal
         function showPdfPreview(url) {
             document.getElementById('imagePreview').classList.add('d-none');
             document.getElementById('pdfPreview').classList.remove('d-none');
-            
-            pdfjsLib.getDocument(url).promise.then(function(pdf) {
+            wcPreviewLoader(true);
+
+            wcLoadPdfjs().then(function () {
+                return window.pdfjsLib.getDocument(url).promise;
+            }).then(function(pdf) {
                 pdfDoc = pdf;
                 totalPagesSpan.textContent = pdf.numPages;
                 pageNum = 1;
-                
+
                 // Reset UI
                 currentPageSpan.textContent = pageNum;
                 prevPageBtn.disabled = true;
                 nextPageBtn.disabled = pdf.numPages <= 1;
-                
+
                 // Render initial page
-                renderPage(pageNum);
+                return renderPage(pageNum);
+            }).then(function() {
+                wcPreviewLoader(false);
             }).catch(function(error) {
+                wcPreviewLoader(false);
                 console.error('PDF preview error:', error);
                 alert('Error loading PDF document');
             });
-            
+
             previewModal.show();
         }
         
-        // Render PDF page
+        // Render PDF page (returns a promise so callers can await first paint)
         function renderPage(num) {
             pageRendering = true;
-            
-            pdfDoc.getPage(num).then(function(page) {
-                const viewport = page.getViewport({ scale: scale });
-                pdfCanvas.width = viewport.width;
-                pdfCanvas.height = viewport.height;
-                
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                
-                page.render(renderContext).promise.then(function() {
-                    pageRendering = false;
-                    if (pageNumPending !== null) {
-                        renderPage(pageNumPending);
-                        pageNumPending = null;
-                    }
-                });
-            });
-            
             currentPageSpan.textContent = num;
             prevPageBtn.disabled = num <= 1;
             nextPageBtn.disabled = num >= pdfDoc.numPages;
+
+            return pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: scale });
+                pdfCanvas.width = viewport.width;
+                pdfCanvas.height = viewport.height;
+
+                return page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+            }).then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
         }
         
         // Queue PDF page rendering

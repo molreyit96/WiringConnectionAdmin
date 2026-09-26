@@ -61,6 +61,7 @@
             try { localStorage.setItem('wc-crew-tab:' + storageKey, name); } catch (e) {}
             updateLocation({ section: name });
         }
+        if (name === 'docs' && window.wcEnsurePdfThumbs) window.wcEnsurePdfThumbs();
     }
 
     function activateDocSub(sub, persist) {
@@ -81,6 +82,7 @@
             try { localStorage.setItem('wc-crew-doc:' + storageKey, sub); } catch (e) {}
             updateLocation({ section: 'docs', sub: sub });
         }
+        if (window.wcEnsurePdfThumbs) window.wcEnsurePdfThumbs();
     }
 
     function initTabs() {

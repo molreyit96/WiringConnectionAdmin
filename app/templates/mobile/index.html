@@ -10,19 +10,12 @@
   {% include 'mobile/partials/pwa_head.html' %}
   <title>{% block title %}Wiring Connection Admin{% endblock %}</title>
   
-  <!-- Ionicons -->
-  <link href="https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
   integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
   crossorigin="anonymous" referrerpolicy="no-referrer" />
   
   <!-- Bootstrap -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
-
-   <!-- DataTables CSS -->
-   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
-   <!-- Buttons CSS -->
-   <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css">
 
   <!-- CSS -->
    {% comment %} <link rel="stylesheet" href="{% static 'mobile/css/general.css' %} ">  {% endcomment %}
@@ -73,57 +66,6 @@
       color: red;
     }
 
-    #orders, #orders2 {
-      width: 455px;
-      table-layout: fixed;
-    }
-
-    #orders th,
-    #orders td,
-    #orders2 th,
-    #orders2 td 
-    {
-        width: auto; /* Let columns adjust automatically within the fixed table width */
-        overflow: hidden; /* Hide overflow content */
-        text-overflow: ellipsis; /* Add ellipsis for overflow text */
-        white-space: nowrap; /* Prevent text wrapping */
-    }
-
-    #orders_wrapper, #orders2_wrapper {
-      width: 455px; /* Match the table width */
-      margin: 0 auto; /* Center the table */
-  }
-    #orders_paginate, #orders2_paginate {
-      width: 455px; /* Match the table width */
-      margin: 0px auto 0; /* Center the pagination and add margin */
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
-  }
-
-  /* Style the current page button */
-  #orders2_paginate .paginate_button.current {
-      background-color: var(--wc-accent);
-      color: white;
-      border-color: var(--wc-accent);
-  }
-
-  #orders2_paginate .paginate_button.current {
-    background-color: var(--wc-accent);
-    color: white;
-    border-color: var(--wc-accent);
-}
-
-  #orders_paginate .paginate_button:not(.previous):not(.next):not(.current) {
-    display: none; /* Hide all buttons except Previous, Next, and Current */
-}
-
-#orders2_paginate .paginate_button:not(.previous):not(.next):not(.current) {
-  display: none; /* Hide all buttons except Previous, Next, and Current */
-}
-
-  }
-
     .wc-dashboard-panel {
       position: fixed;
       left: 0;
@@ -166,6 +108,49 @@
 
 <body class="">
 
+  <!-- Page-loading overlay (first painted element; hides on DOM ready, load, or max 3s) -->
+  <div id="wcPageLoader" role="status" aria-live="polite">
+    <div class="wc-spinner" aria-hidden="true"></div>
+    <span>Loading…</span>
+  </div>
+  <style>
+    #wcPageLoader {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--wc-surface);
+      transition: opacity .3s ease;
+    }
+    #wcPageLoader.wc-loader-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .wc-spinner {
+      width: 2.75rem;
+      height: 2.75rem;
+      border: 4px solid var(--wc-border);
+      border-top-color: var(--wc-accent);
+      border-radius: 50%;
+      animation: wc-spin .8s linear infinite;
+    }
+    #wcPageLoader span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    @keyframes wc-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .wc-spinner { animation: none; }
+    }
+  </style>
+
   <div class="content-wrapper">
     <div class="">
       <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top d-flex justify-content-between" id="mainNav">
@@ -177,7 +162,7 @@
 
         <div class="r-header">
           <div class="d-flex align-items-center">
-            <i class="icon ion-md-contact lead me-2"></i> <span>{{ user.username }} - {{ emp }}</span>
+            <i class="fa-solid fa-circle-user lead me-2"></i> <span>{{ user.username }} - {{ emp }}</span>
             <button type="button" id="theme-toggle" class="btn btn-outline-secondary btn-sm ms-2 tap-target p-0" style="width: 32px; height: 32px;" aria-label="Toggle theme">
               <i class="fa-solid fa-sun icon-theme-sun"></i>
               <i class="fa-solid fa-moon icon-theme-moon" style="display: none;"></i>
@@ -186,6 +171,9 @@
         </div>
       </nav>
     </div>
+
+    <!-- JQuery (loaded before child content so inline $() works) -->
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
 
     {% block container %}
     {% endblock %}
@@ -216,29 +204,7 @@
     </div>
   </nav>
 
-  <!-- JQuery -->
-  <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="https://malsup.github.io/jquery.blockUI.js"></script>
-
-  <!-- Moment -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.js"></script>
-
-
-  <!-- DataTables -->
-  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
-  <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
-   <!-- DataTables JS -->
-   <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.js"></script>
-   <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
-   <!-- Buttons JS -->
-   <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
-   <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.bootstrap5.min.js"></script>
-  
-    <!-- Buttons HTML5 for export functionality -->
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
-  
-   <!-- Theme (dark/light) -->
+  <!-- Theme (dark/light) -->
    <script src="{% static 'mobile/js/theme.js' %}"></script>
 
    <!-- Dashboard tab (placeholder) -->
@@ -257,60 +223,21 @@
 
    {% block extra_js %}{% endblock %}
 
-   <!-- Datatables Script -->
+   <!-- Hide the page-loading overlay -->
   <script>
-    if ($("#orders").length) {
-    $("#orders").DataTable(
-      {
-      
-        "pagingType": "simple_numbers",
-        "language": {
-          "lengthMenu": "Mostrar _MENU_ registros por página",
-          "zeroRecords": "Sin datos en esta página",
-          "info": "Mostrando página _PAGE_ de _PAGES_",
-          "infoEmpty": "Sin registros disponibles",
-          "infoFiltered": "(filtrado de _MAX_ registros en total)",
-          "search": "Buscar:",
-          "paginate": {
-            "first": "<<",
-            "last": ">>",
-            "next": ">",
-            "previous": "<"
-          }
-        }
+    (function () {
+      var el = document.getElementById('wcPageLoader');
+      if (!el) return;
+      function hide() {
+        if (el.dataset.hidden) return;
+        el.dataset.hidden = '1';
+        el.classList.add('wc-loader-hidden');
+        setTimeout(function () { el.remove(); }, 320);
       }
-    );
-    }
-
-    if ($("#orders2").length) {
-    $("#orders2").DataTable({
-      
-      "pagingType": "simple_numbers",
-      "language": {
-        "lengthMenu": "Display _MENU_ records per page",
-        "zeroRecords": "Nothing found - sorry",
-        "info": "Showing page _PAGE_ of _PAGES_",
-        "infoEmpty": "No records available",
-        "infoFiltered": "(filtered from _MAX_ total records)",
-        "search": "Search:",
-        "paginate": {
-          "first": "<<",
-          "last": ">>",
-          "next": ">",
-          "previous": "<"
-        }
-      }
-    });
-    }
-  // Restrict search input to numbers only
-  $('#orders2_filter input').on('keypress', function(event) {
-    var charCode = event.which ? event.which : event.keyCode;
-    if (charCode < 48 || charCode > 57) { // Allow only numbers (0-9)
-        event.preventDefault();
-    }
-  }); 
-
-  $('#example_filter input').attr('inputmode', 'numeric');
+      document.addEventListener('DOMContentLoaded', hide, { once: true });
+      window.addEventListener('load', hide, { once: true });
+      setTimeout(hide, 3000);
+    })();
   </script>
 </body>
 
