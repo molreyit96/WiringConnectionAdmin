@@ -616,7 +616,7 @@
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
                                             <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" onerror="wcBrokenDoc(this)">
                                         {% endif %}
                                         <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
                                     </div>
@@ -645,7 +645,7 @@
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
                                             <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" onerror="wcBrokenDoc(this)">
                                         {% endif %}
                                         <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
                                     </div>
@@ -674,7 +674,7 @@
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
                                             <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" onerror="wcBrokenDoc(this)">
                                         {% endif %}
                                         <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
                                     </div>
@@ -1037,16 +1037,36 @@
         function wcConfirm(message, callback) {
             if (!wcConfirmModal) {
                 wcConfirmModal = new bootstrap.Modal(document.getElementById('wcConfirmModal'));
+                wcConfirmModal._element.addEventListener('hidden.bs.modal', function () {
+                    wcConfirmModal._element.contains(document.activeElement) && document.activeElement.blur();
+                });
             }
             document.getElementById('wcConfirmMsg').textContent = message;
             wcConfirmCallback = callback;
             wcConfirmModal.show();
+            var okBtn = document.getElementById('wcConfirmOk');
+            if (okBtn) okBtn.focus();
         }
         document.getElementById('wcConfirmOk').addEventListener('click', function () {
+            var okBtn = document.getElementById('wcConfirmOk');
+            if (okBtn) okBtn.blur();
             wcConfirmModal.hide();
             if (wcConfirmCallback) wcConfirmCallback();
             wcConfirmCallback = null;
         });
+
+        // Replace a failed media thumbnail with an 'unavailable' tile
+        function wcBrokenDoc(img) {
+            if (!img || img.dataset.wcBroken === '1') return;
+            img.dataset.wcBroken = '1';
+            var tile = img.closest('.thumbnail-content');
+            if (!tile) return;
+            var placeholder = document.createElement('div');
+            placeholder.className = 'wc-doc-broken';
+            placeholder.setAttribute('aria-hidden', 'true');
+            placeholder.innerHTML = '<i class="fa-solid fa-file-circle-xmark" aria-hidden="true"></i><span>File unavailable</span>';
+            img.replaceWith(placeholder);
+        }
 
         function delete_daily(id, selectedLocation){
             event.preventDefault();
