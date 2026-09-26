@@ -337,7 +337,7 @@
 
             <div class="wc-crew-row">
                 <div class="wc-crew-scroll d-flex align-items-center gap-2 overflow-x-auto" id="crewScroll">
-                    {% if AddCrew and editable %}
+                    {% if canAddCrew %}
                         <a class="wc-crew-pill wc-add-crew-pill" href="/mobile/create_daily/{{period.id}}/{{selectedDay}}/{{selectedLocation}}">
                             <i class="fa-solid fa-plus"></i> Add Crew
                         </a>

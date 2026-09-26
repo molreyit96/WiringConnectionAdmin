@@ -315,6 +315,7 @@ def crew(request, perID, dID, crewID, LocID):
     context["docsSub"] = docs_sub
 
     context["editable"] = False
+    context["canAddCrew"] = False
 
     #Select the location
     loca = catalogModel.Locations.objects.filter(LocationID = LocID).first()
@@ -487,6 +488,11 @@ def crew(request, perID, dID, crewID, LocID):
             # get the list of dailys for the period, Day selected and Location
             crews = DailyMob.objects.filter(Period = perID, day=selectedDate, Location = loca, created_by = user).order_by('crew')
             context["AddCrew"] = True
+        
+        # Day-level "Add Crew" availability: yesterday/today plus permission, independent of any selected daily
+        context["canAddCrew"] = (context.get("AddCrew", False)
+                                 and (emp.is_superAdmin or request.user.is_staff
+                                      or context["period"].status in (0, 1)))
         
         context["crew"] = crews
 
