@@ -10,14 +10,34 @@
 <div class="container pb-5 mb-4">
     <form method='post' action="{{request.path}}" id="daily_item">
         {% csrf_token %}          
+
+            <div class="wc-context-bar">
+                <div class="wc-title-row">
+                    <div class="wc-title-side">
+                        <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" href="/mobile/crew/{{DailyID.Period.id}}/{{DailyID.day|date:'d'}}/{{DailyID.crew}}/{{selectedLocation}}?section=items" aria-label="Back to crew">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </a>
+                    </div>
+                    <div class="wc-title-center">
+                        <span class="wc-day-title-sm text-truncate">Add Item</span>
+                        <span class="wc-day-loc-badge"><i class="fa-solid fa-cube" aria-hidden="true"></i> Crew {{DailyID.crew}} &middot; {{DailyID.day|date:"M j"}} &middot; {{selectedLocation}}</span>
+                    </div>
+                    <div class="wc-title-side" aria-hidden="true"></div>
+                </div>
+            </div>
        
         <div class="row mx-0" id="items">
             <div class="col-12">
-                <h6 class="mt-4 mb-3"><i class="fas fa-cube"></i> Select Item</h6>
-                <input type="search" id="itemSearch" class="form-control form-control-lg mb-2" placeholder="Search by item or ID..." autocomplete="off">
-                <div id="itemResults" class="picker-list"></div>
-                <div class="py-2">
-                    <a type="button" class="btn btn-danger" href="/mobile/crew/{{DailyID.Period.id}}/{{DailyID.day|date:'d'}}/{{DailyID.crew}}/{{selectedLocation}}">Close</a>
+                <div class="card">
+                    <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-cube"></i> Select Item</h6>
+                        <a class="btn btn-outline-secondary tap-target" href="/mobile/crew/{{DailyID.Period.id}}/{{DailyID.day|date:'d'}}/{{DailyID.crew}}/{{selectedLocation}}?section=items">Cancel</a>
+                    </div>
+                    <div class="card-body">
+                        <label class="visually-hidden" for="itemSearch">Search items</label>
+                        <input type="search" id="itemSearch" class="form-control form-control-lg mb-2" placeholder="Search by item or ID..." autocomplete="off">
+                        <div id="itemResults" class="picker-list"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,40 +61,47 @@
                 element4.value = itemName    
             }
         </script>
-        <div id="forma" style="display: none;" class="mt-4 pt-5">
-            <div class="row">
-                <div class="col-sm-6">
-                    <div class="mb-3">
-                        <label for="{{ form.DailyID.id_for_label }}" class="form-label">Selected Daily</label>
-                        <input type="text" name="DailyID" id="DailyID" class="form-control" value="{{DailyID}}" disabled>
-                        <div class="invalid-feedback">{{ form.DailyID.errors|first }}</div>
+         <div id="forma" style="display: none;">
+            <div class="card mb-3">
+                <div class="card-header card-header-wc"><h6 class="mb-0"><i class="fa-solid fa-cube"></i> Item</h6></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-12 col-sm-6">
+                            <div class="mb-3">
+                                <label for="{{ form.DailyID.id_for_label }}" class="form-label">Selected Daily</label>
+                                <input type="text" name="DailyID" id="DailyID" class="form-control" value="{{DailyID}}" disabled>
+                                <div class="invalid-feedback">{{ form.DailyID.errors|first }}</div>
+                            </div>
+                        </div>                
+                        <div class="col-12 col-sm-6">
+                            <div class="mb-3">
+                                <label for="itemName" class="form-label">Item</label>                        
+                                <input type="text" name="itemName" id="itemName" class="form-control" disabled>                                                
+                                <input type="hidden" name="itemID" id="itemID">
+                            </div>
+                        </div>                                   
                     </div>
-                </div>                
-                <div class="col-sm-6">
-                    <div class="mb-3">
-                        <label for="itemName" class="form-label">Item</label>                        
-                        <input type="text" name="itemName" id="itemName" class="form-control" disabled>                                                
-                        <input type="hidden" name="itemID" id="itemID">
+                    <div class="row g-2">
+                        <div class="col-12 col-sm-6">
+                            <div class="mb-3">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity</label>
+                                {% render_field form.quantity class="form-control" %}
+                                <div class="invalid-feedback">{{ form.quantity.errors|first }}</div>
+                            </div>
+                        </div> 
                     </div>
-                </div>                                   
-            </div>  
-            <div class="row">
-                <div class="col-sm-6">
-                    <div class="mb-3">
-                        <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity</label>
-                        {% render_field form.quantity class="form-control" %}
-                        <div class="invalid-feedback">{{ form.quantity.errors|first }}</div>
-                    </div>
-                </div> 
-            </div>  
-            
+                </div>
+            </div>
+
             <div class="action-bar">           
-                <button type="submit" class="btn btn-primary btn-lg flex-grow-1" form="daily_item">Save</button>
-                <a type="button" class="btn btn-danger btn-lg" href="/mobile/crew/{{DailyID.Period.id}}/{{DailyID.day|date:'d'}}/{{DailyID.crew}}/{{selectedLocation}}">Close</a>  
+                <button type="submit" class="btn btn-primary flex-grow-1" id="save_btn" form="daily_item">Save</button>
+                <a type="button" class="btn btn-danger flex-grow-1 tap-target" href="/mobile/crew/{{DailyID.Period.id}}/{{DailyID.day|date:'d'}}/{{DailyID.crew}}/{{selectedLocation}}?section=items">Close</a>  
             </div>
         </div>            
     
     </form>
+
+    <div style="height: 100px;" aria-hidden="true"></div>
 </div>
 {% endblock %}
 {% block extra_js %}

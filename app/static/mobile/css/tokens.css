@@ -548,6 +548,12 @@ body.wc-sheet-open {
     white-space: nowrap;
     overflow: hidden;
 }
+.wc-time-preview {
+    color: var(--wc-accent-2);
+    font-size: var(--wc-type-sm);
+    font-weight: 600;
+    min-height: 1.25rem;
+}
 .wc-add-crew-pill {
     background: transparent;
     border: 1px dashed var(--wc-accent);
