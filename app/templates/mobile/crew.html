@@ -871,7 +871,8 @@
             <script>
 
 
-                var initialComment = $('#comment').val().trim();
+                var commentEl = $('#comment');
+                var initialComment = commentEl.length ? commentEl.val().trim() : '';
                 var statusEl = $('#wcCommentStatus');
 
                 function setStatus(msg, type) {
@@ -884,7 +885,7 @@
                 }
 
                 function updateButtonState() {
-                    var currentComment = $('#comment').val().trim();
+                    var currentComment = commentEl.length ? commentEl.val().trim() : '';
                     $('#save-comment-btn').prop('disabled', !(currentComment.length > 0 && currentComment !== initialComment));
                     $('#clear-comment-btn').prop('disabled', !initialComment);
                 }
@@ -940,6 +941,7 @@
                 });
 
                 $(document).ready(function() {
+                    if (!commentEl.length) return;
                     updateButtonState();
                     $('#comment').on('input', updateButtonState);
                 });
@@ -1175,6 +1177,7 @@
         function delete_daily(id, selectedLocation){
             event.preventDefault();
             wcConfirm('Are you sure to remove this Daily?', function () {
+                wcShowPageLoader();
                 window.location.href = `/mobile/delete_daily/${id}/${selectedLocation}`;
             });
         };
@@ -1183,6 +1186,7 @@
         function delete_daily_emp(id, selectedLocation){
             event.preventDefault();
             wcConfirm('Are you sure to remove this Employee?', function () {
+                wcShowPageLoader();
                 window.location.href = `/mobile/delete_daily_emp/${id}/${selectedLocation}`;
             });
         };
@@ -1190,6 +1194,7 @@
         function delete_daily_item(id, selectedLocation){
             event.preventDefault();
             wcConfirm('Are you sure to remove this Item?', function () {
+                wcShowPageLoader();
                 window.location.href = `/mobile/delete_daily_item/${id}/${selectedLocation}`;
             });
         };
@@ -1197,11 +1202,13 @@
         function delete_daily_docs(id, selectedLocation){
             event.preventDefault();
             wcConfirm('Are you sure to remove this attachment?', function () {
+                wcShowPageLoader();
                 window.location.href = `/mobile/delete_daily_docs/${id}/${selectedLocation}`;
             });
         };
         
         function send_payroll(id, selectedLocation){
+            wcShowPageLoader();
             window.location.href = `/mobile/send_payroll/${id}/${selectedLocation}`;
         };
 

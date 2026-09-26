@@ -223,7 +223,7 @@
 
    {% block extra_js %}{% endblock %}
 
-   <!-- Hide the page-loading overlay -->
+   <!-- Page-loading overlay lifecycle + in-app navigation interceptor -->
   <script>
     (function () {
       var el = document.getElementById('wcPageLoader');
@@ -232,8 +232,37 @@
         if (el.dataset.hidden) return;
         el.dataset.hidden = '1';
         el.classList.add('wc-loader-hidden');
-        setTimeout(function () { el.remove(); }, 320);
       }
+      // Reveal the overlay again (e.g. right when the user navigates within the app),
+      // so the wait between click and the next page's first paint is covered.
+      window.wcShowPageLoader = function () {
+        if (!el) return;
+        delete el.dataset.hidden;
+        el.classList.remove('wc-loader-hidden');
+        el.setAttribute('aria-hidden', 'false');
+      };
+      // Anchor navigations: same-origin paths (/mobile/*, /logout/) with a plain
+      // left click. JS-handled links (onclick) and hash-only hrefs are skipped.
+      document.addEventListener('click', function (ev) {
+        if (ev.defaultPrevented || ev.button !== 0) return;
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+        var a = ev.target && ev.target.closest ? ev.target.closest('a') : null;
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        if (!href || href === '#' || href.charAt(0) !== '/') return;
+        if (a.hasAttribute('onclick') || (a.target && a.target !== '_self')) return;
+        window.wcShowPageLoader();
+      });
+      // Standard form POSTs (create/update/upload/approve). AJAX-submitted forms
+      // call preventDefault() and are skipped here.
+      document.addEventListener('submit', function (ev) {
+        if (ev.defaultPrevented) return;
+        var f = ev.target;
+        if (!f || f.tagName !== 'FORM' || (f.method || '').toLowerCase() !== 'post') return;
+        var action = f.getAttribute('action') || '';
+        if (action && action.charAt(0) !== '/') return;
+        window.wcShowPageLoader();
+      });
       document.addEventListener('DOMContentLoaded', hide, { once: true });
       window.addEventListener('load', hide, { once: true });
       setTimeout(hide, 3000);
