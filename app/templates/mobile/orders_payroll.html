@@ -1,44 +1,80 @@
-{% extends 'mobile/index.html' %}  
-{%load static%}
-{% block title %} Order List {% endblock %} 
-{% load humanize %}
+{% extends 'mobile/index.html' %}
+{% load static %}
+{% block title %} Select Work Order {% endblock %}
 {% block container %}
 
+<div class="container pb-5 mb-4">
 
-       
-<div class="container">
-    <form method='post' enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="row mt-5 pt-5">  
-            <div class="col-sm-12">
-                <table id="orders" class="table table-sm table-bordered table-striped">
-                    <thead class="table-primary">
-                        <tr>
-                            
-                            <th scope="col" style="width: 80%%">work Order</th>
-                        
-                            {% comment %} <th scope="col">Status</th> {% endcomment %}
-                            <th scope="col" style="width: 80%%"></th>
-                        </tr>              
-                    </thead>
-                    <tbody>                                       
-                        {% for order in orders %}
-                                <tr>
-                                    <td>{{order.prismID}}-{{order.workOrderId}}-{{order.PO}}</td>                                    
+    <div class="wc-context-bar">
+        <div class="wc-title-row">
+            <div class="wc-title-side">
+                <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0" href="/mobile/crew/{{dailyObj.Period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}?section=employees" aria-label="Back to crew">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+            </div>
+            <div class="wc-title-center">
+                <span class="wc-day-title-sm text-truncate">Select Work Order</span>
+                <span class="wc-day-loc-badge"><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Crew {{dailyObj.crew}} &middot; {{dailyObj.day|date:"M j"}} &middot; {{selectedLocation}}</span>
+            </div>
+            <div class="wc-title-side" aria-hidden="true"></div>
+        </div>
+    </div>
 
-<td width="35%">
-                                    <a class="btn btn-sm btn-outline-success tap-target" href="/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"><i class="fa-solid fa-circle-arrow-right"></i></a>                                        
-                                    
-                                </td>
-                                </tr>   
-                        {% endfor %}
-                    </tbody>                              
-                </table>
+    <div class="row mx-0">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-briefcase"></i> Select Work Order</h6>
+                    <a class="btn btn-outline-secondary tap-target" href="/mobile/crew/{{dailyObj.Period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}?section=employees">Cancel</a>
+                </div>
+                <div class="card-body">
+                    <label class="visually-hidden" for="woSearch">Search work orders</label>
+                    <input type="search" id="woSearch" class="form-control form-control-lg mb-2" placeholder="Search by WO, prism ID or PO..." autocomplete="off">
+                    <div id="woResults" class="picker-list"></div>
+                    {% if not orders %}
+                    <p class="wc-inline-note wc-inline-note--warn mb-0 mt-2"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> No work orders available for this location.</p>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="d-flex justify-content-center mt-2 pt-2">         
-                <a type="button" class="btn btn-danger btn-lg tap-target" href="/mobile/crew/{{dailyObj.Period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}?section=employees">Close</a>          
-        </div>
-    </form>
+    </div>
+
+    <div class="action-bar">
+        <a type="button" class="btn btn-danger flex-grow-1 tap-target" href="/mobile/crew/{{dailyObj.Period.id}}/{{dailyObj.day|date:'d'}}/{{dailyObj.crew}}/{{selectedLocation}}?section=employees">Close</a>
+    </div>
+
+    <div style="height: 100px;" aria-hidden="true"></div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'mobile/js/picker.js' %}"></script>
+<script>
+    var WO_DATA = [
+        {% for order in orders %}{"id": {{order.id}}, "text": "{{order.prismID|escapejs}} - {{order.workOrderId|escapejs}} - {{order.PO|escapejs}}", "next": "/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"},{% endfor %}
+    ];
+
+    function woRow(item) {
+        var frag = document.createElement("span");
+        var name = document.createElement("span");
+        name.className = "picker-name";
+        name.textContent = item.text;
+        frag.appendChild(name);
+        var chevron = document.createElement("i");
+        chevron.className = "fa-solid fa-circle-arrow-right picker-icon";
+        chevron.setAttribute("aria-hidden", "true");
+        frag.appendChild(chevron);
+        return frag;
+    }
+
+    initSearchPicker({
+        inputEl: document.getElementById("woSearch"),
+        listEl: document.getElementById("woResults"),
+        data: WO_DATA,
+        maxResults: 50,
+        renderRow: woRow,
+        onPick: function(item) {
+            window.location.href = item.next;
+        }
+    });
+</script>
 {% endblock %}
