@@ -306,6 +306,56 @@ a {
     padding: .35rem 0;
 }
 
+/* ---- Work-order picker rows ---- */
+.wc-wo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    line-height: 1.4;
+}
+
+.wc-wo-row-text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .15rem .9rem;
+    min-width: 0;
+}
+
+.wc-wo-row-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    font-size: var(--wc-type-sm);
+    font-weight: 600;
+    color: var(--wc-ink);
+    overflow-wrap: anywhere;
+}
+
+.wc-wo-row-seg i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1em;
+    flex-shrink: 0;
+    opacity: .85;
+}
+
+.wc-wo-row-seg--addr {
+    font-weight: 500;
+    font-size: var(--wc-type-xs);
+    color: var(--wc-ink-2);
+}
+
+.wc-wo-row-chevron {
+    flex-shrink: 0;
+    color: var(--wc-ink-2);
+    font-size: var(--wc-type-base);
+    opacity: .8;
+}
+
 /* ---- Sticky action bar (app pattern) ---- */
 .action-bar {
     position: fixed;

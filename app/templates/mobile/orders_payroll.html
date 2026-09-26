@@ -50,20 +50,41 @@
 <script src="{% static 'mobile/js/picker.js' %}"></script>
 <script>
     var WO_DATA = [
-        {% for order in orders %}{"id": {{order.id}}, "text": "{{order.prismID|escapejs}} - {{order.workOrderId|escapejs}} - {{order.PO|escapejs}}", "next": "/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"},{% endfor %}
+        {% for order in orders %}{"id": {{order.id}}, "text": "{{order.prismID|escapejs}} - {{order.workOrderId|escapejs}} - {{order.PO|escapejs}}", "address": "{{ order.JobAddress|default:""|escapejs }}", "next": "/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"},{% endfor %}
     ];
 
     function woRow(item) {
-        var frag = document.createElement("span");
-        var name = document.createElement("span");
-        name.className = "picker-name";
-        name.textContent = item.text;
-        frag.appendChild(name);
+        var row = document.createElement("span");
+        row.className = "wc-wo-row";
+        var text = document.createElement("span");
+        text.className = "wc-wo-row-text";
+
+        var woSeg = document.createElement("span");
+        woSeg.className = "wc-wo-row-seg";
+        var brief = document.createElement("i");
+        brief.className = "fa-solid fa-briefcase";
+        brief.setAttribute("aria-hidden", "true");
+        woSeg.appendChild(brief);
+        woSeg.appendChild(document.createTextNode(item.text));
+        text.appendChild(woSeg);
+
+        if (item.address) {
+            var addrSeg = document.createElement("span");
+            addrSeg.className = "wc-wo-row-seg wc-wo-row-seg--addr";
+            var pin = document.createElement("i");
+            pin.className = "fa-solid fa-map-marker-alt";
+            pin.setAttribute("aria-hidden", "true");
+            addrSeg.appendChild(pin);
+            addrSeg.appendChild(document.createTextNode(item.address));
+            text.appendChild(addrSeg);
+        }
+
+        row.appendChild(text);
         var chevron = document.createElement("i");
-        chevron.className = "fa-solid fa-circle-arrow-right picker-icon";
+        chevron.className = "fa-solid fa-circle-arrow-right wc-wo-row-chevron";
         chevron.setAttribute("aria-hidden", "true");
-        frag.appendChild(chevron);
-        return frag;
+        row.appendChild(chevron);
+        return row;
     }
 
     initSearchPicker({
