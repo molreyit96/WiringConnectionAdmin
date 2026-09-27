@@ -176,3 +176,59 @@ class BulkUploadCompressedViewTests(TestCase):
 
         big = SimpleUploadedFile('scan.png', b'0' * (DOC_UPLOAD_MAX_BYTES + 1))
         self.assertIn('larger than', validate_doc_upload(big))
+
+
+class PwaFooterClearanceTests(TestCase):
+    """The fixed bottom nav must not cover the end of a scrollable page.
+
+    Regression guard for the Home rejected-dailies card sliding under the footer:
+    every PWA page container carries wc-bottom-clear, and the token that drives
+    that clearance (plus the sticky action bar) is declared in tokens.css.
+    """
+
+    PAGES_WITH_CLEARANCE = (
+        'mobile/home.html',
+        'mobile/crew.html',
+        'mobile/create_daily_doc_compressed.html',
+        'mobile/create_daily_emp.html',
+        'mobile/create_daily_item.html',
+        'mobile/orders_payroll.html',
+        'mobile/update_daily_emp.html',
+        'mobile/update_daily_item.html',
+        'mobile/update_supervisor.html',
+    )
+
+    def _source(self, template_name):
+        import os
+
+        from django.conf import settings
+
+        path = os.path.join(settings.BASE_DIR, 'templates', template_name)
+        with open(path, encoding='utf-8') as fh:
+            return fh.read()
+
+    def test_every_pwa_page_container_has_bottom_clearance(self):
+        for template_name in self.PAGES_WITH_CLEARANCE:
+            with self.subTest(template=template_name):
+                src = self._source(template_name)
+                self.assertIn('wc-bottom-clear', src)
+                self.assertNotIn('container pb-5 mb-4', src)
+
+    def test_footer_height_token_declared_in_tokens(self):
+        from django.conf import settings
+
+        with open(
+            settings.STATICFILES_DIRS[0] + '/mobile/css/tokens.css', encoding='utf-8'
+        ) as fh:
+            tokens = fh.read()
+        self.assertIn('--wc-footer-h:', tokens)
+        self.assertIn('padding-bottom: calc(var(--wc-footer-h)', tokens)
+        self.assertIn('bottom: var(--wc-footer-h);', tokens)
+
+    def test_home_collapse_is_driven_by_the_chip_row(self):
+        src = self._source('mobile/home.html')
+        self.assertIn('id="homeFilterLocRow"', src)
+        self.assertIn("document.getElementById('homeFilterLocRow')", src)
+        # Old magic thresholds must be gone.
+        self.assertNotIn('if (y < 80)', src)
+        self.assertNotIn('else if (y > 120)', src)

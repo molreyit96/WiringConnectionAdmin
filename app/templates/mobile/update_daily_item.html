@@ -5,7 +5,7 @@
 {% block container %}
 {% load widget_tweaks%}
 
-<div class="container pb-5 mb-4">
+<div class="container wc-bottom-clear">
     <form method='post' action="{{request.path}}" id="daily_item">
         {% csrf_token %}           
 

@@ -207,6 +207,26 @@
   <!-- Theme (dark/light) -->
    <script src="{% static 'mobile/js/theme.js' %}"></script>
 
+  <!-- Fixed chrome height: keep --wc-footer-h equal to the real footer so page
+       clearance and sticky action bars track font scaling / longer labels. -->
+  <script>
+    (function () {
+      var footer = document.querySelector('.footer-nav');
+      if (!footer) return;
+      var apply = function () {
+        var h = Math.round(footer.getBoundingClientRect().height);
+        if (h > 0) document.documentElement.style.setProperty('--wc-footer-h', h + 'px');
+      };
+      apply();
+      window.addEventListener('load', apply);
+      window.addEventListener('resize', apply);
+      window.addEventListener('orientationchange', apply);
+      // Self-hosted web font swaps change the footer's metrics.
+      if (document.fonts && document.fonts.ready) { document.fonts.ready.then(apply).catch(function () {}); }
+      if (window.ResizeObserver) { new ResizeObserver(apply).observe(footer); }
+    })();
+  </script>
+
    <!-- Dashboard tab (placeholder) -->
    <script>
      (function () {

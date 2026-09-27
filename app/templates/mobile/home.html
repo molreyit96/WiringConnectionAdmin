@@ -242,7 +242,7 @@
     }
 </style>
 
-<div class="container pb-5 mb-4">
+<div class="container wc-bottom-clear">
     <button type="button" class="wc-home-summary" id="homeFilterSummary" aria-expanded="false">
         <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
         <span class="wc-home-summary-loc">{{ selectedLocationName }}</span>
@@ -268,7 +268,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <div class="d-flex flex-wrap gap-2 mb-3">
+                        <div class="d-flex flex-wrap gap-2 mb-3" id="homeFilterLocRow">
                             {% for loc in locationList %}
                                 {% if loc.LocationID|slugify == selectedLocation|slugify %}
                                     <a class="loc-chip loc-chip--on" href="/mobile/home/{{loc.LocationID}}" title="{{loc.name}}">
@@ -436,8 +436,14 @@
     (function () {
         var filters = document.getElementById('homeFilters');
         var summary = document.getElementById('homeFilterSummary');
+        var locRow = document.getElementById('homeFilterLocRow');
+        var nav = document.getElementById('mainNav');
         if (!filters || !summary) return;
+
         var collapsed = false;
+        var manualCollapseUntilTop = false;
+        var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
         function setCollapsed(v) {
             if (collapsed === v) return;
             collapsed = v;
@@ -445,12 +451,41 @@
             summary.classList.toggle('wc-home-summary--show', v);
             summary.setAttribute('aria-expanded', v ? 'false' : 'true');
         }
-        window.addEventListener('scroll', function () {
-            var y = window.scrollY || document.documentElement.scrollTop;
-            if (y < 80) setCollapsed(false);
-            else if (y > 120) setCollapsed(true);
-        }, { passive: true });
-        summary.addEventListener('click', function () { setCollapsed(false); });
+
+        function shouldCollapse() {
+            if (manualCollapseUntilTop) return false;
+            var navH = nav ? Math.round(nav.getBoundingClientRect().height) : 62;
+            var locBottom = locRow ? locRow.getBoundingClientRect().bottom : 0;
+            // Collapse the filters as soon as the first row of location chips is no longer fully visible under the fixed navbar.
+            return locBottom <= navH;
+        }
+
+        function onScroll() {
+            if (window.scrollY <= 1) {
+                // Back at the top: release the manual re-expand lock.
+                manualCollapseUntilTop = false;
+                setCollapsed(false);
+                return;
+            }
+            setCollapsed(shouldCollapse());
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        window.addEventListener('load', onScroll, { passive: true });
+
+        summary.addEventListener('click', function () {
+            // Re-expand and scroll to the top so the full card is visible again.
+            manualCollapseUntilTop = true;
+            setCollapsed(false);
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
+            });
+            // The manual lock clears on the next scroll near the top (see onScroll).
+        });
+
+        onScroll();
     })();
 </script>
 {% endblock %}

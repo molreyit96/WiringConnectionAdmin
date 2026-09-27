@@ -5,7 +5,7 @@
 {% endblock %}
 {% block container %}
 
-<div class="container pb-5 mb-4">
+<div class="container wc-bottom-clear">
     <form method='post' action="{{request.path}}" id="bulkUploadForm" enctype="multipart/form-data"
           data-upload-url="/mobile/create_daily_docs_compressed/{{dailyID.id}}/0/{{docType}}">
         {% csrf_token %}

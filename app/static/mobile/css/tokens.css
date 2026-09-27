@@ -56,6 +56,12 @@ WC Mobile tokens — Palette A "Conductor"
 
     --wc-wash: #eef3f9;
 
+    /* ---- Fixed chrome heights ---- */
+    /* Height of the fixed bottom nav. Default matches the resting footer; the PWA
+       shell re-syncs it from the real element so font scaling / longer labels
+       cannot push page content underneath the footer. */
+    --wc-footer-h: 72px;
+
     /* ---- Type scale (self-hosted IBM Plex Sans) ---- */
     --wc-font-body: "IBM Plex Sans", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
     --wc-type-xs: .875rem;   /* 14px floor — labels, badges, chips */
@@ -361,7 +367,7 @@ a {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 60px;
+    bottom: var(--wc-footer-h);
     z-index: 1030;
     display: flex;
     gap: .6rem;
@@ -373,6 +379,11 @@ a {
 
 .action-bar .btn {
     min-height: 48px;
+}
+
+/* Keeps the last element of a page scrollable clear of the fixed bottom nav. */
+.wc-bottom-clear {
+    padding-bottom: calc(var(--wc-footer-h) + 1.25rem);
 }
 
 /* ---- Crew screen: sticky context bar ---- */
