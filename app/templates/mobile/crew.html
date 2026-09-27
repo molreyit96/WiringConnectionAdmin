@@ -8,133 +8,8 @@
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
  <style>
-    :root {
-       --thumbnail-width: 200px;
-       --thumbnail-height: 145px;
-   }
-   
-   .documents-container {
-       display: flex;
-       flex-wrap: wrap;
-       gap: 15px;
-       margin-top: 20px;
-   }
-   
-   .document-thumbnail {
-       position: relative;
-       width: var(--thumbnail-width);
-       height: var(--thumbnail-height);
-       transition: transform 0.2s ease;
-       border-radius: 4px;
-       overflow: hidden;
-   }
-   
-   .document-thumbnail:hover {
-       transform: scale(1.03);
-       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-   }
-   
-   .thumbnail-content {
-       width: 100%;
-       height: 100%;
-       position: relative;
-       cursor: pointer;
-   }
-   
-   .thumbnail-img {
-       width: 100%;
-       height: 100%;
-       object-fit: cover;
-   }
-   
-   .pdf-thumbnail {
-       width: 100%;
-       height: 100%;
-       background-color: #f5f5f5;
-       display: flex;
-       flex-direction: column;
-       justify-content: center;
-       align-items: center;
-       position: relative;
-   }
-   
-   .pdf-thumbnail canvas {
-       width: 100%;
-       height: 100%;
-       object-fit: contain;
-   }
-   
-   .pdf-icon {
-       font-size: 2rem;
-       color: #e74c3c;
-       margin-bottom: 5px;
-   }
-   
-   .overlay {
-       position: absolute;
-       top: 0;
-       left: 0;
-       right: 0;
-       bottom: 0;
-       background: rgba(0,0,0,0.3);
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       opacity: 0;
-       transition: opacity 0.2s ease;
-   }
-   
-.document-thumbnail:hover .overlay {
-        opacity: 1;
-    }
+   /* Doc grid + upload rows come from mobile/css/tokens.css (wc-doc-*, wc-up-*) */
 
-    .wc-preview-loader {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: .75rem;
-        min-height: 40vh;
-        color: var(--wc-ink-2);
-        font-size: var(--wc-type-sm);
-    }
-    .wc-spinner--sm {
-        width: 1.75rem;
-        height: 1.75rem;
-        border-width: 3px;
-    }
-   
-   .overlay-icon {
-       color: white;
-       font-size: 1.5rem;
-   }
-   
-   .delete-btn {
-       position: absolute;
-       top: 5px;
-       right: 5px;
-       background: white;
-       width: 24px;
-       height: 24px;
-       border-radius: 50%;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       cursor: pointer;
-       z-index: 2;
-       opacity: 0.8;
-       transition: opacity 0.2s ease;
-   }
-   
-   .delete-btn:hover {
-       opacity: 1;
-   }
-   
-   .delete-icon {
-       color: #e74c3c;
-       font-size: 14px;
-   }
-   
    /* Modal Styles */
    .preview-modal .modal-content {
        background-color: rgba(0,0,0,0.9);
@@ -668,22 +543,22 @@
                                     <a href="/mobile/create_daily_docs_compressed/{{dailyactual.id}}/{{selectedLocation}}/1" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                 {% endif %}
                             </h3>
-                            <div class="documents-container">
-                                {% if not dailyDocs %}<p>No Maps Included</p>{% endif %}
+                            <div class="wc-doc-grid">
+                                 {% if not dailyDocs %}<p>No Maps Included</p>{% endif %}
                                 {% for itemd in dailyDocs %}
-                                <div class="document-thumbnail"
+                                <div class="wc-doc-cell"
                                      data-url="{{ itemd.document.url }}"
                                      data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
-                                    <div class="thumbnail-content">
+                                    <div class="wc-doc-content">
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
-                                            <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
+                                            <div class="wc-doc-pdf"><i class="fas fa-file-pdf wc-doc-pdf-icon"></i><small class="wc-doc-pdf-label">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="wc-doc-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
                                         {% endif %}
-                                        <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
+                                        <div class="wc-doc-overlay"><i class="fas fa-magnifying-glass-plus"></i></div>
                                     </div>
                                     {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
-                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times delete-icon"></i></div>
+                                        <button type="button" class="wc-doc-remove" aria-label="Delete document" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times"></i></button>
                                     {% endif %}
                                 </div>
                                 {% endfor %}
@@ -697,22 +572,22 @@
                                     <a href="/mobile/create_daily_docs_compressed/{{dailyactual.id}}/{{selectedLocation}}/2" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                 {% endif %}
                             </h3>
-                            <div class="documents-container">
+                            <div class="wc-doc-grid">
                                 {% if not dailyDocsPic %}<p>No Pictures Included</p>{% endif %}
                                 {% for itemd in dailyDocsPic %}
-                                <div class="document-thumbnail"
+                                <div class="wc-doc-cell"
                                      data-url="{{ itemd.document.url }}"
                                      data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
-                                    <div class="thumbnail-content">
+                                    <div class="wc-doc-content">
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
-                                            <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
+                                            <div class="wc-doc-pdf"><i class="fas fa-file-pdf wc-doc-pdf-icon"></i><small class="wc-doc-pdf-label">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="wc-doc-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
                                         {% endif %}
-                                        <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
+                                        <div class="wc-doc-overlay"><i class="fas fa-magnifying-glass-plus"></i></div>
                                     </div>
                                     {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
-                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times delete-icon"></i></div>
+                                        <button type="button" class="wc-doc-remove" aria-label="Delete document" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times"></i></button>
                                     {% endif %}
                                 </div>
                                 {% endfor %}
@@ -726,22 +601,22 @@
                                     <a href="/mobile/create_daily_docs_compressed/{{dailyactual.id}}/{{selectedLocation}}/3" class="btn btn-outline-secondary tap-target"><i class="fa-solid fa-circle-plus"></i> Add</a>
                                 {% endif %}
                             </h3>
-                            <div class="documents-container">
+                            <div class="wc-doc-grid">
                                 {% if not dailyDocsMB %}<p>No Material Backup Included</p>{% endif %}
                                 {% for itemd in dailyDocsMB %}
-                                <div class="document-thumbnail"
+                                <div class="wc-doc-cell"
                                      data-url="{{ itemd.document.url }}"
                                      data-type="{% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}pdf{% else %}image{% endif %}">
-                                    <div class="thumbnail-content">
+                                    <div class="wc-doc-content">
                                         {% if itemd.document.url|lower|slice:'-4:' == '.pdf' %}
-                                            <div class="pdf-thumbnail"><i class="fas fa-file-pdf pdf-icon"></i><small class="text-muted">PDF Document</small><canvas class="d-none"></canvas></div>
+                                            <div class="wc-doc-pdf"><i class="fas fa-file-pdf wc-doc-pdf-icon"></i><small class="wc-doc-pdf-label">PDF Document</small><canvas class="d-none"></canvas></div>
                                         {% else %}
-                                            <img src="{{ itemd.document.url }}" alt="Document" class="thumbnail-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
+                                            <img src="{{ itemd.document.url }}" alt="Document" class="wc-doc-img" loading="lazy" decoding="async" onerror="wcBrokenDoc(this)">
                                         {% endif %}
-                                        <div class="overlay"><i class="fas fa-magnifying-glass-plus overlay-icon"></i></div>
+                                        <div class="wc-doc-overlay"><i class="fas fa-magnifying-glass-plus"></i></div>
                                     </div>
                                     {% if editable and dailyactual.supervisor and dailyactual.supervisor != "0" and dailyactual.woID %}
-                                        <div class="delete-btn" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times delete-icon"></i></div>
+                                        <button type="button" class="wc-doc-remove" aria-label="Delete document" onclick="delete_daily_docs({{ itemd.id }}, {{ selectedLocation }}); event.stopPropagation();"><i class="fas fa-times"></i></button>
                                     {% endif %}
                                 </div>
                                 {% endfor %}
@@ -976,7 +851,7 @@
         window.wcRenderPdfThumbnails = function () {
             var lib = window.pdfjsLib;
             if (!lib || !lib.getDocument) return;
-            document.querySelectorAll('.document-thumbnail[data-type="pdf"]').forEach(function (thumbnail) {
+            document.querySelectorAll('.wc-doc-cell[data-type="pdf"]').forEach(function (thumbnail) {
                 if (thumbnail.dataset.wcRendered === '1') return;
                 if (!thumbnail.closest('[data-docgroup].is-visible')) return;
                 thumbnail.dataset.wcRendered = '1';
@@ -991,7 +866,7 @@
                     canvas.height = viewport.height;
                     return page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
                 }).then(function () {
-                    var holder = thumbnail.querySelector('.pdf-thumbnail');
+                    var holder = thumbnail.querySelector('.wc-doc-pdf');
                     if (holder) { holder.innerHTML = ''; holder.appendChild(canvas); }
                     canvas.classList.remove('d-none');
                 }).catch(function (error) {
@@ -1001,7 +876,7 @@
         };
 
         window.wcEnsurePdfThumbs = function () {
-            if (!document.querySelector('.document-thumbnail[data-type="pdf"]')) return;
+            if (!document.querySelector('.wc-doc-cell[data-type="pdf"]')) return;
             wcLoadPdfjs().then(window.wcRenderPdfThumbnails).catch(function () {});
         };
         
@@ -1024,9 +899,9 @@
         // Click handlers + kick off thumbnails when the docs panel is already visible
         document.addEventListener('DOMContentLoaded', function() {
             // Set up click handlers for thumbnails
-            document.querySelectorAll('.thumbnail-content').forEach(thumb => {
+            document.querySelectorAll('.wc-doc-content').forEach(thumb => {
                 thumb.addEventListener('click', function() {
-                    const parent = this.closest('.document-thumbnail');
+                    const parent = this.closest('.wc-doc-cell');
                     const url = parent.getAttribute('data-url');
                     const type = parent.getAttribute('data-type');
                     if (type === 'pdf') {
@@ -1165,7 +1040,7 @@
         function wcBrokenDoc(img) {
             if (!img || img.dataset.wcBroken === '1') return;
             img.dataset.wcBroken = '1';
-            var tile = img.closest('.thumbnail-content');
+            var tile = img.closest('.wc-doc-content');
             if (!tile) return;
             var placeholder = document.createElement('div');
             placeholder.className = 'wc-doc-broken';

@@ -1311,7 +1311,24 @@ def delete_daily_item_sup(request, id, LocID):
 
 #************** DAILY DOCS ***********************
 
-# Replace the BulkUploadView class in views.py
+# Server-side guard for the mobile doc upload. The form validators are bypassed by the
+# fetch-based uploader, so the allowlist and the size cap are enforced here instead.
+DOC_UPLOAD_ALLOWED_EXTENSIONS = ('pdf', 'docx', 'xlsx', 'jpeg', 'jpg', 'png')
+DOC_UPLOAD_MAX_BYTES = 25 * 1024 * 1024
+
+
+def validate_doc_upload(file):
+    """Return a short reason string when the upload must be refused, else None."""
+    ext = os.path.splitext(file.name)[1].lstrip('.').lower()
+    if ext not in DOC_UPLOAD_ALLOWED_EXTENSIONS:
+        allowed = ', '.join(DOC_UPLOAD_ALLOWED_EXTENSIONS)
+        return f'File type .{ext} not allowed (allowed: {allowed})'
+    if file.size > DOC_UPLOAD_MAX_BYTES:
+        limit_mb = round(DOC_UPLOAD_MAX_BYTES / (1024 * 1024))
+        return f'File is larger than the {limit_mb} MB limit'
+    return None
+
+
 class BulkUploadCompressedView(View):
     def post(self, request, id, LocID, docType, *args, **kwargs):
         # Use the new form specifically for bulk upload
@@ -1336,7 +1353,13 @@ class BulkUploadCompressedView(View):
             }, status=400)
         
         # Use the docType from the URL (original behavior)
-        doc_type = int(docType)
+        try:
+            doc_type = int(docType)
+        except (TypeError, ValueError):
+            return JsonResponse({
+                'success': False,
+                'errors': f'Invalid document type: {docType}'
+            }, status=400)
         
         # Get files from request
         files = self.request.FILES.getlist('files')
@@ -1346,6 +1369,16 @@ class BulkUploadCompressedView(View):
                 'success': False,
                 'errors': 'No files provided'
             }, status=400)
+
+        # Reject the whole request before touching the DB so a bad file never
+        # leaves a half-saved batch behind
+        for file in files:
+            problem = validate_doc_upload(file)
+            if problem:
+                return JsonResponse({
+                    'success': False,
+                    'errors': f'{file.name}: {problem}'
+                }, status=400)
         
         created_docs = []
         
@@ -1401,7 +1434,8 @@ class BulkUploadCompressedView(View):
             'emp': emp,
             'docType': docType,
             'selectedLocation': LocID,
-            'per': per
+            'per': per,
+            'max_upload_mb': round(DOC_UPLOAD_MAX_BYTES / (1024 * 1024)),
         })
 
 

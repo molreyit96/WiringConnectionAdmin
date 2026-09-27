@@ -822,6 +822,337 @@ body.wc-sheet-open {
     color: var(--wc-on-accent);
 }
 
+/* =========================================================
+   Document grid (shared: crew Docs card + doc upload page)
+   ========================================================= */
+:root {
+    --wc-doc-width: 200px;
+    --wc-doc-height: 145px;
+}
+
+.wc-doc-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.wc-doc-cell {
+    position: relative;
+    width: var(--wc-doc-width);
+    height: var(--wc-doc-height);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--wc-surface-2);
+    border: 1px solid var(--wc-border);
+}
+
+.wc-doc-content {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
+    border: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.wc-doc-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wc-doc-pdf {
+    width: 100%;
+    height: 100%;
+    background: var(--wc-surface-2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.wc-doc-pdf canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.wc-doc-pdf-icon {
+    font-size: 2rem;
+    color: #e74c3c;
+    margin-bottom: 5px;
+}
+
+.wc-doc-pdf-label {
+    font-size: var(--wc-type-xs);
+    color: var(--wc-ink-2);
+}
+
+.wc-doc-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, .35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: #ffffff;
+    font-size: 1.5rem;
+    pointer-events: none;
+}
+
+.wc-doc-cell:hover .wc-doc-overlay,
+.wc-doc-cell:focus-within .wc-doc-overlay {
+    opacity: 1;
+}
+
+.wc-doc-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wc-surface);
+    border: 1px solid var(--wc-border);
+    color: var(--wc-danger);
+    font-size: 14px;
+    z-index: 2;
+    padding: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+}
+
+.wc-doc-remove::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+}
+
+/* Oversize variant: dense grid of local File previews (upload page) */
+.wc-doc-grid--sm {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.wc-doc-grid--sm .wc-doc-cell {
+    width: auto;
+    height: 104px;
+}
+
+.wc-doc-more {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .1rem;
+    background: var(--wc-surface-2);
+    border: 1px dashed var(--wc-border);
+    border-radius: 8px;
+    color: var(--wc-ink-2);
+}
+
+.wc-doc-more b {
+    font-size: var(--wc-type-md);
+    color: var(--wc-ink);
+}
+
+.wc-doc-more span {
+    font-size: var(--wc-type-xs);
+}
+
+/* ---- Preview loading placeholder (PDF thumbnails) ---- */
+.wc-preview-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    min-height: 40vh;
+    color: var(--wc-ink-2);
+    font-size: var(--wc-type-sm);
+}
+
+.wc-spinner--sm {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-width: 3px;
+}
+
+/* ---- Doc upload: selection summary ---- */
+.wc-doc-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    flex-wrap: wrap;
+    padding: .5rem 0 0;
+    border-top: 1px dashed var(--wc-border);
+    margin-top: .75rem;
+}
+
+.wc-doc-summary b {
+    font-size: var(--wc-type-md);
+    color: var(--wc-ink);
+}
+
+/* ---- Doc upload: per-file status rows ---- */
+.wc-up-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.wc-up-row {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    min-height: 48px;
+    padding: .3rem 0;
+    border-bottom: 1px solid var(--wc-border);
+}
+
+.wc-up-row:last-child {
+    border-bottom: 0;
+}
+
+.wc-up-icon {
+    width: 26px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--wc-ink-2);
+}
+
+.wc-up-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.wc-up-name {
+    display: block;
+    font-size: var(--wc-type-sm);
+    color: var(--wc-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wc-up-size {
+    display: block;
+    font-size: var(--wc-type-xs);
+    color: var(--wc-ink-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.wc-up-track {
+    width: 62px;
+    height: 6px;
+    flex-shrink: 0;
+    border-radius: 3px;
+    background: var(--wc-border);
+    overflow: hidden;
+}
+
+.wc-up-track i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--wc-accent);
+    transition: width .3s ease;
+}
+
+.wc-up-row.is-compressing .wc-up-icon,
+.wc-up-row.is-uploading .wc-up-icon {
+    color: var(--wc-accent);
+}
+
+.wc-up-row.is-compressing .wc-up-track i {
+    background: var(--wc-warn);
+}
+
+.wc-up-row.is-done .wc-up-icon {
+    color: var(--wc-ok);
+}
+
+.wc-up-row.is-done .wc-up-track i {
+    background: var(--wc-ok);
+}
+
+.wc-up-row.is-failed .wc-up-icon {
+    color: var(--wc-danger);
+}
+
+.wc-up-row.is-failed .wc-up-track i {
+    background: var(--wc-danger);
+}
+
+.wc-up-row.is-failed .wc-up-size {
+    color: var(--wc-danger);
+}
+
+/* ---- Doc upload: progress ---- */
+.wc-progress {
+    height: 10px;
+    border-radius: 5px;
+    background: var(--wc-border);
+    overflow: hidden;
+}
+
+.wc-progress i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--wc-accent);
+    transition: width .3s ease;
+}
+
+.wc-progress.is-done i {
+    background: var(--wc-ok);
+}
+
+.wc-progress.is-failed i {
+    background: var(--wc-danger);
+}
+
+/* ---- Doc upload: dropzone-style pick target ---- */
+.wc-doc-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    width: 100%;
+    min-height: 132px;
+    padding: 1rem;
+    border: 2px dashed var(--wc-border);
+    border-radius: 10px;
+    background: var(--wc-surface-2);
+    color: var(--wc-ink-2);
+    text-align: center;
+}
+
+.wc-doc-pick i {
+    font-size: 1.6rem;
+    color: var(--wc-accent);
+}
+
+.wc-doc-pick b {
+    color: var(--wc-ink);
+    font-size: var(--wc-type-base);
+}
+
 /* ---- Missing media fallback ---- */
 .wc-doc-broken {
     display: flex;

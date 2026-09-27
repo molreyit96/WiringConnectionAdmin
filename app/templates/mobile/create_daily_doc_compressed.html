@@ -1,1268 +1,747 @@
-{% extends 'mobile/index.html' %} 
-{%load static%}
-{% block title %} Order List {% endblock %} 
-{% load humanize %}
+{% extends 'mobile/index.html' %}
+{% load static %}
+{% block title %}
+    {% if docType == '1' %}Add Maps{% elif docType == '2' %}Add Pictures{% else %}Add Material Backup{% endif %}
+{% endblock %}
 {% block container %}
-{% load widget_tweaks%}
 
-<style>
-    /* ============================================
-       BASE STYLES
-    ============================================ */
-    .file-preview .card {
-        width: 100%;
-        transition: transform 0.2s;
-    }
-    .file-preview .card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .card-footer small {
-        font-size: 0.7rem;
-    }
-    
-    /* ============================================
-       MOBILE-FIRST LAYOUT
-    ============================================ */
-    .upload-container {
-        padding-bottom: 80px; /* Space for floating button */
-    }
-    
-    /* ============================================
-       STICKY HEADER WITH CONTROLS
-    ============================================ */
-    .upload-header {
-        background: white;
-        padding: 12px 0 8px 0;
-        border-bottom: 1px solid #e9ecef;
-        margin-bottom: 15px;
-        z-index: 100;
-    }
-    
-    /* For mobile - sticky header */
-    .upload-header-sticky {
-        position: sticky;
-        top: 0;
-        background: white;
-        z-index: 100;
-        padding: 10px 0 8px 0;
-        border-bottom: 2px solid var(--wc-accent);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    
-    /* ============================================
-       FILE COUNTER & STATS
-    ============================================ */
-    .file-stats {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 14px;
-        padding: 8px 12px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-    
-    .file-stats .badge-count {
-        background: var(--wc-accent);
-        color: white;
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 13px;
-    }
-    
-    .file-stats .size-info {
-        color: #6c757d;
-        font-size: 13px;
-    }
-    
-    /* ============================================
-       UPLOAD CONTROLS ROW
-    ============================================ */
-    .upload-controls {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin: 8px 0 12px 0;
-    }
-    
-    .upload-controls .btn {
-        flex: 1;
-        min-width: 80px;
-        font-size: 14px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        font-weight: 500;
-    }
-    
-    .upload-controls .btn-primary {
-        flex: 2;
-    }
-    
-    /* ============================================
-       PROGRESS BAR - COMPACT
-    ============================================ */
-    .progress-wrapper {
-        margin: 8px 0 12px 0;
-    }
-    
-    .progress-stats {
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
-        margin-bottom: 4px;
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-    
-    .progress-stats .progress-text {
-        font-weight: 500;
-        color: var(--wc-accent);
-    }
-    
-    .progress-stats .time-estimate {
-        color: #6c757d;
-        font-size: 12px;
-    }
-    
-    .progress {
-        height: 20px;
-        border-radius: 10px;
-        background: #e9ecef;
-        overflow: hidden;
-    }
-    
-    .progress .progress-bar {
-        font-size: 11px;
-        line-height: 20px;
-        transition: width 0.5s ease;
-        border-radius: 10px;
-    }
-    
-    /* ============================================
-       FILE PREVIEW GRID - SCROLLABLE
-    ============================================ */
-    .file-preview-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-        gap: 10px;
-        margin-top: 12px;
-        max-height: 55vh;
-        overflow-y: auto;
-        padding: 4px 2px 12px 2px;
-        -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
-    }
-    
-    .file-preview {
-        width: 100% !important;
-    }
-    
-    .file-preview .card {
-        border-radius: 10px;
-        overflow: hidden;
-        border: 1px solid #e9ecef;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-    
-    .file-preview .card-img-top {
-        height: 70px;
-        object-fit: cover;
-        background: #f8f9fa;
-    }
-    
-    .file-preview .card-body {
-        padding: 8px 4px;
-        min-height: 45px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .file-preview .card-body i {
-        font-size: 24px;
-    }
-    
-    .file-preview .card-footer {
-        padding: 4px 6px;
-        font-size: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        background: #f8f9fa;
-        border-top: none;
-    }
-    
-    .file-preview .card-footer small {
-        font-size: 9px;
-    }
-    
-    .file-preview .btn-close {
-        width: 18px;
-        height: 18px;
-        font-size: 10px;
-        padding: 2px;
-        background-color: white;
-        border-radius: 50%;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-        top: 4px;
-        right: 4px;
-        opacity: 0.9;
-    }
-    
-    /* ============================================
-       FILE LIST (Detailed View)
-    ============================================ */
-    .file-list-container {
-        max-height: 40vh;
-        overflow-y: auto;
-        margin-top: 10px;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .file-item {
-        padding: 6px 10px;
-        margin-bottom: 3px;
-        background: white;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid #f1f3f5;
-        font-size: 13px;
-    }
-    
-    .file-item .status-icon {
-        width: 20px;
-        text-align: center;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-    
-    .file-item .file-name {
-        flex: 1;
-        font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .file-item .file-progress {
-        width: 60px;
-        height: 4px;
-        background: #e9ecef;
-        border-radius: 2px;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-    
-    .file-item .file-progress .bar {
-        height: 100%;
-        background: var(--wc-accent);
-        transition: width 0.3s;
-    }
-    
-    .file-item .file-size {
-        font-size: 10px;
-        color: #6c757d;
-        min-width: 60px;
-        text-align: right;
-        flex-shrink: 0;
-    }
-    
-    .file-item.status-completed .bar {
-        background: #198754;
-    }
-    .file-item.status-failed .bar {
-        background: #dc3545;
-    }
-    .file-item.status-compressing .bar {
-        background: #ffc107;
-        animation: pulse 1s infinite;
-    }
-    .file-item.status-uploading .bar {
-        background: var(--wc-accent);
-        animation: pulse 1s infinite;
-    }
-    
-    /* ============================================
-       COMPRESSION STATS - COMPACT
-    ============================================ */
-    .compression-stats {
-        background: #e7f5ff;
-        padding: 8px 12px;
-        border-radius: 6px;
-        margin: 8px 0;
-        font-size: 12px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .compression-stats .saved {
-        color: #198754;
-        font-weight: bold;
-    }
-    
-    /* ============================================
-       FLOATING ACTION BUTTON (FAB)
-    ============================================ */
-    .fab-upload {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 999;
-        width: 90%;
-        max-width: 400px;
-        background: var(--wc-accent);
-        color: white;
-        border: none;
-        border-radius: 50px;
-        padding: 14px 20px;
-        font-size: 16px;
-        font-weight: 600;
-        box-shadow: 0 4px 20px rgba(14, 116, 144, 0.4);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: all 0.3s ease;
-    }
-    
-    .fab-upload:hover {
-        background: var(--wc-accent-dark);
-        transform: translateX(-50%) scale(1.02);
-        box-shadow: 0 6px 28px rgba(14, 116, 144, 0.5);
-    }
-    
-    .fab-upload:active {
-        transform: translateX(-50%) scale(0.96);
-    }
-    
-    .fab-upload .badge {
-        background: rgba(255,255,255,0.25);
-        border-radius: 20px;
-        padding: 2px 12px;
-        font-size: 13px;
-    }
-    
-    /* ============================================
-       RESPONSIVE BREAKPOINTS
-    ============================================ */
-    @media (max-width: 576px) {
-        /* Smaller previews on very small screens */
-        .file-preview-grid {
-            grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-            gap: 6px;
-        }
-        
-        .file-preview .card-img-top {
-            height: 55px;
-        }
-        
-        .file-preview .card-footer {
-            font-size: 8px;
-            padding: 2px 4px;
-        }
-        
-        .upload-controls .btn {
-            font-size: 12px;
-            padding: 8px 10px;
-            min-width: 60px;
-        }
-        
-        .file-stats {
-            font-size: 12px;
-            padding: 6px 10px;
-        }
-        
-        .compression-stats {
-            font-size: 11px;
-            padding: 6px 10px;
-        }
-        
-        .fab-upload {
-            padding: 12px 16px;
-            font-size: 14px;
-            width: 92%;
-        }
-    }
-    
-    @media (max-width: 400px) {
-        .file-preview-grid {
-            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-            gap: 5px;
-        }
-        
-        .file-preview .card-img-top {
-            height: 45px;
-        }
-    }
-    
-    /* ============================================
-       ANIMATIONS
-    ============================================ */
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    
-    @keyframes slideUp {
-        from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-        to { transform: translateX(-50%) translateY(0); opacity: 1; }
-    }
-    
-    .fab-upload.show {
-        display: flex;
-        animation: slideUp 0.3s ease;
-    }
-    
-    /* ============================================
-       SCROLL INDICATOR
-    ============================================ */
-    .scroll-hint {
-        text-align: center;
-        color: #adb5bd;
-        font-size: 11px;
-        padding: 4px 0;
-        display: none;
-    }
-    
-    .scroll-hint.show {
-        display: block;
-    }
-</style>
+<div class="container pb-5 mb-4">
+    <form method='post' action="{{request.path}}" id="bulkUploadForm" enctype="multipart/form-data"
+          data-upload-url="/mobile/create_daily_docs_compressed/{{dailyID.id}}/0/{{docType}}">
+        {% csrf_token %}
 
-<div class="container upload-container">
-    <form method='post' action="{{request.path}}" id="bulkUploadForm" enctype="multipart/form-data">
-        {% csrf_token %}          
-       
-        <div class="row mt-2 pt-2" id="items">
-            
-            <!-- ==========================================
-                 DAILY ID - Hidden
-            ========================================== -->
-            <div class="mb-2">
-                <div class="d-none">
-                    {{ form.DailyID }}
-                    <input type="hidden" name="DailyID" id="DailyID" value="{{ dailyID.id }}">
-                </div>
-            </div>
-            
-            <!-- ==========================================
-                 DOCUMENT TYPE - Hidden
-            ========================================== -->
-            <div class="mb-2">
-                <input type="hidden" name="docType" id="docType" value="{{docType}}">
-                <div class="d-none">
-                    {{ form.docType }}
-                </div>
-            </div>
-            
-            <!-- ==========================================
-                 STICKY HEADER WITH CONTROLS
-            ========================================== -->
-            <div class="upload-header-sticky">
-                
-                <!-- File Stats -->
-                <div class="file-stats">
-                    <span>
-                        <span class="badge-count" id="fileCount">0 files</span>
-                    </span>
-                    <span class="size-info" id="totalSize">Total: 0 MB</span>
-                </div>
-                
-                <!-- Upload Controls -->
-                <div class="upload-controls">
-                    <button type="button" class="btn btn-outline-secondary tap-target" onclick="document.getElementById('id_files').click()">
-                        📎 Select
-                    </button>
-                    <button type="button" class="btn btn-primary tap-target" id="uploadBtn">
-                        📤 Upload All
-                    </button>
-                    <button type="button" class="btn btn-warning tap-target" id="pauseBtn" style="display:none;">
-                        ⏸ Pause
-                    </button>
-                    <button type="button" class="btn btn-danger tap-target" id="cancelBtn" style="display:none;">
-                        ❌ Cancel
-                    </button>
-                    <button type="button" class="btn btn-success tap-target" id="retryBtn" style="display:none;">
-                        🔄 Retry
-                    </button>
-                    <a type="button" class="btn btn-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}?section=docs&sub={% if docType == '1' %}maps{% elif docType == '2' %}pictures{% else %}material{% endif %}">
-                        ✕ Close
+        <input type="hidden" name="DailyID" id="DailyID" value="{{ dailyID.id }}">
+        <input type="hidden" name="docType" id="docType" value="{{ docType }}">
+
+        <div class="wc-context-bar">
+            <div class="wc-title-row">
+                <div class="wc-title-side">
+                    <a class="btn btn-outline-secondary tap-target wc-icon-btn flex-shrink-0"
+                       href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}?section=docs&sub={% if docType == '1' %}maps{% elif docType == '2' %}pictures{% else %}material{% endif %}"
+                       aria-label="Back to crew documents">
+                        <i class="fa-solid fa-arrow-left"></i>
                     </a>
                 </div>
-                
-                <!-- Progress Area -->
-                <div id="uploadProgress" style="display:none;">
-                    <div class="progress-wrapper">
-                        <div class="progress-stats">
-                            <span class="progress-text" id="progressText">0 of 0 uploaded</span>
-                            <span class="time-estimate" id="timeEstimate">Calculating...</span>
-                        </div>
-                        <div class="progress">
-                            <div id="progressBar" class="progress-bar" style="width: 0%">0%</div>
-                        </div>
+                <div class="wc-title-center">
+                    <span class="wc-day-title-sm text-truncate">
+                        {% if docType == '1' %}Add Maps{% elif docType == '2' %}Add Pictures{% else %}Add Material Backup{% endif %}
+                    </span>
+                    <span class="wc-day-loc-badge">
+                        <i class="fa-solid {% if docType == '1' %}fa-map{% elif docType == '2' %}fa-images{% else %}fa-box-archive{% endif %}" aria-hidden="true"></i>
+                        Crew {{dailyID.crew}} &middot; {{dailyID.day|date:"M j"}} &middot; {{selectedLocation}}
+                    </span>
+                </div>
+                <div class="wc-title-side" aria-hidden="true"></div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fa-solid {% if docType == '1' %}fa-map{% elif docType == '2' %}fa-images{% else %}fa-box-archive{% endif %}"></i>
+                    Files
+                </h6>
+                <span class="wc-inline-note wc-inline-note--muted" id="fileCount">None selected</span>
+            </div>
+            <div class="card-body">
+                <button type="button" class="wc-doc-pick" id="pickBtn">
+                    <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+                    <b>Choose files</b>
+                    <span class="wc-inline-note wc-inline-note--muted">PDF, JPG, PNG, DOCX or XLSX &middot; up to {{ max_upload_mb }} MB each</span>
+                </button>
+
+                <input type="file" name="files" id="id_files" class="d-none" multiple
+                       accept=".pdf,.docx,.xlsx,.jpeg,.jpg,.png">
+
+                <div id="selectionWrap" class="d-none">
+                    <div class="wc-doc-summary">
+                        <span class="wc-inline-note">
+                            <b id="summaryCount">0 files</b>
+                            <span class="wc-inline-note--muted" id="summarySize">0 MB</span>
+                        </span>
+                        <span class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm tap-target" id="addMoreBtn">
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm tap-target" id="clearBtn">
+                                <i class="fa-solid fa-trash" aria-hidden="true"></i> Clear
+                            </button>
+                        </span>
                     </div>
-                    
-                    <div class="compression-stats" id="compressionStats" style="display:none;">
-                        <span>📊 Original: <span id="originalSize">0</span></span>
-                        <span>➜ Compressed: <span id="compressedSize">0</span></span>
-                        <span class="saved">💾 Saved: <span id="savedSize">0</span></span>
-                    </div>
+
+                    <div id="filePreviews" class="wc-doc-grid wc-doc-grid--sm"></div>
+
+                    <p class="wc-inline-note wc-inline-note--muted mt-2 mb-0">
+                        <i class="fa-solid fa-compress" aria-hidden="true"></i>
+                        Photos are compressed on upload (max 4096 px, about 0.8 MB).
+                    </p>
                 </div>
             </div>
-            
-            <!-- ==========================================
-                 FILE INPUT
-            ========================================== -->
-            <div class="mb-2">
-                <input type="file" name="files" id="id_files" class="d-none" multiple 
-                    accept=".pdf,.docx,.xlsx,.jpeg,.jpg,.png" onchange="handleFileSelection(event)">
+        </div>
+
+        <div class="card mb-3 d-none" id="uploadsCard">
+            <div class="card-header card-header-wc d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fa-solid fa-cloud-arrow-up"></i> Uploads</h6>
+                <span class="wc-inline-note" id="uploadCount">0 of 0</span>
             </div>
-            
-            <!-- ==========================================
-                 SCROLL HINT
-            ========================================== -->
-            <div id="scrollHint" class="scroll-hint">
-                👆 Scroll down to see all files
+            <div class="card-body">
+                <div id="progressWrap" class="mb-3 d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="wc-inline-note" id="progressText">Working</span>
+                        <span class="wc-inline-note wc-inline-note--muted" id="timeEstimate"></span>
+                    </div>
+                    <div class="wc-progress" id="progressBar" role="progressbar" aria-label="Upload progress"
+                         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+                </div>
+
+                <div class="wc-up-list" id="fileListContainer" aria-live="polite"></div>
+
+                <p class="wc-inline-note wc-inline-note--muted mt-2 mb-0 d-none" id="compressionStats"></p>
             </div>
-            
-            <!-- ==========================================
-                 FILE PREVIEW GRID
-            ========================================== -->
-            <div id="filePreviews" class="file-preview-grid"></div>
-            
-            <!-- ==========================================
-                 FILE LIST (Detailed Progress)
-            ========================================== -->
-            <div id="fileListContainer" class="file-list-container"></div>
-            
-            <!-- ==========================================
-                 CLOSE BUTTON (Bottom - Fallback)
-            ========================================== -->
-            <div class="d-flex justify-content-center mt-3 mb-3">
-                <a type="button" class="btn btn-outline-danger tap-target" href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}?section=docs&sub={% if docType == '1' %}maps{% elif docType == '2' %}pictures{% else %}material{% endif %}">
-                    ✕ Close & Return
-                </a>
-            </div>
-            
-        </div>    
+        </div>
+
+        <div class="action-bar">
+            <button type="button" class="btn btn-primary flex-grow-1 tap-target" id="uploadBtn" disabled>Upload</button>
+            <button type="button" class="btn btn-warning flex-grow-1 tap-target d-none" id="pauseBtn">Pause</button>
+            <a class="btn btn-danger flex-grow-1 tap-target" id="closeLink"
+               href="/mobile/crew/{{dailyID.Period.id}}/{{dailyID.day|date:'d'}}/{{dailyID.crew}}/{{selectedLocation}}?section=docs&sub={% if docType == '1' %}maps{% elif docType == '2' %}pictures{% else %}material{% endif %}">Close</a>
+        </div>
+
+        <div style="height: 100px;" aria-hidden="true"></div>
     </form>
 </div>
 
-<!-- ==========================================
-     CONFIRM DIALOG (non-Bootstrap)
-========================================== -->
-<div id="wcConfirmOverlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.4);">
-    <div style="position:absolute; left:0; right:0; bottom:0; padding:20px 16px calc(16px + env(safe-area-inset-bottom)); background:var(--wc-card, #fff); border-radius:16px 16px 0 0;">
-        <p id="wcConfirmMsg" style="margin:0 0 16px; font-size:1rem; text-align:center; color:var(--wc-text, #1E2530);"></p>
-        <div class="d-flex gap-2">
-            <button type="button" data-wcno class="btn btn-outline-secondary btn-lg flex-grow-1">Cancel</button>
-            <button type="button" data-wcyes class="btn btn-danger btn-lg flex-grow-1">Confirm</button>
+<div class="modal fade" id="wcConfirmModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-body pt-4 pb-0">
+                <p id="wcConfirmMsg" class="text-center mb-4" style="font-size: 1rem;">Are you sure?</p>
+                <div class="d-flex gap-2 pb-2">
+                    <button type="button" class="btn btn-outline-secondary btn-lg flex-grow-1" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger btn-lg flex-grow-1" id="wcConfirmOk">Confirm</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- ==========================================
-     FLOATING ACTION BUTTON (FAB)
-========================================== -->
-<button type="button" class="fab-upload" id="fabUploadBtn">
-    📤 Upload <span id="fabFileCount" class="badge">0</span>
-</button>
-
-<!-- Include compression library -->
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.0/dist/browser-image-compression.min.js"></script>
-
 <script>
 // ============================================
-// COMPLETE UPLOAD MANAGER - ENHANCED
+// Confirm sheet (same pattern as crew.html)
 // ============================================
+var wcConfirmModal = null;
+var wcConfirmCallback = null;
+function wcConfirm(message, callback) {
+    if (!wcConfirmModal) {
+        wcConfirmModal = new bootstrap.Modal(document.getElementById('wcConfirmModal'));
+        wcConfirmModal._element.addEventListener('hidden.bs.modal', function () {
+            wcConfirmModal._element.contains(document.activeElement) && document.activeElement.blur();
+        });
+    }
+    document.getElementById('wcConfirmMsg').textContent = message;
+    wcConfirmCallback = callback;
+    wcConfirmModal.show();
+    var okBtn = document.getElementById('wcConfirmOk');
+    if (okBtn) okBtn.focus();
+}
+document.getElementById('wcConfirmOk').addEventListener('click', function () {
+    var okBtn = document.getElementById('wcConfirmOk');
+    if (okBtn) okBtn.blur();
+    if (wcConfirmModal) wcConfirmModal.hide();
+    if (wcConfirmCallback) wcConfirmCallback();
+    wcConfirmCallback = null;
+});
+
+// ============================================
+// Upload manager
+// ============================================
+var STATUS_ICON = {
+    pending: 'fa-solid fa-circle',
+    compressing: 'fa-solid fa-compress',
+    compressed: 'fa-solid fa-compress',
+    uploading: 'fa-solid fa-cloud-arrow-up',
+    done: 'fa-solid fa-circle-check',
+    failed: 'fa-solid fa-circle-exclamation'
+};
+
+var FILE_ICON = {
+    pdf: 'fa-solid fa-file-pdf',
+    docx: 'fa-solid fa-file-word',
+    xlsx: 'fa-solid fa-file-excel',
+    image: 'fa-solid fa-file-image'
+};
+
+var PREVIEW_LIMIT = 12;
+var CONCURRENCY = 5;
+var COMPRESS_OPTIONS = {
+    maxSizeMB: 0.8,
+    maxWidthOrHeight: 4096,
+    useWebWorker: true,
+    quality: 0.75,
+    fileType: 'image/jpeg',
+    initialQuality: 0.75
+};
+
+function formatFileSize(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    var k = 1024;
+    var units = ['KB', 'MB', 'GB'];
+    var i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)) - 1, units.length - 1);
+    i = Math.max(i, 0);
+    return parseFloat((bytes / Math.pow(k, i + 1)).toFixed(1)) + ' ' + units[i];
+}
+
+function fileKind(file) {
+    var ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'pdf' || ext === 'docx' || ext === 'xlsx') return ext;
+    if (file.type.indexOf('image/') === 0) return 'image';
+    return 'other';
+}
 
 class UploadManager {
     constructor() {
-        this.files = [];
-        this.compressedFiles = [];
-        this.uploadQueue = [];
+        this.items = [];
+        this.nextUid = 1;
+        this.urls = {};
         this.uploading = false;
         this.paused = false;
         this.cancelled = false;
-        this.completed = 0;
-        this.failed = [];
-        this.successful = [];
-        this.concurrentUploads = 5;
-        this.startTime = null;
-        this.isCompressing = false;
-        this.fabVisible = false;
-        
-        // DOM Elements
+        this.concurrency = CONCURRENCY;
+        this.attemptTotal = 0;
+        this.attemptDone = 0;
+        this.startedAt = null;
+        this.redirectTimer = null;
+        this.stayButton = null;
+
+        this.form = document.getElementById('bulkUploadForm');
         this.fileInput = document.getElementById('id_files');
-        this.previewContainer = document.getElementById('filePreviews');
-        this.progressDiv = document.getElementById('uploadProgress');
+        this.pickBtn = document.getElementById('pickBtn');
+        this.addMoreBtn = document.getElementById('addMoreBtn');
+        this.clearBtn = document.getElementById('clearBtn');
+        this.selectionWrap = document.getElementById('selectionWrap');
+        this.previewGrid = document.getElementById('filePreviews');
+        this.uploadsCard = document.getElementById('uploadsCard');
+        this.listEl = document.getElementById('fileListContainer');
+        this.fileCount = document.getElementById('fileCount');
+        this.summaryCount = document.getElementById('summaryCount');
+        this.summarySize = document.getElementById('summarySize');
+        this.uploadCount = document.getElementById('uploadCount');
+        this.progressWrap = document.getElementById('progressWrap');
         this.progressBar = document.getElementById('progressBar');
+        this.progressFill = this.progressBar.querySelector('i');
         this.progressText = document.getElementById('progressText');
         this.timeEstimate = document.getElementById('timeEstimate');
-        this.fileListContainer = document.getElementById('fileListContainer');
         this.compressionStats = document.getElementById('compressionStats');
-        this.originalSize = document.getElementById('originalSize');
-        this.compressedSize = document.getElementById('compressedSize');
-        this.savedSize = document.getElementById('savedSize');
         this.uploadBtn = document.getElementById('uploadBtn');
         this.pauseBtn = document.getElementById('pauseBtn');
-        this.cancelBtn = document.getElementById('cancelBtn');
-        this.retryBtn = document.getElementById('retryBtn');
-        this.fileCount = document.getElementById('fileCount');
-        this.totalSize = document.getElementById('totalSize');
-        this.fabUploadBtn = document.getElementById('fabUploadBtn');
-        this.fabFileCount = document.getElementById('fabFileCount');
-        this.scrollHint = document.getElementById('scrollHint');
-        
-        // Bind events
-        this.bindEvents();
-        this.setupScrollDetection();
+        this.closeLink = document.getElementById('closeLink');
+
+        this.pickBtn.addEventListener('click', function () { this.fileInput.click(); }.bind(this));
+        this.addMoreBtn.addEventListener('click', function () { this.fileInput.click(); }.bind(this));
+        this.clearBtn.addEventListener('click', this.clearAll.bind(this));
+        this.uploadBtn.addEventListener('click', this.startUpload.bind(this));
+        this.pauseBtn.addEventListener('click', this.togglePause.bind(this));
+        this.fileInput.addEventListener('change', this.onFileInputChange.bind(this));
     }
-    
-    bindEvents() {
-        this.uploadBtn.addEventListener('click', () => this.startUpload());
-        this.fabUploadBtn.addEventListener('click', () => this.startUpload());
-        this.pauseBtn.addEventListener('click', () => this.togglePause());
-        this.cancelBtn.addEventListener('click', () => this.cancelUpload());
-        this.retryBtn.addEventListener('click', () => this.retryFailed());
+
+    // ---------------- selection ----------------
+
+    onFileInputChange(event) {
+        var picked = Array.prototype.slice.call(event.target.files || []);
+        if (!picked.length) return;
+        if (this.items.length) this.addFiles(picked);
+        else this.setFiles(picked);
+        // Re-selecting the same file must still fire change
+        this.fileInput.value = '';
     }
-    
-    // ============================================
-    // SCROLL DETECTION - Show hint when scrolling
-    // ============================================
-    setupScrollDetection() {
-        const container = this.previewContainer;
-        if (container) {
-            container.addEventListener('scroll', () => {
-                if (container.scrollHeight > container.clientHeight) {
-                    this.scrollHint.classList.add('show');
-                } else {
-                    this.scrollHint.classList.remove('show');
-                }
-            });
+
+    setFiles(files) {
+        this.revokeAllUrls();
+        this.items = [];
+        this.addFiles(files);
+    }
+
+    addFiles(files) {
+        var self = this;
+        files.forEach(function (file) {
+            self.items.push({ uid: self.nextUid++, file: file, status: 'pending', size: file.size, error: '' });
+        });
+        this.render();
+    }
+
+    removeItem(uid) {
+        this.items = this.items.filter(function (item) { return item.uid !== uid; });
+        this.revokeUrl(uid);
+        this.render();
+    }
+
+    clearAll() {
+        this.revokeAllUrls();
+        this.items = [];
+        this.render();
+    }
+
+    // ---------------- rendering ----------------
+
+    render() {
+        var count = this.items.length;
+        var totalSize = this.items.reduce(function (sum, item) { return sum + item.size; }, 0);
+
+        this.fileCount.textContent = count ? count + ' selected' : 'None selected';
+        this.summaryCount.textContent = count === 1 ? '1 file' : count + ' files';
+        this.summarySize.textContent = formatFileSize(totalSize);
+
+        this.pickBtn.classList.toggle('d-none', count > 0);
+        this.selectionWrap.classList.toggle('d-none', count === 0);
+        this.uploadsCard.classList.toggle('d-none', count === 0);
+        this.uploadBtn.disabled = count === 0 || this.uploading;
+        this.uploadBtn.textContent = count === 0 ? 'Upload' : (count > 1 ? 'Upload ' + count + ' files' : 'Upload file');
+        if (!count) {
+            this.uploadCount.textContent = '0 of 0';
+            this.compressionStats.classList.add('d-none');
         }
+
+        this.renderPreviews();
+        this.renderRows();
     }
-    
-    // ============================================
-    // FILE SELECTION & PREVIEW
-    // ============================================
-    
-    handleFileSelection(event) {
-        const selectedFiles = Array.from(event.target.files);
-        
-        // Filter only images for compression
-        const imageFiles = selectedFiles.filter(f => f.type.startsWith('image/'));
-        const otherFiles = selectedFiles.filter(f => !f.type.startsWith('image/'));
-        
-        this.files = [...otherFiles, ...imageFiles];
-        
-        this.renderPreviews(this.files);
-        
-        const totalSize = this.files.reduce((sum, f) => sum + f.size, 0);
-        this.updateStats(this.files.length, totalSize);
-        
-        this.progressDiv.style.display = 'block';
-        this.updateFileList();
-        
-        // Reset upload state
-        this.resetUI();
-        
-        // Show FAB
-        this.showFAB(this.files.length);
-        
-        // Enable file input
-        this.fileInput.disabled = false;
-    }
-    
-    updateStats(count, size) {
-        this.fileCount.textContent = `${count} files`;
-        this.totalSize.textContent = `Total: ${this.formatFileSize(size)}`;
-        this.fabFileCount.textContent = count;
-    }
-    
-    resetUI() {
-        this.uploadBtn.style.display = 'inline-block';
-        this.uploadBtn.textContent = '📤 Upload All';
-        this.uploadBtn.disabled = false;
-        this.pauseBtn.style.display = 'none';
-        this.cancelBtn.style.display = 'none';
-        this.retryBtn.style.display = 'none';
-        this.compressionStats.style.display = 'none';
-        this.progressBar.style.width = '0%';
-        this.progressBar.textContent = '0%';
-        this.progressBar.className = 'progress-bar';
-        this.progressText.textContent = 'Ready to upload';
-        this.timeEstimate.textContent = 'Select files to begin';
-    }
-    
-    showFAB(count) {
-        if (count > 0) {
-            this.fabUploadBtn.classList.add('show');
-            this.fabVisible = true;
-        } else {
-            this.fabUploadBtn.classList.remove('show');
-            this.fabVisible = false;
-        }
-    }
-    
-    renderPreviews(files) {
-        this.previewContainer.innerHTML = '';
-        
-        const previewLimit = 12;
-        const filesToShow = files.slice(0, previewLimit);
-        const remaining = files.length - previewLimit;
-        
-        filesToShow.forEach(file => {
-            const previewDiv = document.createElement('div');
-            previewDiv.className = 'file-preview';
-            
-            let previewContent = '';
-            if (file.type.startsWith('image/')) {
-                const url = URL.createObjectURL(file);
-                previewContent = `<img src="${url}" class="card-img-top" style="height: 70px; object-fit: cover">`;
+
+    renderPreviews() {
+        var self = this;
+        this.previewGrid.textContent = '';
+
+        var shown = this.items.slice(0, PREVIEW_LIMIT);
+        shown.forEach(function (item) {
+            var cell = document.createElement('div');
+            cell.className = 'wc-doc-cell';
+
+            var holder = document.createElement('div');
+            holder.className = 'wc-doc-content';
+
+            var kind = fileKind(item.file);
+            if (kind === 'image') {
+                if (!self.urls[item.uid]) self.urls[item.uid] = URL.createObjectURL(item.file);
+                var img = document.createElement('img');
+                img.className = 'wc-doc-img';
+                img.alt = item.file.name;
+                img.loading = 'lazy';
+                img.src = self.urls[item.uid];
+                holder.appendChild(img);
             } else {
-                const icon = this.getFileIcon(file);
-                previewContent = `
-                    <div class="card-body">
-                        <i class="bi ${icon} display-6 text-secondary"></i>
-                    </div>
-                `;
+                var pdfLike = document.createElement('div');
+                pdfLike.className = 'wc-doc-pdf';
+                var icon = document.createElement('i');
+                icon.className = FILE_ICON[kind] || FILE_ICON.image;
+                pdfLike.appendChild(icon);
+                var label = document.createElement('small');
+                label.className = 'wc-doc-pdf-label';
+                label.textContent = formatFileSize(item.size);
+                pdfLike.appendChild(label);
+                holder.appendChild(pdfLike);
             }
-            
-            previewDiv.innerHTML = `
-                <div class="card">
-                    <button type="button" class="btn-close position-absolute top-0 end-0 m-1" 
-                            style="background-color: white; border-radius: 50%; padding: 2px; width: 18px; height: 18px; font-size: 10px;"
-                            aria-label="Remove" onclick="uploadManager.removeFile('${file.name}')"></button>
-                    ${previewContent}
-                    <div class="card-footer">
-                        <small class="d-block text-truncate">${file.name}</small>
-                        <small class="text-muted">${this.formatFileSize(file.size)}</small>
-                    </div>
-                </div>
-            `;
-            this.previewContainer.appendChild(previewDiv);
+            cell.appendChild(holder);
+
+            var remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'wc-doc-remove';
+            remove.setAttribute('aria-label', 'Remove ' + item.file.name);
+            remove.addEventListener('click', function () { self.removeItem(item.uid); });
+            var x = document.createElement('i');
+            x.className = 'fa-solid fa-times';
+            remove.appendChild(x);
+            cell.appendChild(remove);
+
+            self.previewGrid.appendChild(cell);
         });
-        
+
+        var remaining = this.items.length - shown.length;
         if (remaining > 0) {
-            const moreDiv = document.createElement('div');
-            moreDiv.className = 'file-preview';
-            moreDiv.innerHTML = `
-                <div class="card" style="background: #f8f9fa; border: 2px dashed #dee2e6;">
-                    <div class="card-body text-center py-3">
-                        <h5 style="font-size: 18px; font-weight: bold; color: #6c757d;">+${remaining}</h5>
-                        <small style="color: #6c757d;">more files</small>
-                    </div>
-                </div>
-            `;
-            this.previewContainer.appendChild(moreDiv);
+            var more = document.createElement('div');
+            more.className = 'wc-doc-cell';
+            var moreInner = document.createElement('div');
+            moreInner.className = 'wc-doc-more';
+            var moreNum = document.createElement('b');
+            moreNum.textContent = '+' + remaining;
+            var moreLabel = document.createElement('span');
+            moreLabel.textContent = remaining === 1 ? 'more file' : 'more files';
+            moreInner.appendChild(moreNum);
+            moreInner.appendChild(moreLabel);
+            more.appendChild(moreInner);
+            this.previewGrid.appendChild(more);
         }
     }
-    
-    removeFile(fileName) {
-        this.files = this.files.filter(f => f.name !== fileName);
-        this.renderPreviews(this.files);
-        this.updateFileList();
-        
-        const dt = new DataTransfer();
-        this.files.forEach(f => dt.items.add(f));
-        this.fileInput.files = dt.files;
-        
-        const totalSize = this.files.reduce((sum, f) => sum + f.size, 0);
-        this.updateStats(this.files.length, totalSize);
-        this.showFAB(this.files.length);
-    }
-    
-    getFileIcon(file) {
-        if (file.type.includes('pdf')) return 'bi-file-earmark-pdf';
-        if (file.type.includes('word')) return 'bi-file-earmark-word';
-        if (file.type.includes('excel') || file.type.includes('spreadsheet')) return 'bi-file-earmark-excel';
-        return 'bi-file-earmark';
-    }
-    
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
-    
-    // ============================================
-    // FILE LIST UI
-    // ============================================
-    
-    updateFileList() {
-        this.fileListContainer.innerHTML = '';
-        
-        this.files.forEach(file => {
-            const item = document.createElement('div');
-            item.className = 'file-item';
-            item.dataset.filename = file.name;
-            
-            item.innerHTML = `
-                <span class="status-icon">⏳</span>
-                <span class="file-name">${file.name}</span>
-                <div class="file-progress">
-                    <div class="bar" style="width: 0%"></div>
-                </div>
-                <span class="file-size">${this.formatFileSize(file.size)}</span>
-            `;
-            
-            this.fileListContainer.appendChild(item);
+
+    renderRows() {
+        var self = this;
+        this.listEl.textContent = '';
+        this.items.forEach(function (item) {
+            var row = document.createElement('div');
+            row.className = 'wc-up-row';
+            row.id = 'up-' + item.uid;
+
+            var icon = document.createElement('span');
+            icon.className = 'wc-up-icon';
+            var glyph = document.createElement('i');
+            icon.appendChild(glyph);
+
+            var text = document.createElement('div');
+            text.className = 'wc-up-text';
+            var name = document.createElement('span');
+            name.className = 'wc-up-name';
+            name.textContent = item.file.name;
+            var size = document.createElement('span');
+            size.className = 'wc-up-size';
+            text.appendChild(name);
+            text.appendChild(size);
+
+            var track = document.createElement('div');
+            track.className = 'wc-up-track';
+            var bar = document.createElement('i');
+            track.appendChild(bar);
+
+            row.appendChild(icon);
+            row.appendChild(text);
+            row.appendChild(track);
+            self.listEl.appendChild(row);
+
+            self.paintRow(item);
         });
     }
-    
-    updateFileStatus(fileName, status, extra = null) {
-        const fileItems = this.fileListContainer.querySelectorAll('.file-item');
-        fileItems.forEach(item => {
-            if (item.dataset.filename === fileName) {
-                item.className = 'file-item';
-                item.classList.add(`status-${status}`);
-                
-                const statusIcon = item.querySelector('.status-icon');
-                const progressBar = item.querySelector('.bar');
-                const sizeSpan = item.querySelector('.file-size');
-                
-                switch(status) {
-                    case 'compressing':
-                        statusIcon.innerHTML = '⏳';
-                        progressBar.style.width = '100%';
-                        progressBar.style.background = '#ffc107';
-                        break;
-                    case 'compressed':
-                        statusIcon.innerHTML = '✅';
-                        progressBar.style.width = '100%';
-                        progressBar.style.background = '#198754';
-                        if (extra) {
-                            sizeSpan.textContent = this.formatFileSize(extra);
-                        }
-                        break;
-                    case 'uploading':
-                        statusIcon.innerHTML = '📤';
-                        progressBar.style.width = '100%';
-                        progressBar.style.background = 'var(--wc-accent)';
-                        break;
-                    case 'completed':
-                        statusIcon.innerHTML = '✅';
-                        progressBar.style.width = '100%';
-                        progressBar.style.background = '#198754';
-                        break;
-                    case 'failed':
-                        statusIcon.innerHTML = '❌';
-                        progressBar.style.width = '100%';
-                        progressBar.style.background = '#dc3545';
-                        break;
-                }
-            }
-        });
-    }
-    
-    // ============================================
-    // COMPRESSION
-    // ============================================
-    
-    async compressImages() {
-        const imageFiles = this.files.filter(f => f.type.startsWith('image/'));
-        const otherFiles = this.files.filter(f => !f.type.startsWith('image/'));
-        
-        if (imageFiles.length === 0) {
-            this.compressedFiles = [...otherFiles];
-            return;
+
+    paintRow(item) {
+        var row = document.getElementById('up-' + item.uid);
+        if (!row) return;
+        var status = item.status === 'compressed' ? 'compressing' : item.status;
+        row.className = 'wc-up-row is-' + status;
+        row.querySelector('.wc-up-icon i').className = STATUS_ICON[item.status] || STATUS_ICON.pending;
+        row.querySelector('.wc-up-size').textContent = item.error
+            ? item.error
+            : formatFileSize(item.size);
+
+        var bar = row.querySelector('.wc-up-track i');
+        if (item.status === 'uploading' || item.status === 'compressing' || item.status === 'compressed') {
+            bar.style.width = '60%';
+        } else if (item.status === 'done' || item.status === 'failed') {
+            bar.style.width = '100%';
+        } else {
+            bar.style.width = '0%';
         }
-        
-        this.isCompressing = true;
-        this.compressionStats.style.display = 'flex';
-        let totalOriginal = 0;
-        let totalCompressed = 0;
-        
-        const compressedImages = [];
-        let processed = 0;
-        
-        for (const file of imageFiles) {
-            try {
-                this.updateFileStatus(file.name, 'compressing');
-                
-                const options = {
-                    maxSizeMB: 0.8,
-                    maxWidthOrHeight: 4096,
-                    useWebWorker: true,
-                    quality: 0.75,
-                    fileType: 'image/jpeg',
-                    initialQuality: 0.75,
-                };
-                
-                const compressedFile = await imageCompression(file, options);
-                compressedImages.push(compressedFile);
-                
-                totalOriginal += file.size;
-                totalCompressed += compressedFile.size;
-                processed++;
-                
-                this.originalSize.textContent = this.formatFileSize(totalOriginal);
-                this.compressedSize.textContent = this.formatFileSize(totalCompressed);
-                const saved = totalOriginal - totalCompressed;
-                this.savedSize.textContent = this.formatFileSize(saved);
-                
-                this.updateFileStatus(file.name, 'compressed', compressedFile.size);
-                this.updateCompressionProgress(processed, imageFiles.length);
-                
-            } catch (error) {
-                console.error(`Failed to compress ${file.name}:`, error);
-                compressedImages.push(file);
-                this.updateFileStatus(file.name, 'failed', 'Compression failed');
-            }
+    }
+
+    setStatus(item, status, error) {
+        item.status = status;
+        item.error = error || '';
+        this.paintRow(item);
+    }
+
+    // ---------------- progress ----------------
+
+    setProgress(done, total, label) {
+        this.attemptDone = done;
+        this.attemptTotal = total;
+        var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        this.progressFill.style.width = pct + '%';
+        this.progressBar.setAttribute('aria-valuenow', pct);
+        this.progressBar.className = 'wc-progress';
+        this.progressText.textContent = label;
+        this.uploadCount.textContent = done + ' of ' + total;
+
+        if (this.startedAt && done > 0 && done < total) {
+            var elapsed = (Date.now() - this.startedAt) / 1000;
+            var remaining = Math.max(0, Math.round((elapsed / done) * (total - done)));
+            this.timeEstimate.textContent = remaining + 's left';
+        } else {
+            this.timeEstimate.textContent = '';
         }
-        
-        this.compressedFiles = [...compressedImages, ...otherFiles];
-        this.isCompressing = false;
     }
-    
-    updateCompressionProgress(current, total) {
-        const percentage = Math.round((current / total) * 100);
-        this.progressBar.style.width = percentage + '%';
-        this.progressBar.textContent = `Compressing... ${percentage}%`;
-        this.progressText.textContent = `Compressing ${current} of ${total} images`;
-    }
-    
-    // ============================================
-    // UPLOAD MANAGEMENT
-    // ============================================
-    
-    async startUpload() {
+
+    // ---------------- upload ----------------
+
+    startUpload() {
         if (this.uploading) return;
-        if (this.files.length === 0) {
-            alert('Please select files first');
-            return;
-        }
-        
+        this.clearRedirect();
+
+        var self = this;
+        // Resolve the work list before touching the UI: with nothing queued the page
+        // must stay in its ready state instead of stranding the user mid-upload
+        var queue = this.items.filter(function (item) {
+            return item.status === 'pending' || item.status === 'failed';
+        }).map(function (item) {
+            // A retry re-queues failures, so clear the previous error first
+            self.setStatus(item, 'pending');
+            return item;
+        });
+
+        if (!queue.length) return;
+
         this.uploading = true;
         this.paused = false;
         this.cancelled = false;
-        this.completed = 0;
-        this.failed = [];
-        this.successful = [];
-        this.startTime = Date.now();
-        
-        // Hide FAB during upload
-        this.fabUploadBtn.classList.remove('show');
-        
-        this.uploadBtn.style.display = 'none';
-        this.pauseBtn.style.display = 'inline-block';
-        this.cancelBtn.style.display = 'inline-block';
-        this.retryBtn.style.display = 'none';
+        this.startedAt = Date.now();
+        this.progressWrap.classList.remove('d-none');
+        this.progressBar.className = 'wc-progress';
+        this.uploadBtn.classList.add('d-none');
+        this.pauseBtn.classList.remove('d-none');
+        this.pauseBtn.textContent = 'Pause';
+        this.closeLink.textContent = 'Cancel';
+        this.pickBtn.classList.add('d-none');
+        this.addMoreBtn.disabled = true;
+        this.clearBtn.disabled = true;
         this.fileInput.disabled = true;
-        
-        this.updateFileList();
-        
-        this.progressText.textContent = 'Compressing images...';
-        await this.compressImages();
-        
+
+        this.compressQueue(queue).then(function () {
+            if (self.cancelled) return null;
+            return self.uploadQueue(queue);
+        });
+    }
+
+    compressQueue(queue) {
+        var self = this;
+        var images = queue.filter(function (item) { return fileKind(item.file) === 'image'; });
+
+        if (typeof window.imageCompression !== 'function' || !images.length) {
+            this.compressionStats.classList.add('d-none');
+            return Promise.resolve();
+        }
+
+        this.compressionStats.classList.remove('d-none');
+        this.compressionStats.textContent = 'Compressing photos…';
+
+        var index = 0;
+        var originals = 0;
+        var compressedTotal = 0;
+
+        function step() {
+            if (index >= images.length) return Promise.resolve();
+            var item = images[index];
+            var before = item.size;
+            self.setStatus(item, 'compressing');
+            self.setProgress(index, images.length, 'Compressing photo ' + (index + 1) + ' of ' + images.length);
+
+            var job;
+            try {
+                job = window.imageCompression(item.file, COMPRESS_OPTIONS);
+            } catch (e) {
+                job = Promise.reject(e);
+            }
+
+            return job.then(function (blob) {
+                item.file = new File([blob], item.file.name, { type: blob.type || 'image/jpeg' });
+                item.size = blob.size;
+                originals += before;
+                compressedTotal += blob.size;
+                self.setStatus(item, 'compressed');
+                index += 1;
+                return step();
+            }).catch(function () {
+                // Compression is an optimization: keep the original and upload it anyway
+                originals += before;
+                compressedTotal += before;
+                self.setStatus(item, 'pending');
+                index += 1;
+                return step();
+            });
+        }
+
+        return step().then(function () {
+            if (!images.length) return;
+            var saved = originals - compressedTotal;
+            self.compressionStats.textContent = saved > 0
+                ? 'Photos compressed: ' + formatFileSize(originals) + ' → ' + formatFileSize(compressedTotal) + ' (' + formatFileSize(saved) + ' smaller)'
+                : 'Photos already small enough — uploaded as they are';
+        });
+    }
+
+    uploadQueue(queue) {
+        var self = this;
+        var pending = queue.slice();
+        var total = pending.length;
+        var settled = 0;
+        this.setProgress(0, total, 'Uploading…');
+
+        function next() {
+            if (self.cancelled || !pending.length) return Promise.resolve();
+            if (self.paused) {
+                return self.waitForResume().then(next);
+            }
+            var batch = pending.splice(0, self.concurrency);
+            var work = batch.map(function (item) { return self.uploadItem(item); });
+            return Promise.allSettled(work).then(function () {
+                if (self.cancelled) return;
+                settled += batch.length;
+                self.setProgress(settled, total, 'Uploading…');
+                return next();
+            });
+        }
+
+        return next().then(function () { self.finishUpload(); });
+    }
+
+    waitForResume() {
+        var self = this;
+        return new Promise(function (resolve) {
+            (function check() {
+                if (!self.paused || self.cancelled) resolve();
+                else setTimeout(check, 400);
+            })();
+        });
+    }
+
+    uploadItem(item) {
+        var self = this;
+        this.setStatus(item, 'uploading');
+
+        var data = new FormData();
+        data.append('files', item.file, item.file.name);
+        data.append('DailyID', document.getElementById('DailyID').value);
+        data.append('docType', document.getElementById('docType').value);
+        var tokenEl = this.form.querySelector('[name="csrfmiddlewaretoken"]');
+        data.append('csrfmiddlewaretoken', tokenEl ? tokenEl.value : '');
+
+        return fetch(this.form.dataset.uploadUrl, {
+            method: 'POST',
+            body: data,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function (response) {
+            return response.json().catch(function () {
+                throw new Error('Upload failed (' + response.status + ')');
+            }).then(function (payload) {
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.errors || 'Upload failed (' + response.status + ')');
+                }
+                return payload;
+            });
+        }).then(function () {
+            self.setStatus(item, 'done');
+            return true;
+        }).catch(function (error) {
+            self.setStatus(item, 'failed', (error && error.message) ? error.message : 'Upload failed');
+            return false;
+        });
+    }
+
+    finishUpload() {
         if (this.cancelled) return;
-        
-        this.uploadQueue = [...this.compressedFiles];
-        this.progressText.textContent = 'Uploading files...';
-        await this.processQueue();
-    }
-    
-    async processQueue() {
-        const total = this.uploadQueue.length;
-        const concurrency = this.concurrentUploads;
-        
-        while (this.uploadQueue.length > 0 && !this.cancelled) {
-            if (this.paused) {
-                await this.waitForResume();
-                if (this.cancelled) return;
-            }
-            
-            const batch = this.uploadQueue.splice(0, concurrency);
-            
-            const uploadPromises = batch.map(file => this.uploadFile(file));
-            const results = await Promise.allSettled(uploadPromises);
-            
-            results.forEach((result, index) => {
-                const file = batch[index];
-                if (result.status === 'fulfilled' && result.value.success) {
-                    this.successful.push(file);
-                    this.updateFileStatus(file.name, 'completed');
-                } else {
-                    this.failed.push(file);
-                    this.updateFileStatus(file.name, 'failed');
-                }
-            });
-            
-            this.completed += batch.length;
-            this.updateProgress();
-        }
-        
-        this.uploadComplete();
-    }
-    
-    async uploadFile(file) {
-        const formData = new FormData();
-        formData.append('files', file);
-        
-        const dailyIDField = document.getElementById('DailyID');
-        const dailyIDValue = dailyIDField ? dailyIDField.value : '';
-        
-        const docTypeField = document.getElementById('docType');
-        const docTypeValue = docTypeField ? docTypeField.value : '';
-        
-        formData.append('DailyID', dailyIDValue);
-        formData.append('docType', docTypeValue);
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name="csrfmiddlewaretoken"]')?.value || '');
-        
-        const uploadUrl = `/mobile/create_daily_docs_compressed/${dailyIDValue}/0/${docTypeValue}`;
-        
-        this.updateFileStatus(file.name, 'uploading');
-        
-        try {
-            const response = await fetch(uploadUrl, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            if (!response.ok) {
-                let errorMsg = `Upload failed: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    if (errorData.errors) {
-                        errorMsg += ` - ${JSON.stringify(errorData.errors)}`;
-                    }
-                } catch (e) {}
-                throw new Error(errorMsg);
-            }
-            
-            const data = await response.json();
-            if (!data.success) {
-                throw new Error(data.errors || 'Upload failed');
-            }
-            
-            return data;
-            
-        } catch (error) {
-            console.error('Upload error for file:', file.name, error);
-            throw error;
-        }
-    }
-    
-    // ============================================
-    // PROGRESS TRACKING
-    // ============================================
-    
-    updateProgress() {
-        const total = this.compressedFiles.length;
-        const percentage = Math.round((this.completed / total) * 100);
-        
-        this.progressBar.style.width = percentage + '%';
-        this.progressBar.textContent = `${percentage}%`;
-        this.progressText.textContent = `${this.completed} of ${total} uploaded`;
-        
-        const elapsed = (Date.now() - this.startTime) / 1000;
-        if (this.completed > 0 && this.completed < total) {
-            const avgTime = elapsed / this.completed;
-            const remaining = (total - this.completed) * avgTime;
-            const remainingMin = Math.floor(remaining / 60);
-            const remainingSec = Math.floor(remaining % 60);
-            
-            if (remainingMin > 0) {
-                this.timeEstimate.textContent = `${remainingMin}m ${remainingSec}s remaining`;
-            } else {
-                this.timeEstimate.textContent = `${remainingSec}s remaining`;
-            }
-        } else if (this.completed >= total) {
-            this.timeEstimate.textContent = 'Complete!';
-        }
-    }
-    
-    uploadComplete() {
         this.uploading = false;
-        this.pauseBtn.style.display = 'none';
-        this.cancelBtn.style.display = 'none';
-        
-        const total = this.compressedFiles.length;
-        const successCount = this.successful.length;
-        const failedCount = this.failed.length;
-        
-        if (failedCount === 0) {
-            this.progressText.textContent = `✅ All ${successCount} files uploaded successfully!`;
-            this.timeEstimate.textContent = 'Upload complete!';
-            this.progressBar.className = 'progress-bar bg-success';
-            this.uploadBtn.style.display = 'inline-block';
-            this.uploadBtn.textContent = '✅ Complete!';
-            this.uploadBtn.disabled = true;
-            
-            setTimeout(() => {
-                // Auto-redirect
-                // window.location.href = `/mobile/crew/...`;
-            }, 3000);
-        } else {
-            this.progressText.textContent = `✅ ${successCount} uploaded, ❌ ${failedCount} failed`;
-            this.timeEstimate.textContent = 'Some files failed';
-            this.retryBtn.style.display = 'inline-block';
-            this.uploadBtn.style.display = 'inline-block';
-            this.uploadBtn.textContent = '📤 Upload All';
-            this.uploadBtn.disabled = false;
-        }
-        
-        const totalOriginal = this.files.reduce((sum, f) => sum + f.size, 0);
-        const totalCompressed = this.compressedFiles.reduce((sum, f) => sum + f.size, 0);
-        const saved = totalOriginal - totalCompressed;
-        
-        if (saved > 0 && this.files.some(f => f.type.startsWith('image/'))) {
-            this.compressionStats.style.display = 'flex';
-            this.savedSize.textContent = this.formatFileSize(saved);
-        }
-        
+        this.addMoreBtn.disabled = false;
+        this.clearBtn.disabled = false;
         this.fileInput.disabled = false;
-        this.fabUploadBtn.classList.remove('show');
+        this.pauseBtn.classList.add('d-none');
+        this.closeLink.textContent = 'Close';
+        this.uploadBtn.classList.remove('d-none');
+
+        var failed = this.items.filter(function (item) { return item.status === 'failed'; });
+        var done = this.items.filter(function (item) { return item.status === 'done'; });
+
+        this.progressBar.className = 'wc-progress ' + (failed.length ? 'is-failed' : 'is-done');
+        this.progressText.textContent = failed.length
+            ? done.length + ' uploaded, ' + failed.length + ' failed'
+            : 'All ' + done.length + ' uploaded';
+        this.timeEstimate.textContent = '';
+        this.uploadCount.textContent = done.length + ' of ' + this.items.length;
+
+        if (failed.length) {
+            this.uploadBtn.textContent = 'Retry ' + failed.length;
+            this.uploadBtn.disabled = false;
+            return;
+        }
+
+        this.uploadBtn.textContent = 'Upload more';
+        this.uploadBtn.disabled = true;
+        this.scheduleRedirect();
     }
-    
-    // ============================================
-    // CONTROLS
-    // ============================================
-    
+
+    scheduleRedirect() {
+        var self = this;
+        var seconds = 4;
+        this.clearRedirect();
+        this.timeEstimate.textContent = 'Back to documents in ' + seconds + 's';
+
+        var stay = document.createElement('button');
+        stay.type = 'button';
+        stay.className = 'btn btn-link btn-sm p-0 ms-2';
+        stay.textContent = 'Stay here';
+        this.stayButton = stay;
+        stay.addEventListener('click', function () {
+            self.clearRedirect();
+            self.timeEstimate.textContent = '';
+        });
+        this.timeEstimate.parentNode.appendChild(stay);
+
+        this.redirectTimer = setInterval(function () {
+            seconds -= 1;
+            if (seconds <= 0) {
+                self.clearRedirect();
+                window.location.href = self.closeLink.href;
+                return;
+            }
+            self.timeEstimate.textContent = 'Back to documents in ' + seconds + 's';
+        }, 1000);
+    }
+
+    clearRedirect() {
+        if (this.redirectTimer) {
+            clearInterval(this.redirectTimer);
+            this.redirectTimer = null;
+        }
+        if (this.stayButton) {
+            this.stayButton.remove();
+            this.stayButton = null;
+        }
+    }
+
     togglePause() {
         this.paused = !this.paused;
-        this.pauseBtn.textContent = this.paused ? '▶️ Resume' : '⏸ Pause';
-        this.pauseBtn.classList.toggle('btn-warning');
-        this.pauseBtn.classList.toggle('btn-success');
-        
-        if (!this.paused) {
-            this.processQueue();
+        this.pauseBtn.textContent = this.paused ? 'Resume' : 'Pause';
+    }
+
+    cancelUpload() {
+        var self = this;
+        wcConfirm('Cancel the upload? Files already sent stay on the crew.', function () {
+            self.cancelled = true;
+            self.uploading = false;
+            self.paused = false;
+            self.pauseBtn.classList.add('d-none');
+            self.closeLink.textContent = 'Close';
+            self.uploadBtn.classList.remove('d-none');
+            self.addMoreBtn.disabled = false;
+            self.clearBtn.disabled = false;
+            self.fileInput.disabled = false;
+            self.progressWrap.classList.add('d-none');
+
+            var failed = self.items.filter(function (item) { return item.status === 'failed'; });
+            var done = self.items.filter(function (item) { return item.status === 'done'; });
+            self.uploadBtn.textContent = failed.length ? 'Retry ' + failed.length : 'Upload again';
+            self.uploadBtn.disabled = !self.items.length;
+        });
+    }
+
+    // ---------------- object URLs ----------------
+
+    revokeUrl(uid) {
+        if (this.urls[uid]) {
+            URL.revokeObjectURL(this.urls[uid]);
+            delete this.urls[uid];
         }
     }
-    
-    waitForResume() {
-        return new Promise(resolve => {
-            const checkResume = () => {
-                if (!this.paused) {
-                    resolve();
-                } else if (this.cancelled) {
-                    resolve();
-                } else {
-                    setTimeout(checkResume, 500);
-                }
-            };
-            checkResume();
-        });
-    }
-    
-    cancelUpload() {
-        wcConfirm('Are you sure you want to cancel the upload?', () => {
-            this.cancelled = true;
-            this.uploading = false;
-            this.paused = false;
-            
-            this.pauseBtn.style.display = 'none';
-            this.cancelBtn.style.display = 'none';
-            this.uploadBtn.style.display = 'inline-block';
-            this.uploadBtn.textContent = '📤 Upload All';
-            this.uploadBtn.disabled = false;
-            this.fileInput.disabled = false;
-            
-            this.progressText.textContent = '❌ Upload cancelled';
-            this.timeEstimate.textContent = 'Cancelled';
-            this.progressBar.className = 'progress-bar bg-danger';
-            
-            this.fabUploadBtn.classList.add('show');
-        });
-    }
-    
-    async retryFailed() {
-        if (this.failed.length === 0) return;
-        
-        this.uploadBtn.style.display = 'none';
-        this.retryBtn.style.display = 'none';
-        this.pauseBtn.style.display = 'inline-block';
-        this.cancelBtn.style.display = 'inline-block';
-        
-        this.failed.forEach(file => {
-            this.updateFileStatus(file.name, 'pending');
-        });
-        
-        this.uploadQueue = [...this.failed];
-        this.failed = [];
-        this.completed = 0;
-        this.startTime = Date.now();
-        this.progressBar.className = 'progress-bar';
-        
-        await this.processQueue();
+
+    revokeAllUrls() {
+        var self = this;
+        Object.keys(this.urls).forEach(function (uid) { self.revokeUrl(Number(uid)); });
     }
 }
 
-// ============================================
-// INITIALIZATION
-// ============================================
+var uploadManager = new UploadManager();
+window.uploadManager = uploadManager;
 
-let uploadManager;
-
-document.addEventListener('DOMContentLoaded', function() {
-    uploadManager = new UploadManager();
-    window.uploadManager = uploadManager;
-    
-    window.handleFileSelection = function(event) {
-        uploadManager.handleFileSelection(event);
-    };
-    
-    window.removeFile = function(fileName) {
-        uploadManager.removeFile(fileName);
-    };
-    
-    console.log('🚀 Upload Manager initialized with compression');
-    console.log('📦 Files will be compressed on upload click');
-    console.log('⚙️  Settings: 4096px max, 75% quality, 800KB target');
+// Cancel needs the confirm sheet, not a plain link
+document.getElementById('closeLink').addEventListener('click', function (event) {
+    if (!uploadManager.uploading) return;
+    event.preventDefault();
+    uploadManager.cancelUpload();
 });
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initUploadManager);
-} else {
-    initUploadManager();
-}
-
-function initUploadManager() {
-    if (!window.uploadManager) {
-        uploadManager = new UploadManager();
-        window.uploadManager = uploadManager;
-        window.handleFileSelection = function(event) {
-            uploadManager.handleFileSelection(event);
-        };
-        window.removeFile = function(fileName) {
-            uploadManager.removeFile(fileName);
-        };
-        console.log('🚀 Upload Manager initialized (fallback)');
-    }
-}
-
-function wcConfirm(message, callback) {
-    const overlay = document.getElementById('wcConfirmOverlay');
-    document.getElementById('wcConfirmMsg').textContent = message;
-    overlay.style.display = 'block';
-    overlay.querySelector('[data-wcyes]').onclick = null;
-    overlay.querySelector('[data-wcno]').onclick = null;
-    overlay.querySelector('[data-wcyes]').onclick = function () {
-        overlay.style.display = 'none';
-        if (callback) callback();
-    };
-    overlay.querySelector('[data-wcno]').onclick = function () {
-        overlay.style.display = 'none';
-    };
-    overlay.onclick = function (e) {
-        if (e.target === overlay) overlay.style.display = 'none';
-    };
-}
 </script>
 {% endblock %}
