@@ -635,8 +635,15 @@ def update_supervisor(request, perID, dID, crewID, LocID):
     context["superV"] = superV            
     context["selectedCrew"] = int(crewID)
     context["dailyObj"] = crew
+    context["empCount"] = DailyMobEmployee.objects.filter(DailyID = crew).count()
     context["selectedDay"] = int(dID)
     context["selectedLocation"] = LocID      
+
+    # Resolve the assigned supervisor's name server-side so the compact row can
+    # render even when the employee is no longer flagged as a supervisor.
+    context["currentSup"] = None
+    if crew and crew.supervisor and str(crew.supervisor).isdigit():
+        context["currentSup"] = catalogModel.Employee.objects.filter(employeeID = int(crew.supervisor)).first()
 
     return render(request, "mobile/update_supervisor.html", context)
 
