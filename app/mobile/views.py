@@ -613,14 +613,10 @@ def update_supervisor(request, perID, dID, crewID, LocID):
             if 'ov' in request.POST:
                 crew.own_vehicle = request.POST.get('ov') or None
 
-            emp_ptp = update_ptp_Emp(dailyID, bool(split))
-            emp_ptp = 0
-
-            crew.total_pay = emp_ptp     
             crew.save()
             per = crew.Period.id  
 
-            emp_ptp = update_ptp_Emp(dailyID, bool(split))       
+            update_ptp_Emp(dailyID, bool(split))       
             
             if str(sup).isdigit() and int(sup)>0 and crew.woID != None:
                 super = catalogModel.Employee.objects.filter(employeeID = sup ).first()
