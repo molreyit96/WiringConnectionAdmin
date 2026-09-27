@@ -602,19 +602,16 @@ def update_supervisor(request, perID, dID, crewID, LocID):
 
     if request.method == 'POST':
         dailyID = request.POST.get('daily')
-        sup = request.POST.get('supervisor') 
+        sup = request.POST.get('supervisor') or '0'
         split = request.POST.get('split')
         ptp = request.POST.get('ptp')
-        ov = request.POST.get('ov')
         crew = DailyMob.objects.filter(id = dailyID).first()
         if crew:            
             crew.supervisor = sup                      
             crew.split_paymet = bool(split)   
 
-            if ov != '':
-                crew.own_vehicle = ov
-            else:
-                crew.own_vehicle = None    
+            if 'ov' in request.POST:
+                crew.own_vehicle = request.POST.get('ov') or None
 
             emp_ptp = update_ptp_Emp(dailyID, bool(split))
             emp_ptp = 0
@@ -625,7 +622,7 @@ def update_supervisor(request, perID, dID, crewID, LocID):
 
             emp_ptp = update_ptp_Emp(dailyID, bool(split))       
             
-            if int(str(sup))>0 and crew.woID != None:
+            if str(sup).isdigit() and int(sup)>0 and crew.woID != None:
                 super = catalogModel.Employee.objects.filter(employeeID = sup ).first()
                 if super:   
                     wo = catalogModel.workOrder.objects.filter( id = crew.woID.id).first()

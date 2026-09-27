@@ -4993,16 +4993,13 @@ def payroll(request, perID, dID, crewID, LocID):
         sup = request.POST.get('supervisor') 
         split = request.POST.get('split')
         ptp = request.POST.get('ptp')
-        ov = request.POST.get('ov')
         crew = Daily.objects.filter(id = dailyID).first()
         if crew:            
             crew.supervisor = sup                      
             crew.split_paymet = bool(split)   
 
-            if ov != '':
-                crew.own_vehicle = ov
-            else:
-                crew.own_vehicle = None    
+            if 'ov' in request.POST:
+                crew.own_vehicle = request.POST.get('ov') or None
 
             emp_ptp = update_ptp_Emp(dailyID, bool(split))
 
@@ -5012,7 +5009,7 @@ def payroll(request, perID, dID, crewID, LocID):
 
             emp_ptp = update_ptp_Emp(dailyID, bool(split))       
             
-            if int(str(sup))>0 and crew.woID != None:
+            if str(sup).isdigit() and int(sup)>0 and crew.woID != None:
                 super = Employee.objects.filter(employeeID = sup ).first()
                 if super:   
                     wo = workOrder.objects.filter( id = crew.woID.id).first()
@@ -5022,7 +5019,7 @@ def payroll(request, perID, dID, crewID, LocID):
                         
                         
                         #Adding Audit
-                        operationDetail = "Change on Selected Supervisor- New Supervisor: " + str(super) + ", Own Vehicle: " + str(ov) + ", Split: " + str(bool(split))
+                        operationDetail = "Change on Selected Supervisor- New Supervisor: " + str(super) + ", Own Vehicle: " + str(crew.own_vehicle) + ", Split: " + str(bool(split))
                         
                         daily_audit(crew.id, operationDetail, "Insert/Update", request.user.username)
      
