@@ -74,27 +74,27 @@ WC Mobile tokens — Palette A "Conductor"
 }
 
 [data-theme="dark"] {
-    --wc-bg: #10151b;
-    --wc-surface: #1a222b;
-    --wc-surface-2: #202a34;
-    --wc-ink: #e8edf2;
-    --wc-ink-2: #a7b4c2;
-    --wc-border: #2c3742;
+    --wc-bg: #0b1220;
+    --wc-surface: #131c2e;
+    --wc-surface-2: #1a2438;
+    --wc-border: #263449;
 
-    --wc-accent: #2dd4bf;
-    --wc-accent-dark: #14b8a6;
-    --wc-accent-2: #5eead4;
+    --wc-ink: #e5ecf6;
+    --wc-ink-2: #9aabc2;
 
-    --wc-ok: #58c97b;
-    --wc-warn: #e0a35c;
-    --wc-danger: #e57368;
+    --wc-accent: #38bdf8;
+    --wc-accent-dark: #0ea5e9;
+    --wc-accent-2: #7dd3fc;
 
-    --wc-header: #0f2e2b;
-    --wc-header-ink: #5eead4;
+    --wc-ok: #4ade80;
+    --wc-warn: #fbbf24;
+    --wc-danger: #f87171;
+
+    --wc-header: #0c2536;
+    --wc-header-ink: #7dd3fc;
     --wc-header-bar: var(--wc-accent);
-    --wc-on-accent: #10151b;
-
-    --wc-wash: #142a27;
+    --wc-on-accent: #0b1220;
+    --wc-wash: #10233a;
 }
 
 /* ---- App surface ---- */

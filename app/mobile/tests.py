@@ -189,6 +189,7 @@ class PwaFooterClearanceTests(TestCase):
     PAGES_WITH_CLEARANCE = (
         'mobile/home.html',
         'mobile/crew.html',
+        'mobile/dashboard.html',
         'mobile/create_daily_doc_compressed.html',
         'mobile/create_daily_emp.html',
         'mobile/create_daily_item.html',

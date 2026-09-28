@@ -7,6 +7,8 @@ urlpatterns = [
      # ****** Home **********************
      path('',views.mobile),
      path('home/<LocID>',views.mobile_home),
+     path('dashboard/', views.mobile_dashboard, {'LocID': 0}),
+     path('dashboard/<LocID>', views.mobile_dashboard),
 
      # ****** DAILY **********************
      path('crew/<perID>/<dID>/<crewID>/<LocID>',views.crew),

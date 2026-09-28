@@ -66,41 +66,7 @@
       color: red;
     }
 
-    .wc-dashboard-panel {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      top: 62px;
-      z-index: 1029;
-      background-color: var(--wc-bg);
-      overflow-y: auto;
-    }
-    .wc-dashboard-panel-inner {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: .6rem;
-      padding: 1.5rem;
-      text-align: center;
-    }
-    .wc-dashboard-icon {
-      font-size: 2.5rem;
-      color: var(--wc-ink-2);
-    }
-    .wc-dashboard-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--wc-ink);
-      margin-bottom: 0;
-    }
-    .wc-dashboard-hint {
-      color: var(--wc-ink-2);
-      font-size: .9rem;
-      margin-bottom: 0;
-    }
+
 
   </style>
 
@@ -179,26 +145,18 @@
     {% endblock %}
   </div>
 
-  <!-- Dashboard placeholder (frontend-only; content to be defined) -->
-  <div id="wc-dashboard-panel" class="wc-dashboard-panel" style="display: none;">
-    <div class="wc-dashboard-panel-inner">
-      <i class="fa-solid fa-chart-pie wc-dashboard-icon"></i>
-      <p class="wc-dashboard-title">Dashboard</p>
-      <p class="wc-dashboard-hint">Content to be defined in a future iteration.</p>
-    </div>
-  </div>
-
+  <!-- Dashboard route link -->
   <nav class="navbar navbar-expand-lg navbar-light footer-nav fixed-bottom">
     <div class="container-fluid d-flex">
-      <a class="btn btn-link nav-link active tap-target" type="button" href="/mobile/">
+      <a class="btn btn-link nav-link {% if request.path == '/mobile/' or request.path|slice:":12" == '/mobile/home' %}active{% endif %} tap-target" href="/mobile/">
         <i class="fa fa-home"></i><span class="ms-1">Home</span>
       </a>
 
-      <button type="button" class="btn btn-link nav-link tap-target" id="wc-dashboard-tab">
+      <a class="btn btn-link nav-link {% if request.path|slice:":17" == '/mobile/dashboard' %}active{% endif %} tap-target" href="/mobile/dashboard/" id="wc-dashboard-tab">
         <i class="fa-solid fa-chart-pie"></i><span class="ms-1">Dashboard</span>
-      </button>
+      </a>
 
-      <a class="btn btn-link nav-link btn-exit tap-target" type="button" href="/logout/">
+      <a class="btn btn-link nav-link btn-exit tap-target" href="/logout/">
         <i class="fa fa-sign-out-alt"></i><span class="ms-1">Exit</span>
       </a>
     </div>
@@ -226,20 +184,6 @@
       if (window.ResizeObserver) { new ResizeObserver(apply).observe(footer); }
     })();
   </script>
-
-   <!-- Dashboard tab (placeholder) -->
-   <script>
-     (function () {
-       var tab = document.getElementById('wc-dashboard-tab');
-       var panel = document.getElementById('wc-dashboard-panel');
-       if (!tab || !panel) return;
-       tab.addEventListener('click', function () {
-         var isOpen = panel.style.display !== 'none';
-         panel.style.display = isOpen ? 'none' : 'block';
-         tab.classList.toggle('active', !isOpen);
-       });
-     })();
-   </script>
 
    {% block extra_js %}{% endblock %}
 

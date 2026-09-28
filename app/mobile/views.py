@@ -28,7 +28,7 @@ from io import BytesIO
 from xhtml2pdf import pisa
 import base64
 from django.views.decorators.http import require_POST
-from django.db.models import Sum, OuterRef, Subquery, Value, CharField, IntegerField
+from django.db.models import Sum, Count, OuterRef, Subquery, Value, CharField, IntegerField
 from django.db.models.functions import Concat, Cast
 
 
@@ -3327,3 +3327,111 @@ def html_to_pdf_save(html_content, daily_obj):
     except Exception as e:
         print(f"Error converting HTML to PDF: {str(e)}")
         return False, f"Error converting HTML to PDF: {str(e)}",""
+
+
+@login_required(login_url='/home/')
+def mobile_dashboard(request, LocID=0):
+    emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
+    if not emp:
+        return HttpResponseRedirect('/mobile/')
+
+    is_privileged = request.user.is_staff or emp.is_superAdmin or emp.is_admin or emp.is_manager or emp.is_supervisor
+    if not is_privileged:
+        return HttpResponseRedirect('/mobile/')
+
+    per = catalogModel.period.objects.filter(status=1).first()
+    if not per:
+        per = catalogModel.period.objects.filter(periodID=-1).first()
+
+    locaList = catalogModel.employeeLocation.objects.filter(employeeID = emp)
+    locationList = []
+    seenLocations = set()
+    if emp.Location:
+        locationList.append({'LocationID': emp.Location.LocationID, 'name': emp.Location.name})
+        seenLocations.add(emp.Location.LocationID)
+    for i in locaList:
+        if i.LocationID and i.LocationID.LocationID not in seenLocations:
+            locationList.append({'LocationID': i.LocationID.LocationID, 'name': i.LocationID.name})
+            seenLocations.add(i.LocationID.LocationID)
+
+    try:
+        LocID = int(LocID)
+    except:
+        LocID = 0
+
+    selected_loc_id = LocID
+
+    dailies_qs = DailyMob.objects.filter(Period=per)
+    authorized_loc_ids = [l['LocationID'] for l in locationList]
+    if selected_loc_id != 0:
+        dailies_qs = dailies_qs.filter(Location__LocationID=selected_loc_id)
+    else:
+        if authorized_loc_ids:
+            dailies_qs = dailies_qs.filter(Location__LocationID__in=authorized_loc_ids)
+
+    status_counts = dict(dailies_qs.values_list('Status').annotate(c=Count('id')))
+    sent_count = status_counts.get(2, 0)
+    pending_count = status_counts.get(3, 0)
+    approved_count = status_counts.get(4, 0)
+    rejected_count = status_counts.get(5, 0)
+    total_dailies = dailies_qs.count()
+
+    active_dailies_qs = dailies_qs.filter(Status__in=[2, 3, 4])
+
+    top_employees = DailyMobEmployee.objects.filter(
+        DailyID__in=active_dailies_qs
+    ).values(
+        'EmployeeID__employeeID',
+        'EmployeeID__first_name',
+        'EmployeeID__last_name'
+    ).annotate(
+        total_h=Sum('total_hours')
+    ).order_by('-total_h', 'EmployeeID__first_name', 'EmployeeID__last_name')[:5]
+
+    max_hours = float(top_employees[0]['total_h']) if top_employees and top_employees[0]['total_h'] else 1.0
+    if max_hours <= 0: max_hours = 1.0
+
+    top_locations = DailyMobItem.objects.filter(
+        DailyID__in=active_dailies_qs
+    ).values(
+        'DailyID__Location__LocationID',
+        'DailyID__Location__name'
+    ).annotate(
+        total_payroll=Sum('total')
+    ).order_by('-total_payroll')[:5]
+
+    max_payroll = float(top_locations[0]['total_payroll']) if top_locations and top_locations[0]['total_payroll'] else 1.0
+    if max_payroll <= 0: max_payroll = 1.0
+
+    rejects_by_loc = DailyMob.objects.filter(
+        Period=per, Status=5
+    )
+    if selected_loc_id != 0:
+        rejects_by_loc = rejects_by_loc.filter(Location__LocationID=selected_loc_id)
+    elif authorized_loc_ids:
+        rejects_by_loc = rejects_by_loc.filter(Location__LocationID__in=authorized_loc_ids)
+
+    rejects_summary = rejects_by_loc.values(
+        'Location__LocationID',
+        'Location__name'
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')[:5]
+
+    context = {
+        'emp': emp,
+        'period': per,
+        'locationList': locationList,
+        'selectedLocation': selected_loc_id,
+        'total_dailies': total_dailies,
+        'sent_count': sent_count,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'top_employees': top_employees,
+        'max_hours': max_hours,
+        'top_locations': top_locations,
+        'max_payroll': max_payroll,
+        'rejects_summary': rejects_summary,
+    }
+    return render(request, "mobile/dashboard.html", context)

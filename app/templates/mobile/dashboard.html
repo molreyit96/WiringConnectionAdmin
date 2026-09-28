@@ -1,0 +1,220 @@
+{% extends 'mobile/index.html' %} 
+{% load static %}
+{% block title %} Dashboard · Mobile {% endblock %} 
+{% load humanize %}
+{% block container %}
+
+<style>
+    /* ---- Location chips (reused from home) ---- */
+    .loc-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .55rem .9rem;
+        border-radius: 2rem;
+        border: 1px solid var(--wc-border);
+        background: var(--wc-surface);
+        color: var(--wc-ink);
+        font-size: var(--wc-type-sm);
+        font-weight: 500;
+        text-decoration: none;
+        min-height: 44px;
+        max-width: 100%;
+    }
+    .loc-chip .loc-chip-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 12rem;
+    }
+    .loc-chip--on {
+        background: var(--wc-accent);
+        border-color: var(--wc-accent);
+        color: var(--wc-on-accent);
+    }
+
+    /* ---- Dashboard Sections & Ranked Rows ---- */
+    .dash-section {
+        background: var(--wc-surface);
+        border: 1px solid var(--wc-border);
+        border-radius: .8rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    .dash-section:last-child {
+        margin-bottom: 5rem;
+    }
+    .dash-title {
+        font-size: var(--wc-type-md);
+        font-weight: 600;
+        color: var(--wc-ink);
+        margin-bottom: .8rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .rank-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .5rem 0;
+        border-bottom: 1px solid var(--wc-surface-2);
+        font-size: var(--wc-type-sm);
+    }
+    .rank-row:last-child {
+        border-bottom: none;
+    }
+    .rank-name {
+        font-weight: 500;
+        color: var(--wc-ink);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .rank-bar-wrap {
+        flex: 1;
+        margin: 0 .8rem;
+        background: var(--wc-surface-2);
+        border-radius: 4px;
+        height: 8px;
+        overflow: hidden;
+    }
+    .rank-bar {
+        background: var(--wc-accent);
+        height: 100%;
+        border-radius: 4px;
+    }
+    .rank-val {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--wc-ink);
+        text-align: right;
+        min-width: 4.5rem;
+    }
+    .status-badge-row {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-top: .5rem;
+    }
+    .status-pill {
+        font-size: var(--wc-type-xs);
+        padding: .25rem .6rem;
+        border-radius: 1rem;
+        font-weight: 500;
+        background: var(--wc-surface-2);
+        color: var(--wc-ink-2);
+        border: 1px solid var(--wc-border);
+    }
+    .status-pill strong {
+        color: var(--wc-ink);
+    }
+</style>
+
+<div class="container py-3 wc-bottom-clear" style="margin-top: 4.5rem;">
+    
+    <!-- Header / Period & Locations -->
+    <div class="dash-section">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-muted" style="font-size: var(--wc-type-xs);">
+                Period: {% if period and period.periodID != -1 %}{{ period.fromDate|date:"M d" }} – {{ period.toDate|date:"M d, Y" }} (W: {{ period.weekRange }}){% else %}Active{% endif %}
+            </span>
+            <span class="badge bg-secondary" style="font-size: .75rem;">Supervisor View</span>
+        </div>
+
+        <h1 class="dash-title mb-3">
+            <i class="fa-solid fa-chart-pie text-primary"></i> Field Dashboard
+        </h1>
+
+        <!-- Location Chips Filter -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a class="loc-chip {% if selectedLocation == 0 %}loc-chip--on{% endif %}" href="/mobile/dashboard/0">
+                <i class="fas fa-globe"></i> <span class="loc-chip-label">All Locations</span>
+            </a>
+            {% for loc in locationList %}
+                <a class="loc-chip {% if loc.LocationID|slugify == selectedLocation|slugify %}loc-chip--on{% endif %}" href="/mobile/dashboard/{{ loc.LocationID }}">
+                    <i class="fas fa-map-marker-alt"></i> <span class="loc-chip-label">{{ loc.name }}</span>
+                </a>
+            {% endfor %}
+        </div>
+
+        <!-- Operational Status Sentence -->
+        <p class="text-muted mb-2" style="font-size: var(--wc-type-sm);">
+            In this period, <strong>{{ total_dailies }}</strong> daily forms are registered:
+        </p>
+        <div class="status-badge-row">
+            <span class="status-pill">Approved: <strong>{{ approved_count }}</strong></span>
+            <span class="status-pill">Pending: <strong>{{ pending_count }}</strong></span>
+            <span class="status-pill">Sent: <strong>{{ sent_count }}</strong></span>
+            <span class="status-pill text-danger">Rejected: <strong>{{ rejected_count }}</strong></span>
+        </div>
+    </div>
+
+    <!-- Top Employees by Hours -->
+    <div class="dash-section">
+        <div class="dash-title">
+            <i class="fa-solid fa-user-clock text-primary"></i> Top Employees (Hours)
+        </div>
+        {% if top_employees %}
+            <div class="d-flex flex-column">
+                {% for emp_row in top_employees %}
+                    <div class="rank-row">
+                        <div class="rank-name">{{ emp_row.EmployeeID__first_name }} {{ emp_row.EmployeeID__last_name }}</div>
+                        <div class="rank-bar-wrap">
+                            <div class="rank-bar" style="width: {% widthratio emp_row.total_h max_hours 100 %}%;"></div>
+                        </div>
+                        <div class="rank-val">{{ emp_row.total_h|floatformat:1 }}h</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0" style="font-size: var(--wc-type-sm);">No active employee hours recorded in this period.</p>
+        {% endif %}
+    </div>
+
+    <!-- Top Locations by Payroll Generated -->
+    <div class="dash-section">
+        <div class="dash-title">
+            <i class="fa-solid fa-money-bill-wave text-primary"></i> Top Locations (Payroll Generated)
+        </div>
+        {% if top_locations %}
+            <div class="d-flex flex-column">
+                {% for loc_row in top_locations %}
+                    <div class="rank-row">
+                        <div class="rank-name">{{ loc_row.DailyID__Location__name }}</div>
+                        <div class="rank-bar-wrap">
+                            <div class="rank-bar" style="width: {% widthratio loc_row.total_payroll max_payroll 100 %}%;"></div>
+                        </div>
+                        <div class="rank-val">${{ loc_row.total_payroll|floatformat:0|intcomma }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0" style="font-size: var(--wc-type-sm);">No payroll items recorded in this period.</p>
+        {% endif %}
+    </div>
+
+    <!-- Rejects Summary -->
+    <div class="dash-section">
+        <div class="dash-title">
+            <i class="fa-solid fa-triangle-exclamation text-danger"></i> Rejected Dailies by Location
+        </div>
+        {% if rejects_summary %}
+            <div class="d-flex flex-column">
+                {% for rej in rejects_summary %}
+                    <div class="rank-row">
+                        <div class="rank-name">{{ rej.Location__name }}</div>
+                        <div class="rank-val text-danger fw-bold">{{ rej.count }} rejected</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0" style="font-size: var(--wc-type-sm);">No rejected dailies in this period. Great job!</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}
