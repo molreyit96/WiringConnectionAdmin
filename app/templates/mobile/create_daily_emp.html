@@ -350,7 +350,7 @@
 {% endblock %}
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js"></script>
-<script src="{% static 'mobile/js/picker.js' %}"></script>
+<script src="{% static 'mobile/js/picker.js' %}?v={{ ASSET_VERSION }}"></script>
 <script>
     initSearchPicker({
         inputEl: document.getElementById("empSearch"),

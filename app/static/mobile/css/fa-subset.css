@@ -1,8 +1,15 @@
 /* Font Awesome 6 Free - subconjunto de la PWA (75 glifos de 1129).
    Fuente derivada del mismo woff2/ttf que servia cdnjs, asi que el
    render es identico. Se reemplazan 126,828 B por 6,404 B.
-   Generado: 81 iconos detectados en templates/mobile + static/mobile. */
-@font-face{font-family:"Font Awesome 6 Free";font-style:normal;font-weight:900;font-display:block;src:url("../fonts/fa-solid-subset.woff2") format("woff2")}
+   Generado: 81 iconos detectados en templates/mobile + static/mobile.
+
+   OJO - versionado manual: la URL de la fuente NO lleva ?v= porque este
+   asset se referencia desde CSS, no desde una plantilla, y el token de
+   ASSET_VERSION (settings.py) no puede llegar aqui. Si regeneras
+   fa-solid-subset.woff2, bumpa a mano el ?v= de abajo con el mismo valor
+   de ASSET_VERSION, o los usuarios seguiran viendo la fuente vieja
+   durante 30 dias. Cubierto por mobile.tests.AssetVersionTests. */
+@font-face{font-family:"Font Awesome 6 Free";font-style:normal;font-weight:900;font-display:block;src:url("../fonts/fa-solid-subset.woff2?v=2026-09-29-1") format("woff2")}
 
 .fa{font-family:var(--fa-style-family,"Font Awesome 6 Free");font-weight:var(--fa-style,900)}
 .fa,.fa-brands,.fa-duotone,.fa-light,.fa-regular,.fa-solid,.fa-thin,.fab,.fad,.fal,.far,.fas,.fat{-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased;display:var(--fa-display,inline-block);font-style:normal;font-variant:normal;line-height:1;text-rendering:auto}

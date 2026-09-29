@@ -151,6 +151,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = '/static/static/'
+
+# Version de assets estaticos de la PWA. SUBIR en cada deploy que cambie CSS,
+# JS o imagenes. Se anade como '?v=' a cada {% static %} del shell mobile para
+# que la URL cambie y el navegador descarte su cache de 30 dias, ya que
+# STATIC_URL no va fingerprinted. Debe coincidir con CACHE_NAME en
+# app/static/pwa/sw.js. Verificado por mobile.tests.AssetVersionTests.
+ASSET_VERSION = '2026-09-29-1'
 """MEDIA_URL = '/static/media/'
 
 MEDIA_ROOT = '/vol/web/media'

@@ -105,7 +105,7 @@
 </div>
 {% endblock %}
 {% block extra_js %}
-<script src="{% static 'mobile/js/picker.js' %}"></script>
+<script src="{% static 'mobile/js/picker.js' %}?v={{ ASSET_VERSION }}"></script>
 <script>
     function itemRow(item) {
         var frag = document.createElement("span");

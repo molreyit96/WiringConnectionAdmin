@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wcapp-v1';
+const CACHE_NAME = 'wcapp-2026-09-29-1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

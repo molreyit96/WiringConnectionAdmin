@@ -47,7 +47,7 @@
 </div>
 {% endblock %}
 {% block extra_js %}
-<script src="{% static 'mobile/js/picker.js' %}"></script>
+<script src="{% static 'mobile/js/picker.js' %}?v={{ ASSET_VERSION }}"></script>
 <script>
     var WO_DATA = [
         {% for order in orders %}{"id": {{order.id}}, "text": "{{order.prismID|escapejs}} - {{order.workOrderId|escapejs}} - {{order.PO|escapejs}}", "address": "{{ order.JobAddress|default:""|escapejs }}", "next": "/mobile/update_order_daily/{{order.id}}/{{daily}}/{{selectedLocation}}"},{% endfor %}

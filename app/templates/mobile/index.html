@@ -13,15 +13,15 @@
   <!-- Font Awesome: subconjunto local de los 81 iconos que usa la PWA.
        Reemplaza al all.min.css del CDN (89 KB de CSS + 127 KB de fuente)
        por 5 KB de CSS + 6 KB de fuente. Mismos glifos, mismo render. -->
-  <link rel="stylesheet" href="{% static 'mobile/css/fa-subset.css' %} ">
+  <link rel="stylesheet" href="{% static 'mobile/css/fa-subset.css' %}?v={{ ASSET_VERSION }} ">
   
   <!-- Bootstrap -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
 
   <!-- CSS -->
    {% comment %} <link rel="stylesheet" href="{% static 'mobile/css/general.css' %} ">  {% endcomment %}
-   <link rel="stylesheet" href="{% static 'css/style.css' %} "> 
-   <link rel="stylesheet" href="{% static 'mobile/css/tokens.css' %} "> 
+   <link rel="stylesheet" href="{% static 'css/style.css' %}?v={{ ASSET_VERSION }} "> 
+   <link rel="stylesheet" href="{% static 'mobile/css/tokens.css' %}?v={{ ASSET_VERSION }} "> 
 
   <style>
     body, html {
@@ -123,7 +123,7 @@
       <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top d-flex justify-content-between" id="mainNav">
         <div>
           <a class="navbar-brand" href="/mobile/">
-            <img src="{% static 'images/WC_logo.jpg' %}" width="100" height="35" class="d-inline-block align-top" alt="">
+            <img src="{% static 'images/WC_logo.jpg' %}?v={{ ASSET_VERSION }}" width="100" height="35" class="d-inline-block align-top" alt="">
           </a>
         </div>
 
@@ -164,7 +164,7 @@
   </nav>
 
   <!-- Theme (dark/light) -->
-   <script src="{% static 'mobile/js/theme.js' %}"></script>
+   <script src="{% static 'mobile/js/theme.js' %}?v={{ ASSET_VERSION }}"></script>
 
   <!-- Fixed chrome height: keep --wc-footer-h equal to the real footer so page
        clearance and sticky action bars track font scaling / longer labels. -->

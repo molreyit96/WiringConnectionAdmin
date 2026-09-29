@@ -1,3 +1,5 @@
+import os
+import re
 import shutil
 import tempfile
 from datetime import date
@@ -233,3 +235,137 @@ class PwaFooterClearanceTests(TestCase):
         # Old magic thresholds must be gone.
         self.assertNotIn('if (y < 80)', src)
         self.assertNotIn('else if (y > 120)', src)
+
+
+class AssetVersionTests(TestCase):
+    """Static assets served to the PWA must carry a version token.
+
+    STATIC_URL is not fingerprinted and nginx serves /static/ with
+    `Cache-Control: max-age=2592000`, so an unversioned URL keeps serving the
+    old file for 30 days. Every `{% static %}` in the PWA shell therefore
+    needs a `?v={{ ASSET_VERSION }}` suffix, and the service worker cache
+    name has to move with it so stale responses are purged on activation.
+
+    Desktop templates are intentionally out of scope: they share style.css and
+    the logo, and versioning them is a separate decision.
+    """
+
+    PWA_SHELL = 'mobile/index.html'
+    VERSION_SUFFIX = '?v={{ ASSET_VERSION }}'
+
+    # Templates that must be fully versioned. employee_list.html and
+    # employee_submitted_list.html are deliberately absent: they extend the
+    # desktop base.html and load the shared logo.
+    PWA_TEMPLATES = (
+        'mobile/index.html',
+        'mobile/approved_dailies.html',
+        'mobile/approve_timesheet_2.html',
+        'mobile/create_daily_emp.html',
+        'mobile/create_daily_item.html',
+        'mobile/orders_payroll.html',
+        'mobile/supervisor_list.html',
+        'mobile/supervisor_timesheet.html',
+        'mobile/timesheet.html',
+        'mobile/update_daily_emp.html',
+        'mobile/update_daily_item.html',
+        'mobile/update_supervisor.html',
+        'mobile/crew.html',
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from django.conf import settings
+
+        cls.templates_dir = os.path.join(settings.BASE_DIR, 'templates')
+        cls.static_dir = settings.STATICFILES_DIRS[0]
+
+    def _read_template(self, name):
+        with open(os.path.join(self.templates_dir, name), encoding='utf-8') as fh:
+            return fh.read()
+
+    def _strip_comments(self, src):
+        return re.sub(r'{%\s*comment\s*%}.*?{%\s*endcomment\s*%}', '', src, flags=re.S)
+
+    def _static_refs(self, src):
+        """Yield (asset, snippet) for each active {% static %} in src.
+
+        The snippet must include the trailing `?v={{ ASSET_VERSION }}` when
+        present, so the pattern accepts an optional Django variable and stops
+        at the first quote or tag boundary. Handling the variable explicitly
+        matters: a bare [^"'>] class would stop at the '{' of {{ and silently
+        miss every versioned ref.
+        """
+        tail = r"(?:\?v=\{\{\s*ASSET_VERSION\s*\}\})?[^\"'<>]*"
+        pattern = r"{%\s*static\s+'([^']+)'\s*%}" + tail
+        for match in re.finditer(pattern, src):
+            yield match.group(1), match.group(0).strip()
+
+    def test_every_pwa_static_ref_is_versioned(self):
+        total = 0
+        for name in self.PWA_TEMPLATES:
+            src = self._strip_comments(self._read_template(name))
+            for asset, snippet in self._static_refs(src):
+                total += 1
+                with self.subTest(template=name, asset=asset):
+                    self.assertIn(
+                        self.VERSION_SUFFIX,
+                        snippet,
+                        f'{name} loads {asset} without a version token; the '
+                        f'browser would keep the cached copy for 30 days',
+                    )
+        self.assertGreater(total, 0, 'no static refs found; test would pass vacuously')
+
+    def test_pwa_shell_is_itself_versioned(self):
+        src = self._strip_comments(self._read_template(self.PWA_SHELL))
+        refs = list(self._static_refs(src))
+        self.assertGreaterEqual(len(refs), 4)
+        for asset, snippet in refs:
+            with self.subTest(asset=asset):
+                self.assertIn(self.VERSION_SUFFIX, snippet)
+
+    def test_no_double_versioning(self):
+        for name in self.PWA_TEMPLATES:
+            src = self._read_template(name)
+            with self.subTest(template=name):
+                self.assertNotIn('?v={{ ASSET_VERSION }}?v=', src)
+
+    def test_service_worker_cache_name_matches_asset_version(self):
+        from django.conf import settings
+
+        with open(os.path.join(self.static_dir, 'pwa', 'sw.js'), encoding='utf-8') as fh:
+            sw = fh.read()
+        self.assertIn(f"'wcapp-{settings.ASSET_VERSION}'", sw)
+
+    def test_asset_version_is_declared(self):
+        from django.conf import settings
+
+        self.assertTrue(settings.ASSET_VERSION)
+        self.assertRegex(settings.ASSET_VERSION, r'^\d{4}-\d{2}-\d{2}-\d+$')
+
+    def test_desktop_templates_stay_unversioned(self):
+        """Scope guard: shared assets must not be versioned on desktop.
+
+        If someone versioned these, the desktop UI would start busting its
+        cache for style.css and the logo too, which was an explicit decision
+        to leave out of this change.
+        """
+        for name in ('mobile/employee_list.html', 'mobile/employee_submitted_list.html'):
+            src = self._read_template(name)
+            with self.subTest(template=name):
+                self.assertIn("{% static 'images/WC_logo.jpg'%}", src)
+                self.assertNotIn(self.VERSION_SUFFIX, src)
+
+    def test_font_subset_url_is_documented_as_manual(self):
+        """The icon font is referenced from CSS, not a template.
+
+        No test can catch a stale woff2 there, so the hazard is recorded in
+        the CSS itself and asserted here so the note cannot be deleted silently.
+        """
+        with open(
+            os.path.join(self.static_dir, 'mobile', 'css', 'fa-subset.css'),
+            encoding='utf-8',
+        ) as fh:
+            css = fh.read()
+        self.assertIn('fa-solid-subset.woff2', css)
+        self.assertIn('ASSET_VERSION', css)

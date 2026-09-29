@@ -825,7 +825,7 @@
                             {% if emp.EmployeeID.signature %}                            
                                 <td><img id="signature-preview" src="{{emp.EmployeeID.signature.url}}" alt="Employee signature1" width="100" height="70" class="pb-2"></td>
                             {%else%}
-                                <td><img id="signature-preview" src="{% static 'images/no_signature.png'%}" alt="Employee Signature" width="100" height="70" class="pb-2"> </td>
+                                <td><img id="signature-preview" src="{% static 'images/no_signature.png' %}?v={{ ASSET_VERSION }}" alt="Employee Signature" width="100" height="70" class="pb-2"> </td>
                             {%endif%}
                         </tr>
 
@@ -839,7 +839,7 @@
                                     {% if sup.signature %}                            
                                         <img id="signature-preview" src="{{sup.signature.url}}" alt="Employee signature1" width="100" height="70" class="pb-2">
                                     {%else%}
-                                        <img id="signature-preview" src="{% static 'images/no_signature.png'%}" alt="Employee Signature" width="100" height="70" class="pb-2"> 
+                                        <img id="signature-preview" src="{% static 'images/no_signature.png' %}?v={{ ASSET_VERSION }}" alt="Employee Signature" width="100" height="70" class="pb-2"> 
                                     {%endif%}      
                                                   
                                 {%endif%}            

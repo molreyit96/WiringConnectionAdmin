@@ -3,7 +3,7 @@
 {% load humanize %}
 {% block container %}
 
-<script src="{% static 'js/supervisor.js' %}"></script>
+<script src="{% static 'js/supervisor.js' %}?v={{ ASSET_VERSION }}"></script>
 
 <div class="container">
     <form method='post' enctype="multipart/form-data">
