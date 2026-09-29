@@ -10,9 +10,10 @@
   {% include 'mobile/partials/pwa_head.html' %}
   <title>{% block title %}Wiring Connection Admin{% endblock %}</title>
   
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" 
-  integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" 
-  crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Font Awesome: subconjunto local de los 81 iconos que usa la PWA.
+       Reemplaza al all.min.css del CDN (89 KB de CSS + 127 KB de fuente)
+       por 5 KB de CSS + 6 KB de fuente. Mismos glifos, mismo render. -->
+  <link rel="stylesheet" href="{% static 'mobile/css/fa-subset.css' %} ">
   
   <!-- Bootstrap -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
