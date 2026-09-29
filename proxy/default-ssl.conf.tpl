@@ -36,8 +36,9 @@ server {
     location /static/media/ {
         alias /vol/static/media/;
 
-        expires 7d;
-        add_header Cache-Control "public, max-age=604800";
+        # Solo Cache-Control (moderno). No usar 'expires' aqui: ya emitiria un
+        # segundo header Cache-Control y duplicaria la directiva.
+        add_header Cache-Control "public, max-age=604800" always;
 
         proxy_connect_timeout 600s;
         proxy_send_timeout 600s;
@@ -51,8 +52,10 @@ server {
     location /static {
         alias /vol/static;
 
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000, immutable";
+        # Solo Cache-Control (moderno). 'expires' emitiria un segundo header
+        # Cache-Control; ademas 'immutable' exige que la URL cambie por version,
+        # y aqui los assets NO estan fingerprinted (STATIC_URL sin hash).
+        add_header Cache-Control "public, max-age=2592000" always;
 
         proxy_connect_timeout 600s;
         proxy_send_timeout 600s;
