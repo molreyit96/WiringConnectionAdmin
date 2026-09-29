@@ -343,6 +343,43 @@ class AssetVersionTests(TestCase):
         self.assertTrue(settings.ASSET_VERSION)
         self.assertRegex(settings.ASSET_VERSION, r'^\d{4}-\d{2}-\d{2}-\d+$')
 
+    def test_asset_version_reaches_the_template_context(self):
+        """Django does not expose settings to templates on its own.
+
+        Without a context processor, {{ ASSET_VERSION }} renders empty and the
+        ?v= suffix becomes "?v=", which busts nothing. This asserts the value
+        is actually present in rendered HTML, not just that the tag exists.
+        """
+        from django.conf import settings
+        from django.template import engines
+        from django.test import RequestFactory
+
+        engine = engines['django']
+        template = engine.from_string(
+            '{% load static %}'
+            "{% static 'mobile/css/tokens.css' %}?v={{ ASSET_VERSION }}"
+        )
+        # Render through a RequestContext so the registered context
+        # processors actually run; a bare Context() would skip them and make
+        # this test pass for the wrong reason.
+        request = RequestFactory().get('/mobile/home/10')
+        rendered = template.render(request=request)
+
+        self.assertIn('?v=', rendered)
+        self.assertNotIn(
+            '?v= ',
+            rendered,
+            'ASSET_VERSION rendered empty: the context processor is missing',
+        )
+        self.assertNotIn('?v="', rendered)
+        self.assertIn(f'?v={settings.ASSET_VERSION}', rendered)
+
+    def test_context_processor_is_registered(self):
+        from django.conf import settings
+
+        processors = settings.TEMPLATES[0]['OPTIONS']['context_processors']
+        self.assertIn('app.context_processors.asset_version', processors)
+
     def test_desktop_templates_stay_unversioned(self):
         """Scope guard: shared assets must not be versioned on desktop.
 

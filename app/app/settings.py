@@ -97,6 +97,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                # ASSET_VERSION -> available as {{ ASSET_VERSION }} in templates
+                'app.context_processors.asset_version',
             ],
         },
     },
