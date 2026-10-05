@@ -36,6 +36,8 @@ services:
     image: postgres:13-alpine
     volumes:
       - pgdata:/var/lib/postgresql/data
+    # ports:
+    #   - 5440:5432 # <-- AGREGA ESTO PARA ABRIR LA PUERTA
     environment:
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}

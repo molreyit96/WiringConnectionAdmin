@@ -6848,6 +6848,15 @@ def get_order_list(request,estatus, loc,pid,addR,invNumber,invAmount,invAmountF,
         
         
         woCalculate = workOrder.objects.filter(id = item.id).first()
+
+        # 30-09-2026: el Excel debe mostrar los mismos valores que /billing_list. Antes solo
+        # leia authorizedBilling sin sincronizarlo, y salia 0 hasta abrir la pantalla de billing.
+        # Se llama a la misma funcion compartida. Ver ../soporte_30-09-2026.md
+        try:
+            materialize_authorized_billing(woCalculate, request, "False")
+        except Exception as e:
+            print(str(e))
+
         production_invoiced, produnction_pending_billing = calculate_billing_amount(request, woCalculate)
         
         ##### Calculos
@@ -8612,74 +8621,23 @@ def authorized_billing_list(request, id):
     context["order"] = wo
     
 
-    payItems = DailyItem.objects.filter(DailyID__woID = wo)
-    itemResume = []
-
-
     opType = "Access Option"
     opDetail = "Billing List"
     logInAuditLog(request, opType, opDetail)
 
-
-    try:
-        for data in payItems:
-
-            itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == data.itemID.item.itemID), None)
-            amount = 0
-            amount = Decimal(str(data.quantity)) * Decimal(str(data.itemID.price))  
-            if itemResult != None:                  
-                itemResume[itemResult]['quantity'] += data.quantity
-                itemResume[itemResult]['amount'] += amount
-            else:            
-                itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False})
-           
-        
-    except Exception as e:
-        print(str(e)) 
-
-    # Group External Production by Item
-    try:
-        extProduction = externalProdItem.objects.filter(externalProdID__woID = wo)
-
-        for data in extProduction:
-
-            itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == data.itemID.item.itemID), None)
-            amount = 0
-            amount = Decimal(str(data.quantity)) * Decimal(str(data.itemID.price))  
-            if itemResult != None:                  
-                itemResume[itemResult]['quantity'] += data.quantity
-                itemResume[itemResult]['amount'] += amount
-            else:            
-                itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False})
-           
-        
-    except Exception as e:
-        print(str(e)) 
+    # 30-09-2026: esta vista creaba authorizedBilling por su cuenta sin rastrear el flag
+    # isAuthorized, lo que podia duplicar filas al combinarse con /billing_list.
+    # Ahora reutiliza la funcion compartida. Ver ../soporte_30-09-2026.md
+    itemResume, syncErrorMessage = materialize_authorized_billing(wo, request, "False")
+    if syncErrorMessage:
+        context["errorMessage"] = syncErrorMessage
 
     itemFinal = []
 
-    countAuthItem = authorizedBilling.objects.filter(woID = wo).count()
-
-    #Insert Production in Authorized Items
-    if countAuthItem == 0:
-        for itemR in itemResume:
-
-            #Getting the Item Price
-
-            iPrice = itemPrice.objects.filter(item__itemID=itemR['item'], location__LocationID = wo.Location.LocationID).first()
-
-            authI = authorizedBilling(
-                        woID = wo,
-                        itemID = iPrice,
-                        quantity = itemR['quantity'],
-                        total = itemR['amount'],
-                        createdBy = request.user.username,
-                        created_date = datetime.now()
-                    )
-
-            authI.save()       
-            
     authorizedItem = authorizedBilling.objects.filter(woID = wo)
+
+    # 30-09-2026: se elimino el bloque que agregaba la produccion aqui. Esa ruta paralela
+    # no marcaba isAuthorized y provocaba filas duplicadas. Ver ../soporte_30-09-2026.md
 
     for itemA in authorizedItem:
         itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == itemA.itemID.item.itemID), None)
@@ -9178,10 +9136,6 @@ def billing_list(request, id, isRestoring):
         context['status_ready'] = str(wo.Status) in ['2', '7', '8']
         
 
-        payItems = DailyItem.objects.filter(DailyID__woID = wo, Status=1)
-        itemResume = []
-
-
         #list estimate numbers
         estimateList = woEstimate.objects.filter(woID = wo)
         estimateFList = []
@@ -9206,129 +9160,13 @@ def billing_list(request, id, isRestoring):
         estimateList = woInvoice.objects.filter(woID = wo)
         context["invoiceList"] = estimateList
 
-        try:
-            for data in payItems:                
+        # 30-09-2026: la sincronizacion hacia authorizedBilling se movio a la funcion
+        # compartida materialize_authorized_billing (ver ../soporte_30-09-2026.md).
+        # Se mantiene aqui para no cambiar el comportamiento de la pantalla.
+        itemResume, syncErrorMessage = materialize_authorized_billing(wo, request, isRestoring)
+        errorMessage += syncErrorMessage
 
-                itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == data.itemID.item.itemID), None)
-                amount = 0
-                
-                #Calculate amount with DailyItem.price
-                #amount = Decimal(str(validate_decimals(data.quantity))) * Decimal(str(validate_decimals(data.itemID.price)))  
-                amount = Decimal(str(validate_decimals(data.quantity))) * Decimal(str(validate_decimals(data.price)))  
-
-                if amount == 0:
-                    amount = Decimal(str(validate_decimals(data.quantity))) * Decimal(str(validate_decimals(data.itemID.price))) 
-
-
-                if amount == 0:
-                    #Calculate amount with DailyItem.price
-                    #errorMessage = "There is a Problem with " + data.itemID.item.itemID + ' - ' + data.itemID.item.name + ' Price: '+ str(validate_decimals(data.itemID.price)) + ' Amount ' + str(validate_decimals(amount))
-                    errorMessage = "There is a Problem with " + data.itemID.item.itemID + ' - ' + data.itemID.item.name + ' Price: '+ str(validate_decimals(data.price)) + ' Amount ' + str(validate_decimals(amount))
-
-                if itemResult != None:                                      
-                    itemResume[itemResult]['quantity'] += data.quantity
-                    itemResume[itemResult]['amount'] += amount
-                    if data.isAuthorized == False:
-                        itemResume[itemResult]['updateQuantity'] += data.quantity
-                        itemResume[itemResult]['updateAmount'] += amount
-                else:            
-                    if data.isAuthorized == False:
-                        #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':amount, 'updateQuantity':data.quantity})
-                        #Adding Price from Amount/Qty                        
-                        itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.price, 'amount':amount,'Encontrado':False, 'updateAmount':amount, 'updateQuantity':data.quantity})
-                    else:
-                        #itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
-                        
-                        #if data.price == 0 then use the Item Catalog Price
-                        if data.price == 0 or data.price == None:
-                            itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
-                        else:                        
-                            #Adding Price from Amount/Qty
-                            itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
-
-                if data.isAuthorized == False:
-                    currentItem = DailyItem.objects.filter(id = data.id).first()
-                    currentItem.isAuthorized = True               
-                    currentItem.authorized_date = datetime.now()
-                    currentItem.save()
-        
-        except Exception as e:
-            errorMessage += str(e) + ' primero \n\n'
-            print(str(e)) 
-
-        # Group External Production by Item
-        try:
-            extProduction = externalProdItem.objects.filter(externalProdID__woID = wo, Status=1)
-
-            for data in extProduction:
-
-                itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == data.itemID.item.itemID), None)
-                amount = 0
-                amount = Decimal(str(data.quantity)) * Decimal(str(data.itemID.price))  
-                if itemResult != None:                  
-                    itemResume[itemResult]['quantity'] += data.quantity
-                    itemResume[itemResult]['amount'] += amount
-
-                    if data.isAuthorized == False:
-                        itemResume[itemResult]['updateQuantity'] += data.quantity
-                        itemResume[itemResult]['updateAmount'] += amount
-                else:          
-                    if data.isAuthorized == False:
-                        itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':amount, 'updateQuantity':data.quantity})
-                        
-                    else:                      
-                        itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
-
-                if data.isAuthorized == False:
-                    currentItem = externalProdItem.objects.filter(id = data.id).first()
-                    currentItem.isAuthorized = True               
-                    currentItem.authorized_date = datetime.now()
-                    currentItem.save() 
-            
-        except Exception as e:
-            errorMessage += str(e) + ' segundo \n\n'
-            print(str(e)) 
-
-        itemFinal = []    
-
-
-        #Insert Production in Authorized Items
-        for itemR in itemResume:
-
-            #Validating if Item exists in Authorized Item
-            countItem = authorizedBilling.objects.filter(woID = wo, Status = 1, itemID__item__itemID = itemR['item']).count()
-
-            if countItem == 0:
-                #Getting the Item Price
-                iPrice = itemPrice.objects.filter(item__itemID=itemR['item'], location__LocationID = wo.Location.LocationID).first()
-
-                if iPrice:
-
-                    authI = authorizedBilling(
-                                woID = wo,
-                                itemID = iPrice,
-                                quantity = itemR['quantity'],
-                                total = itemR['amount'],
-                                createdBy = request.user.username,
-                                created_date = datetime.now(),
-                                transferQty = 0
-                            )
-
-                    authI.save()     
-
-                else:
-                    errorMessage += 'Item ' + str(itemR['item']) + ' does not have a price definition for ' + wo.Location.name + '. ' +  os.linesep 
-            else:
-                existingAB = authorizedBilling.objects.filter(woID = wo, Status = 1, itemID__item__itemID = itemR['item']).first()
-                if isRestoring == "True":
-                    existingAB.quantity = itemR['quantity']
-                    existingAB.total = float(itemR['amount'])
-                    existingAB.save()
-                else:                  
-                    existingAB.quantity += itemR['updateQuantity']
-                    existingAB.total += float(itemR['updateAmount'])
-                    existingAB.save()
-
+        itemFinal = []
 
         authorizedItem = authorizedBilling.objects.filter(woID = wo, Status = 1)
         qtyP = 0
@@ -12031,6 +11869,136 @@ def calculate_billing_amount(request, wo):
         
     return totalInvoiced, pendingProduction
 
+
+# 30-09-2026: Sincroniza la produccion capturada (DailyItem / externalProdItem) hacia
+# authorizedBilling. Antes esta logica solo vivia dentro de billing_list, por lo que el
+# export Excel de /order_list leia una tabla vacia y mostraba 0 en Pending Billing /
+# Billing Amount hasta que alguien abria la pantalla de billing de la orden.
+# Ver ../soporte_30-09-2026.md
+# Idempotente: gracias al flag isAuthorized, las visitas posteriores aportan delta 0.
+def materialize_authorized_billing(wo, request, isRestoring="False"):
+    errorMessage = ""
+    itemResume = []
+
+    if wo is None:
+        return itemResume, errorMessage
+
+    username = request.user.username if request is not None and request.user.is_authenticated else "system"
+
+    try:
+        for data in DailyItem.objects.filter(DailyID__woID = wo, Status=1):
+
+            itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == data.itemID.item.itemID), None)
+            amount = 0
+
+            #Calculate amount with DailyItem.price
+            amount = Decimal(str(validate_decimals(data.quantity))) * Decimal(str(validate_decimals(data.price)))
+
+            if amount == 0:
+                amount = Decimal(str(validate_decimals(data.quantity))) * Decimal(str(validate_decimals(data.itemID.price)))
+
+            if amount == 0:
+                errorMessage = "There is a Problem with " + data.itemID.item.itemID + ' - ' + data.itemID.item.name + ' Price: '+ str(validate_decimals(data.price)) + ' Amount ' + str(validate_decimals(amount))
+
+            if itemResult != None:
+                itemResume[itemResult]['quantity'] += data.quantity
+                itemResume[itemResult]['amount'] += amount
+                if data.isAuthorized == False:
+                    itemResume[itemResult]['updateQuantity'] += data.quantity
+                    itemResume[itemResult]['updateAmount'] += amount
+            else:
+                if data.isAuthorized == False:
+                    #Adding Price from Amount/Qty
+                    itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.price, 'amount':amount,'Encontrado':False, 'updateAmount':amount, 'updateQuantity':data.quantity})
+                else:
+                    #if data.price == 0 then use the Item Catalog Price
+                    if data.price == 0 or data.price == None:
+                        itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
+                    else:
+                        #Adding Price from Amount/Qty
+                        itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
+
+            if data.isAuthorized == False:
+                currentItem = DailyItem.objects.filter(id = data.id).first()
+                currentItem.isAuthorized = True
+                currentItem.authorized_date = datetime.now()
+                currentItem.save()
+
+    except Exception as e:
+        errorMessage += str(e) + ' primero \n\n'
+        print(str(e))
+
+    # Group External Production by Item
+    try:
+        for data in externalProdItem.objects.filter(externalProdID__woID = wo, Status=1):
+
+            itemResult = next((i for i, item in enumerate(itemResume) if item["item"] == data.itemID.item.itemID), None)
+            amount = 0
+            amount = Decimal(str(data.quantity)) * Decimal(str(data.itemID.price))
+            if itemResult != None:
+                itemResume[itemResult]['quantity'] += data.quantity
+                itemResume[itemResult]['amount'] += amount
+
+                if data.isAuthorized == False:
+                    itemResume[itemResult]['updateQuantity'] += data.quantity
+                    itemResume[itemResult]['updateAmount'] += amount
+            else:
+                if data.isAuthorized == False:
+                    itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':amount, 'updateQuantity':data.quantity})
+
+                else:
+                    itemResume.append({'item':data.itemID.item.itemID, 'name': data.itemID.item.name, 'quantity': data.quantity, 'price':data.itemID.price, 'amount':amount,'Encontrado':False, 'updateAmount':0, 'updateQuantity':0})
+
+            if data.isAuthorized == False:
+                currentItem = externalProdItem.objects.filter(id = data.id).first()
+                currentItem.isAuthorized = True
+                currentItem.authorized_date = datetime.now()
+                currentItem.save()
+
+    except Exception as e:
+        errorMessage += str(e) + ' segundo \n\n'
+        print(str(e))
+
+    #Insert Production in Authorized Items
+    for itemR in itemResume:
+
+        #Validating if Item exists in Authorized Item
+        # Status=1 = fila activa. Si la previa ya esta Invoiced (3) se crea una fila nueva,
+        # para que la produccion reciente quede como pendiente sin tocar lo facturado.
+        countItem = authorizedBilling.objects.filter(woID = wo, Status = 1, itemID__item__itemID = itemR['item']).count()
+
+        if countItem == 0:
+            #Getting the Item Price
+            iPrice = itemPrice.objects.filter(item__itemID=itemR['item'], location__LocationID = wo.Location.LocationID).first()
+
+            if iPrice:
+
+                authI = authorizedBilling(
+                            woID = wo,
+                            itemID = iPrice,
+                            quantity = itemR['quantity'],
+                            total = itemR['amount'],
+                            createdBy = username,
+                            created_date = datetime.now(),
+                            transferQty = 0
+                        )
+
+                authI.save()
+
+            else:
+                errorMessage += 'Item ' + str(itemR['item']) + ' does not have a price definition for ' + wo.Location.name + '. ' +  os.linesep
+        else:
+            existingAB = authorizedBilling.objects.filter(woID = wo, Status = 1, itemID__item__itemID = itemR['item']).first()
+            if isRestoring == "True":
+                existingAB.quantity = itemR['quantity']
+                existingAB.total = float(itemR['amount'])
+                existingAB.save()
+            else:
+                existingAB.quantity += itemR['updateQuantity']
+                existingAB.total += float(itemR['updateAmount'])
+                existingAB.save()
+
+    return itemResume, errorMessage
 
 
 def get_invoiced_production_total_for_wo(wo):
