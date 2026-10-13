@@ -1496,7 +1496,11 @@ def send_payroll(request, id, LocID):
     context ={}
 
     obj = get_object_or_404(DailyMob, id = id)
-    
+
+    # Prevents an already-approved/rejected/deleted daily from being reverted to Sent.
+    if obj.Status not in (1, 5):
+        return HttpResponseRedirect('/mobile/crew/' + str(obj.Period.id) + '/' + obj.day.strftime("%d") + '/0/' + str(LocID))
+
     if obj:
         obj.send_date = datetime.now()    
         obj.Status = 2

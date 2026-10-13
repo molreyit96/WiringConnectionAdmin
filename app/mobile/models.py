@@ -191,3 +191,23 @@ class DailyMobDocs(models.Model):
 
     def __str__(self):
         return str(self.DailyID) + " - " + str(self.docType) + " - " + str(self.docName)
+
+
+class DailyMobStatusAudit(models.Model):
+    dailymob_id = models.BigIntegerField(db_index=True)
+    old_status = models.IntegerField(null=True, blank=True)
+    new_status = models.IntegerField(null=True, blank=True)
+    operation = models.CharField(max_length=10, null=True, blank=True)
+    changed_at = models.DateTimeField(null=True, blank=True)
+    db_user = models.CharField(max_length=100, null=True, blank=True)
+    session_user = models.CharField(max_length=100, null=True, blank=True)
+    app_user = models.CharField(max_length=100, null=True, blank=True)
+    txid = models.BigIntegerField(null=True, blank=True)
+    row_snapshot = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'mobile_dailymobstatusaudit'
+        ordering = ['-changed_at']
+
+    def __str__(self):
+        return "DailyMob {} : {} -> {} ({})".format(self.dailymob_id, self.old_status, self.new_status, self.changed_at)
