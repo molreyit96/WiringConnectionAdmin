@@ -223,7 +223,7 @@ def mobile_home(request, LocID):
         day = fullDate.strftime("%d")
 
         #obtengo la cantidad de Items asociados
-        dItems = DailyMob.objects.filter(Period = per, Location = loca, day = fullDate)
+        dItems = DailyMob.objects.filter(Period = per, Location = loca, day = fullDate, created_by = user)
         totalItems = 0
         type ="primary"
         
