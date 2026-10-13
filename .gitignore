@@ -135,6 +135,7 @@ app/media/Recaps/
 app/media/dailys/
 
 *.dump
+*.dump.gz
 
 # AI assistants / coding agents
 .opencode/
