@@ -3152,13 +3152,6 @@ def html_to_pdf_save(html_content, daily_obj):
         html_mail = ""
         html_mail = html_content
 
-        tech_comments_html = daily_obj.daily_comments or ""
-        supervisor_comments_html = daily_obj.comments or ""
-        html_content += f"""
-        <div style="margin: 10px 0;"><strong>Comments / Notes:</strong> {tech_comments_html}</div>
-        <div style="margin: 10px 0;"><strong>Supervisor Comments:</strong> {supervisor_comments_html}</div>
-        """
-
         # Add DailyMobDocs images section
         dailyDocs = DailyMobDocs.objects.filter(DailyID=daily_obj).order_by('docType')
         html_content += """
