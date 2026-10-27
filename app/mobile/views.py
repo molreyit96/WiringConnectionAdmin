@@ -3036,9 +3036,9 @@ def html_to_pdf_save(html_content, daily_obj):
 
         <div style="margin: 10px 0; border-bottom: 0.5px solid #666;"></div>
         
-        <div style="margin: 10px 0;">Comments / Notes:  {tech_comments_html}</div>
+            <div style="margin: 10px 0;"><strong>Comments / Notes:</strong> {tech_comments_html}</div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 0.5px solid #666;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 0.5px solid #666;">
             <tr style="background-color: #f2f2f2;">
                 <td style="border: 0.5px solid #666; padding: 4px;">Code</td>
                 <td style="border: 0.5px solid #666; padding: 4px;">Description</td>
@@ -3129,10 +3129,11 @@ def html_to_pdf_save(html_content, daily_obj):
                                 {empty_box} Fiber Done<br><br>"""
 
 
+        comments_text = daily_obj.comments or ""
         html_content += f"""
 
             <strong>Supervisor Comments:</strong><br>
-            <div style="height: 50px; border: 0.5px solid #666; margin: 5px 0;"></div>
+            <div style="min-height: 50px; border: 0.5px solid #666; margin: 5px 0; padding: 4px; white-space: pre-wrap;">{comments_text}</div>
 
             <table style="width: 100%; margin-top: 20px;">
                 <tr>
@@ -3151,7 +3152,14 @@ def html_to_pdf_save(html_content, daily_obj):
         html_mail = ""
         html_mail = html_content
 
-         # Add DailyMobDocs images section
+        tech_comments_html = daily_obj.daily_comments or ""
+        supervisor_comments_html = daily_obj.comments or ""
+        html_content += f"""
+        <div style="margin: 10px 0;"><strong>Comments / Notes:</strong> {tech_comments_html}</div>
+        <div style="margin: 10px 0;"><strong>Supervisor Comments:</strong> {supervisor_comments_html}</div>
+        """
+
+        # Add DailyMobDocs images section
         dailyDocs = DailyMobDocs.objects.filter(DailyID=daily_obj).order_by('docType')
         html_content += """
         <div style="margin: 10px 0; "></div>

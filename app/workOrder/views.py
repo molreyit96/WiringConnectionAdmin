@@ -45,6 +45,7 @@ from django.db.models import Max
 from django.db.models import Sum
 from .models import status_choice, prodStatus_choice, estimateStatus_choice
 from mobile import models as MobileModel
+from mobile import views as mobile_views
 from django.views.generic import View
 from django.views.generic import CreateView
 from django.http import JsonResponse
@@ -5555,8 +5556,11 @@ def upload_daily(request, id, LocID):
 
     return render(request, "upload_daily.html", context)
 
-@login_required
+from django.views.decorators.csrf import csrf_exempt
+
+
 @require_POST
+@csrf_exempt
 def record_daily_pdf_download(request, daily_id):
     """
     Registra en la BD que el PDF asociado a Daily (item.pdfDaily) fue descargado:
@@ -5566,14 +5570,27 @@ def record_daily_pdf_download(request, daily_id):
     except Daily.DoesNotExist:
         return JsonResponse({'error': 'not found'}, status=404)
 
+    try:
+        if daily and daily.mobile_id:
+            dailyMob = MobileModel.DailyMob.objects.filter(id=daily.mobile_id).first()
+            if dailyMob:
+                try:
+                    mobile_views.html_to_pdf_save('<html><body>test</body></html>', dailyMob)
+                    dailyMob.refresh_from_db()
+                    if dailyMob.pdfDaily:
+                        daily.pdfDaily = dailyMob.pdfDaily
+                        daily.save(update_fields=['pdfDaily'])
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
     try:
         daily.download_date = datetime.now()
         daily.downloaded_by = request.user.username
         daily.save()
-    except Daily.DoesNotExist:
+    except Exception:
         return JsonResponse({'error': 'Error updating data'}, status=405)
-
 
     return JsonResponse({'status': 'ok'})
 
