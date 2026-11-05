@@ -1649,6 +1649,7 @@ def linkOrder(request, id, manualid):
     return render(request, "link_order.html", context)
 
 @login_required(login_url='/home/')
+@transaction.atomic
 def updateLinkOrder(request, id, manualid):
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
     per = period.objects.filter(status__in=(1,2)).first()
@@ -1675,7 +1676,16 @@ def updateLinkOrder(request, id, manualid):
             temProd = Daily.objects.filter(id = p.id).first()
             temProd.woID = order
             temProd.save()
-        
+
+        #Se traslada produccion movil (DailyMob) si la hay
+
+        mobileProd = MobileModel.DailyMob.objects.filter(woID = manOrder)
+
+        for mp in mobileProd:
+            temMobileProd = MobileModel.DailyMob.objects.filter(id = mp.id).first()
+            temMobileProd.woID = order
+            temMobileProd.save()
+
         #Se traslada internal PO
         
         internal = internalPO.objects.filter(woID = manOrder)
@@ -1723,8 +1733,27 @@ def updateLinkOrder(request, id, manualid):
             temInv.save()
 
 
+        #Auditoria del enlace en ambas ordenes
+
+        linkDetail = "Manual order " + str(manOrder.id) + " (" + str(manOrder.prismID) + ") linked to order " + str(order.id) + " (" + str(order.prismID) + "). Daily and DailyMob production transferred."
+
+        woCommentLog.objects.create(
+            woID = order,
+            comment = "[SYSTEM] Link Order: " + linkDetail,
+            created_date = datetime.now(),
+            createdBy = request.user.username
+        )
+
+        woCommentLog.objects.create(
+            woID = manOrder,
+            comment = "[SYSTEM] Link Order: " + linkDetail,
+            created_date = datetime.now(),
+            createdBy = request.user.username
+        )
+
         return render(request,'landing.html',{'message':'Order Linked Successfully', 'alertType':'success','emp':emp, 'per':per})
     except Exception as e:
+        transaction.set_rollback(True)
         return render(request,'landing.html',{'message':'Somenthing went Wrong!' + str(e), 'alertType':'danger','emp':emp, 'per': per})
 
 @login_required(login_url='/home/')
