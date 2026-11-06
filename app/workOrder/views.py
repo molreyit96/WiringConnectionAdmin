@@ -4330,7 +4330,7 @@ def location_period_list(request, id):
                     over_time += validate_decimals(i.ot_hour)
                     double_time += validate_decimals(i.double_time)
                     total_time += validate_decimals(i.total_hours)
-                    #if validate_decimals(i.EmployeeID.hourly_rate) != None:
+                    #if i.emp_rate is not None:
                     rt += validate_decimals(i.rt_pay)
                     ot += validate_decimals(i.ot_pay)
                     dt += validate_decimals(i.dt_pay)
@@ -4529,6 +4529,9 @@ def update_order_daily(request, woID, dailyID, LocID):
     anterior = None
 
     if crew and wo:
+        guard = _closed_period_guard(request, daily=crew, action="update_order_daily")
+        if guard:
+            return guard
 
         if crew.woID != None:
             anterior = workOrder.objects.filter(id = crew.woID.id).first()
@@ -4599,6 +4602,9 @@ def create_daily(request, pID, dID, LocID):
     context = {}    
     context["emp"] = emp    
     per = period.objects.filter(id = pID).first()
+    guard = _closed_period_guard(request, period_obj=per, action="create_daily")
+    if guard:
+        return guard
 
     perActual = period.objects.filter(status__in=(1,2)).first()
     context["per"] = perActual
@@ -4665,11 +4671,89 @@ def daily_audit(dailyID, opDetail, opType, createBy):
     return True
 
 
+def _valid_hourly_rate(employee):
+    if not employee:
+        return None
+    raw = employee.hourly_rate
+    if raw is None or str(raw).strip() == "":
+        return None
+    rate = validate_decimals(raw)
+    if rate <= 0:
+        return None
+    return rate
 
-def logInAuditLog(request, opType, opDetail):
+
+def _closed_period_guard(request, period_obj=None, daily=None, action=""):
+    if period_obj is None and daily is not None:
+        period_obj = daily.Period
+    if not period_obj or period_obj.status != 3:
+        return None
+
+    emp = Employee.objects.filter(user__username__exact=request.user.username).first()
+    detail = "Blocked action on closed period: %s; Period: %s; Daily: %s; User: %s" % (
+        action,
+        getattr(period_obj, "id", None),
+        getattr(daily, "id", None),
+        request.user.username,
+    )
+    try:
+        if daily is not None:
+            DailyAudit.objects.create(
+                DailyID=daily,
+                operationDetail=detail[:500],
+                operationType="Blocked-ClosedPeriod",
+                created_date=datetime.now(),
+                createdBy=request.user.username,
+            )
+        logInAudit.objects.create(
+            Location=getattr(daily, "Location", None) or (emp.Location if emp else None),
+            Period=period_obj,
+            EmployeeID=emp,
+            operationType="Blocked-ClosedPeriod",
+            operationDetail=detail[:1000],
+            created_date=datetime.now(),
+            createdBy=request.user.username,
+            is_staff=request.user.is_staff,
+            is_supervisor=bool(emp and emp.is_supervisor),
+            is_admin=bool(emp and emp.is_admin),
+            is_superAdmin=bool(emp and emp.is_superAdmin),
+            accounts_payable=bool(emp and emp.accounts_payable),
+        )
+    except Exception:
+        logging.getLogger(__name__).exception("Failed to audit blocked closed-period action")
+    logging.getLogger(__name__).warning(detail)
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest" or request.path.startswith("/update_daily_status/"):
+        return JsonResponse({"error": "Period is closed. This daily cannot be modified."}, status=403)
+    return HttpResponse("Period is closed. This daily cannot be modified.", status=403)
+
+
+def _payroll_close_issues(period_obj):
+    issues = []
+    rows = DailyEmployee.objects.filter(DailyID__Period=period_obj).select_related("DailyID", "EmployeeID")
+    for row in rows:
+        if row.emp_rate is not None and validate_decimals(row.emp_rate) > 0:
+            continue
+        has_items = DailyItem.objects.filter(DailyID_id=row.DailyID_id).exists()
+        hours = (
+            validate_decimals(row.regular_hours)
+            + validate_decimals(row.ot_hour)
+            + validate_decimals(row.double_time)
+        )
+        if has_items or hours > 0:
+            issues.append(
+                "Daily %s / Employee %s: missing emp_rate" % (
+                    row.DailyID_id,
+                    getattr(row.EmployeeID, "employeeID", None),
+                )
+            )
+    return issues
+
+
+def logInAuditLog(request, opType, opDetail, period_obj=None):
     
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
-    per = period.objects.filter(status__in=(1,2)).first()
+    per = period_obj or period.objects.filter(status__in=(1,2)).first()
     
     if emp:
         Location = emp.Location
@@ -4721,6 +4805,9 @@ def update_daily(request, daily):
     context["per"] = per
 
     crew = Daily.objects.filter(id = daily).first()
+    guard = _closed_period_guard(request, daily=crew, action="update_daily")
+    if guard:
+        return guard
 
     if crew:
         sup = request.POST.get('supervisor') 
@@ -4753,6 +4840,9 @@ def get_daily_status(request, daily_id):
 def update_daily_status(request, daily_id):
     try:
         daily = Daily.objects.get(id=daily_id)
+        guard = _closed_period_guard(request, daily=daily, action="update_daily_status")
+        if guard:
+            return guard
         data = json.loads(request.body)
         
         daily.daily_rtb = data.get('daily_rtb', daily.daily_rtb)
@@ -4786,6 +4876,9 @@ def update_ptp_Emp(dailyID, split):
     emp_ptp = 0
     crew = Daily.objects.filter(id = dailyID).first()
     if crew:
+        if crew.Period_id and crew.Period.status == 3:
+            return emp_ptp
+
         itemCount = 0
         itemSum = 0
         
@@ -4828,6 +4921,13 @@ def update_ptp_Emp(dailyID, split):
             if empD.per_to_pay != None:                                         
                 emp_ptp += empD.per_to_pay      
 
+            empRate = validate_decimals(empD.emp_rate) if empD.emp_rate is not None else 0
+            if empRate <= 0:
+                fallbackRate = _valid_hourly_rate(empD.EmployeeID)
+                if fallbackRate is not None:
+                    empRate = fallbackRate
+                    empD.emp_rate = fallbackRate
+
             if itemCount > 0:
                 pay_out = validate_decimals(((itemSum * empD.per_to_pay) / 100))
                 production = validate_decimals(((itemSum * empD.per_to_pay) / 100))
@@ -4838,9 +4938,6 @@ def update_ptp_Emp(dailyID, split):
                     pay_out += ovEmp      
 
             else: 
-                if empD.EmployeeID.hourly_rate != None: 
-                    empRate = validate_decimals(empD.EmployeeID.hourly_rate)
-
                 rt_pay = (empD.regular_hours * empRate)
                 ot_pay = (empD.ot_hour * (empRate * 1.5))
                 dt_pay = (empD.double_time * (empRate * 2))
@@ -4855,7 +4952,6 @@ def update_ptp_Emp(dailyID, split):
             empD.rt_pay = rt_pay
             empD.ot_pay = ot_pay
             empD.dt_pay = dt_pay
-            empD.emp_rate = empRate
             empD.own_vehicle_pay = ovEmp
             empD.payout = pay_out
             empD.production = production
@@ -5214,6 +5310,9 @@ def create_daily_emp(request, id, LocID):
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     dailyID = Daily.objects.filter(id = id).first()
+    guard = _closed_period_guard(request, daily=dailyID, action="create_daily_emp")
+    if guard:
+        return guard
     
     #Get all the dailies with the same Period, Day and Location
     dailyList = list(Daily.objects.filter(Location = dailyID.Location, Period = dailyID.Period, day = dailyID.day, woID = dailyID.woID))
@@ -5243,7 +5342,16 @@ def create_daily_emp(request, id, LocID):
         empid = request.POST.get('EmployeeID')
         
         selectedEmp = Employee.objects.filter(employeeID = empid).first()
+        empRate = _valid_hourly_rate(selectedEmp)
+        if selectedEmp is None or empRate is None:
+            form.add_error('EmployeeID', 'Employee must have a valid hourly rate.')
+            context['form'] = form
+            context['emp'] = emp
+            context['daily'] = dailyID
+            context['empList'] = EmpLocation
+            return render(request, "create_daily_emp.html", context)
         form.instance.EmployeeID = selectedEmp
+        form.instance.emp_rate = empRate
         form.save()  
 
         #Adding Audit
@@ -5265,6 +5373,12 @@ def update_daily_emp(request, id, LocID):
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}    
     obj = get_object_or_404(DailyEmployee, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="update_daily_emp")
+    if guard:
+        return guard
+
+    old_emp_id = obj.EmployeeID_id
+    old_rate = obj.emp_rate
 
     per = period.objects.filter(status__in=(1,2)).first()
     context["per"] = per    
@@ -5285,19 +5399,27 @@ def update_daily_emp(request, id, LocID):
         empid = request.POST.get('EmployeeID')
         
         selectedEmp = Employee.objects.filter(employeeID = empid).first()
-        form.instance.EmployeeID = selectedEmp
+        empRate = _valid_hourly_rate(selectedEmp)
+        if selectedEmp is None or empRate is None:
+            form.add_error('EmployeeID', 'Employee must have a valid hourly rate.')
+        else:
+            employee_changed = selectedEmp.pk != old_emp_id
+            if employee_changed or old_rate is None or validate_decimals(old_rate) <= 0:
+                form.instance.emp_rate = empRate
+            else:
+                form.instance.emp_rate = old_rate
+            form.instance.EmployeeID = selectedEmp
 
-        form.save()
-        
-         #Adding Audit
-        operationDetail = "Updating a Employee: " + str(selectedEmp) + ", % to pay: " + str(obj.per_to_pay) + ", on Call: " + str(obj.on_call) + ", Bonus: " + str(obj.bonus) + ", Start Time: " + str(startTime) + ", Lunch Start Time: " + str(lunch_startTime) + ", Lunch End Time: " + str(lunch_endTime) + ", End Time: " + str(endTime)
-        
-        daily_audit(obj.DailyID.id, operationDetail, "Update", request.user.username)
+            form.save()
 
-        update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet) 
+            operationDetail = "Updating a Employee: " + str(selectedEmp) + ", emp_rate: " + str(old_rate) + " -> " + str(form.instance.emp_rate) + ", % to pay: " + str(obj.per_to_pay) + ", on Call: " + str(obj.on_call) + ", Bonus: " + str(obj.bonus) + ", Start Time: " + str(startTime) + ", Lunch Start Time: " + str(lunch_startTime) + ", Lunch End Time: " + str(lunch_endTime) + ", End Time: " + str(endTime)
 
-        context["emp"] = emp       
-        return HttpResponseRedirect('/payroll/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) + '/' + str(LocID)) 
+            daily_audit(obj.DailyID.id, operationDetail, "Update", request.user.username)
+
+            update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet)
+
+            context["emp"] = emp
+            return HttpResponseRedirect('/payroll/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) + '/' + str(LocID))
 
     dailyID = Daily.objects.filter(id = obj.DailyID.id).first()
 
@@ -5314,6 +5436,9 @@ def delete_daily_emp(request, id, LocID):
     emp = Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     obj = get_object_or_404(DailyEmployee, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_emp")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -5350,6 +5475,9 @@ def create_daily_item(request, id, LocID):
     context["per"] = per
 
     dailyID = Daily.objects.filter(id = id).first()
+    guard = _closed_period_guard(request, daily=dailyID, action="create_daily_item")
+    if guard:
+        return guard
 
     dailyI = DailyItem.objects.filter(DailyID = dailyID)
     itemList = []
@@ -5422,6 +5550,9 @@ def update_daily_item(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyItem, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="update_daily_item")
+    if guard:
+        return guard
 
     itemLocation = itemPrice.objects.filter(location__LocationID = obj.DailyID.Location.LocationID)
     
@@ -5468,6 +5599,9 @@ def delete_daily_item(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyItem, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_item")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -5498,6 +5632,9 @@ class BulkUploadView(View):
 
         if form.is_valid():
             daily_id = form.cleaned_data['DailyID']
+            guard = _closed_period_guard(request, daily=daily_id, action="upload_daily_docs")
+            if guard:
+                return guard
             doc_type = form.cleaned_data['docType']            
             files = self.request.FILES.getlist('files')
             
@@ -5549,6 +5686,9 @@ def delete_daily_docs(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyDocs, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_docs")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -5572,6 +5712,9 @@ def upload_daily(request, id, LocID):
         new_daily = request.FILES['myfile']
         
         d = Daily.objects.filter(id = id).first()
+        guard = _closed_period_guard(request, daily=d, action="upload_daily")
+        if guard:
+            return guard
 
         if d:
             filename = d.day.strftime("%m%d%Y") + "-C" + str(d.crew) + "-" + d.Location.name + "-" + d.Period.weekRange + ".pdf"           
@@ -6062,10 +6205,10 @@ def generate_recap(empID, perID):
         prod = DailyItem.objects.filter(DailyID = item.DailyID).count()
 
         if prod <= 0:           
-            if item.EmployeeID.hourly_rate != None:
-                rt = (item.regular_hours * float(item.EmployeeID.hourly_rate))
-                ot = ((item.ot_hour * (float(item.EmployeeID.hourly_rate)*1.5)))
-                dt = ((item.double_time * (float(item.EmployeeID.hourly_rate)*2)))
+            if item.emp_rate is not None:
+                rt = (item.regular_hours * float(item.emp_rate))
+                ot = ((item.ot_hour * (float(item.emp_rate)*1.5)))
+                dt = ((item.double_time * (float(item.emp_rate)*2)))
 
         payroll = item.payout
         on_call = item.on_call
@@ -7088,10 +7231,10 @@ def get_summary(request, perID):
                         ws.write(row_num,6,validate_print_decimals(i.double_time), font_style)
                         ws.write(row_num,7,validate_print_decimals(i.total_hours), font_style)
 
-                        if validate_decimals(i.EmployeeID.hourly_rate) != None:
-                            rtPrice = (validate_decimals(i.regular_hours) * float(validate_decimals(i.EmployeeID.hourly_rate)))
-                            otPrice = ((validate_decimals(i.ot_hour) * (float(validate_decimals(i.EmployeeID.hourly_rate))*1.5)))
-                            dtPrice = ((validate_decimals(i.double_time) * (float(validate_decimals(i.EmployeeID.hourly_rate))*2)))
+                        if i.emp_rate is not None:
+                            rtPrice = (validate_decimals(i.regular_hours) * float(validate_decimals(i.emp_rate)))
+                            otPrice = ((validate_decimals(i.ot_hour) * (float(validate_decimals(i.emp_rate))*1.5)))
+                            dtPrice = ((validate_decimals(i.double_time) * (float(validate_decimals(i.emp_rate))*2)))
 
                             ws.write(row_num,8,validate_print_decimals(rtPrice), font_style)
                             ws.write(row_num,9,validate_print_decimals(otPrice + dtPrice), font_style)
@@ -7291,10 +7434,10 @@ def get_summary(request, perID):
                     prod = DailyItem.objects.filter(DailyID = itemEmp.DailyID).count()
 
                     if prod <= 0:           
-                        if validate_decimals(itemEmp.EmployeeID.hourly_rate) != None:
-                            rt = (validate_decimals(itemEmp.regular_hours) * float(validate_decimals(itemEmp.EmployeeID.hourly_rate)))
-                            ot = ((validate_decimals(itemEmp.ot_hour) * (float(validate_decimals(itemEmp.EmployeeID.hourly_rate))*1.5)))
-                            dt = ((validate_decimals(itemEmp.double_time) * (float(validate_decimals(itemEmp.EmployeeID.hourly_rate))*2)))
+                        if itemEmp.emp_rate is not None:
+                            rt = (validate_decimals(itemEmp.regular_hours) * float(validate_decimals(itemEmp.emp_rate)))
+                            ot = ((validate_decimals(itemEmp.ot_hour) * (float(validate_decimals(itemEmp.emp_rate))*1.5)))
+                            dt = ((validate_decimals(itemEmp.double_time) * (float(validate_decimals(itemEmp.emp_rate))*2)))
                         rt_Total += validate_decimals(itemEmp.regular_hours)
                         ot_Total += validate_decimals(itemEmp.ot_hour)
                         dt_Total += validate_decimals(itemEmp.double_time)
@@ -7459,10 +7602,10 @@ def get_summary(request, perID):
                         over_time += validate_decimals(i.ot_hour)
                         double_time += validate_decimals(i.double_time)
                         total_time += validate_decimals(i.total_hours)
-                        if validate_decimals(i.EmployeeID.hourly_rate) != None:
-                            rt += (validate_decimals(i.regular_hours) * float(validate_decimals(i.EmployeeID.hourly_rate)))
-                            ot += ((validate_decimals(i.ot_hour) * (float(validate_decimals(i.EmployeeID.hourly_rate))*1.5)))
-                            dt += ((validate_decimals(i.double_time) * (float(validate_decimals(i.EmployeeID.hourly_rate))*2)))
+                        if i.emp_rate is not None:
+                            rt += (validate_decimals(i.regular_hours) * float(validate_decimals(i.emp_rate)))
+                            ot += ((validate_decimals(i.ot_hour) * (float(validate_decimals(i.emp_rate))*1.5)))
+                            dt += ((validate_decimals(i.double_time) * (float(validate_decimals(i.emp_rate))*2)))
 
                     if validate_decimals(i.bonus) != None:
                         bonus += validate_decimals(i.bonus)
@@ -7814,10 +7957,16 @@ def close_payroll(request, id):
     context["emp"] = emp
  
     if request.method == 'POST':
+        issues = _payroll_close_issues(obj)
+        if issues:
+            messages.error(request, "Cannot close payroll: " + "; ".join(issues[:5]))
+            return redirect('/close_payroll/' + str(obj.id))
+
         obj.status = 3
         obj.closedBy = request.user.username
         obj.closed_date = datetime.now()
         obj.save()    
+        logInAuditLog(request, "Close Period", "Closed period %s %s" % (obj.periodID, obj.periodYear), period_obj=obj)
         
         
         #Validate if the next period exist, if not create it                
@@ -7845,6 +7994,7 @@ def open_period(request,id):
     #Changing the period Status to Open
     actual_period.status = 1
     actual_period.save()
+    logInAuditLog(request, "Reopen Period", "Reopened period %s %s" % (actual_period.periodID, actual_period.periodYear), period_obj=actual_period)
     
     return HttpResponseRedirect('/location_period_list/' + str(id))
     
@@ -10375,10 +10525,10 @@ def get_summary_by_employee(request,dateSelected, dateSelected2, empID, Location
                         ws.write(row_num,6,validate_print_decimals(i.double_time), font_style)
                         ws.write(row_num,7,validate_print_decimals(i.total_hours), font_style)
 
-                        if validate_decimals(i.EmployeeID.hourly_rate) != None:
-                            rtPrice = (validate_decimals(i.regular_hours) * float(validate_decimals(i.EmployeeID.hourly_rate)))
-                            otPrice = ((validate_decimals(i.ot_hour) * (float(validate_decimals(i.EmployeeID.hourly_rate))*1.5)))
-                            dtPrice = ((validate_decimals(i.double_time) * (float(validate_decimals(i.EmployeeID.hourly_rate))*2)))
+                        if i.emp_rate is not None:
+                            rtPrice = (validate_decimals(i.regular_hours) * float(validate_decimals(i.emp_rate)))
+                            otPrice = ((validate_decimals(i.ot_hour) * (float(validate_decimals(i.emp_rate))*1.5)))
+                            dtPrice = ((validate_decimals(i.double_time) * (float(validate_decimals(i.emp_rate))*2)))
 
                             ws.write(row_num,8,validate_print_decimals(rtPrice), font_style)
                             ws.write(row_num,9,validate_print_decimals(otPrice + dtPrice), font_style)
@@ -11458,7 +11608,7 @@ def update_emp_payout(request):
     
     try:
         #Getting all Dailys     
-        dailyObj = Daily.objects.all()
+        dailyObj = Daily.objects.exclude(Period__status=3).select_related("Period")
         updated = 0
         
         for crew in dailyObj:
@@ -11506,8 +11656,8 @@ def update_emp_payout(request):
                         empRate = validate_decimals(empD.payout / empD.regular_hours) 
                     elif validate_decimals(empD.regular_hours) > 0  and validate_decimals(empD.payout) > 0  and (validate_decimals(empD.on_call) != 0 or validate_decimals(empD.bonus) != 0): 
                         empRate = validate_decimals((empD.payout - validate_decimals(empD.on_call) - validate_decimals(empD.bonus)) / empD.regular_hours)         
-                    elif empD.EmployeeID.hourly_rate != None: 
-                        empRate = validate_decimals(empD.EmployeeID.hourly_rate)
+                    elif empD.emp_rate is not None:
+                        empRate = validate_decimals(empD.emp_rate)
                     else:
                         empRate = 0
 
@@ -11519,7 +11669,6 @@ def update_emp_payout(request):
                     empD.rt_pay = rt_pay
                     empD.ot_pay = ot_pay
                     empD.dt_pay = dt_pay
-                    empD.emp_rate = empRate                
                     empD.production = production
                     empD.save()    
             

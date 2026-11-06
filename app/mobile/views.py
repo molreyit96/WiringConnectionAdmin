@@ -18,6 +18,7 @@ from workOrder import models as catalogModel
 from datetime import datetime, timedelta
 from django.db import transaction
 import os
+import logging
 import uuid
 # Actualizado: 2026-08-05 - send_email_with_attachment fue migrada a la API de Brevo
 from utils.email import send_email_via_brevo_with_attachment
@@ -30,6 +31,54 @@ import base64
 from django.views.decorators.http import require_POST
 from django.db.models import Sum, OuterRef, Subquery, Value, CharField, IntegerField
 from django.db.models.functions import Concat, Cast
+
+
+def _valid_hourly_rate(employee):
+    if not employee:
+        return None
+    raw = employee.hourly_rate
+    if raw is None or str(raw).strip() == "":
+        return None
+    rate = round(float(str(raw)), 2)
+    if rate <= 0:
+        return None
+    return rate
+
+
+def _closed_period_guard(request, period_obj=None, daily=None, action=""):
+    if period_obj is None and daily is not None:
+        period_obj = daily.Period
+    if not period_obj or period_obj.status != 3:
+        return None
+
+    emp = catalogModel.Employee.objects.filter(user__username__exact=request.user.username).first()
+    detail = "Blocked action on closed period: %s; Period: %s; DailyMob: %s; User: %s" % (
+        action,
+        getattr(period_obj, "id", None),
+        getattr(daily, "id", None),
+        request.user.username,
+    )
+    try:
+        catalogModel.logInAudit.objects.create(
+            Location=getattr(daily, "Location", None) or (emp.Location if emp else None),
+            Period=period_obj,
+            EmployeeID=emp,
+            operationType="Blocked-ClosedPeriod",
+            operationDetail=detail[:1000],
+            created_date=datetime.now(),
+            createdBy=request.user.username,
+            is_staff=request.user.is_staff,
+            is_supervisor=bool(emp and emp.is_supervisor),
+            is_admin=bool(emp and emp.is_admin),
+            is_superAdmin=bool(emp and emp.is_superAdmin),
+            accounts_payable=bool(emp and emp.accounts_payable),
+        )
+    except Exception:
+        logging.getLogger(__name__).exception("Failed to audit blocked closed-period action")
+    logging.getLogger(__name__).warning(detail)
+
+    return HttpResponse("Period is closed. This daily cannot be modified.", status=403)
+
 
 @login_required(login_url='/home/')
 def mobile(request):
@@ -560,6 +609,9 @@ def update_supervisor(request, perID, dID, crewID, LocID):
         ov = request.POST.get('ov')
         crew = DailyMob.objects.filter(id = dailyID).first()
         if crew:            
+            guard = _closed_period_guard(request, daily=crew, action="update_supervisor")
+            if guard:
+                return guard
             crew.supervisor = sup                      
             crew.split_paymet = bool(split)   
 
@@ -603,6 +655,9 @@ def create_daily(request, pID, dID, LocID):
     context = {}    
     context["emp"] = emp    
     per = catalogModel.period.objects.filter(id = pID).first()
+    guard = _closed_period_guard(request, period_obj=per, action="create_daily")
+    if guard:
+        return guard
 
     #perActual = catalogModel.period.objects.filter(status__in=(1,2)).first()
     perActual = catalogModel.period.objects.filter(status=1).first()
@@ -762,6 +817,9 @@ def create_daily_emp(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     dailyID = DailyMob.objects.filter(id = id).first()
+    guard = _closed_period_guard(request, daily=dailyID, action="create_daily_emp")
+    if guard:
+        return guard
 
     #Get all the dailies with the same Period, Day and Location
     dailyList = list(DailyMob.objects.filter(Location = dailyID.Location, Period = dailyID.Period, day = dailyID.day, woID = dailyID.woID))
@@ -805,7 +863,17 @@ def create_daily_emp(request, id, LocID):
         empid = request.POST.get('EmployeeID')
         
         selectedEmp = catalogModel.Employee.objects.filter(employeeID = empid).first()
+        empRate = _valid_hourly_rate(selectedEmp)
+        if selectedEmp is None or empRate is None:
+            form.add_error('EmployeeID', 'Employee must have a valid hourly rate.')
+            context['form'] = form
+            context['emp'] = emp
+            context['daily'] = dailyID
+            context['empList'] = EmpLocation
+            context['selectedLocation'] = LocID
+            return render(request, "mobile/create_daily_emp.html", context)
         form.instance.EmployeeID = selectedEmp
+        form.instance.emp_rate = empRate
         form.save()  
           
         update_ptp_Emp(id, dailyID.split_paymet)             
@@ -824,6 +892,9 @@ def create_daily_emp_sup(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     dailyID = DailyMob.objects.filter(id = id).first()
+    guard = _closed_period_guard(request, daily=dailyID, action="create_daily_emp_sup")
+    if guard:
+        return guard
 
     dailyE = DailyMobEmployee.objects.filter(DailyID = dailyID)
     empList = []
@@ -849,7 +920,17 @@ def create_daily_emp_sup(request, id, LocID):
         empid = request.POST.get('EmployeeID')
         
         selectedEmp = catalogModel.Employee.objects.filter(employeeID = empid).first()
+        empRate = _valid_hourly_rate(selectedEmp)
+        if selectedEmp is None or empRate is None:
+            form.add_error('EmployeeID', 'Employee must have a valid hourly rate.')
+            context['form'] = form
+            context['emp'] = emp
+            context['daily'] = dailyID
+            context['empList'] = EmpLocation
+            context['selectedLocation'] = LocID
+            return render(request, "mobile/create_daily_emp_sup.html", context)
         form.instance.EmployeeID = selectedEmp
+        form.instance.emp_rate = empRate
         form.save()  
           
         update_ptp_Emp(id, dailyID.split_paymet)             
@@ -868,6 +949,12 @@ def update_daily_emp(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}    
     obj = get_object_or_404(DailyMobEmployee, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="update_daily_emp")
+    if guard:
+        return guard
+
+    old_emp_id = obj.EmployeeID_id
+    old_rate = obj.emp_rate
 
     per = catalogModel.period.objects.filter(status__in=(1,2)).first()
     context["per"] = per    
@@ -890,14 +977,23 @@ def update_daily_emp(request, id, LocID):
         empid = request.POST.get('EmployeeID')
         
         selectedEmp = catalogModel.Employee.objects.filter(employeeID = empid).first()
-        form.instance.EmployeeID = selectedEmp
+        empRate = _valid_hourly_rate(selectedEmp)
+        if selectedEmp is None or empRate is None:
+            form.add_error('EmployeeID', 'Employee must have a valid hourly rate.')
+        else:
+            employee_changed = selectedEmp.pk != old_emp_id
+            if employee_changed or old_rate is None or round(float(str(old_rate)), 2) <= 0:
+                form.instance.emp_rate = empRate
+            else:
+                form.instance.emp_rate = old_rate
+            form.instance.EmployeeID = selectedEmp
 
-        form.save()       
+            form.save()
 
-        update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet) 
+            update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet)
 
-        context["emp"] = emp       
-        return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) + '/' + str(LocID)) 
+            context["emp"] = emp
+            return HttpResponseRedirect('/mobile/crew/' + str(obj.DailyID.Period.id) + '/' + obj.DailyID.day.strftime("%d") + '/' + str(obj.DailyID.crew) + '/' + str(LocID))
 
     dailyID = DailyMob.objects.filter(id = obj.DailyID.id).first()
 
@@ -915,6 +1011,12 @@ def update_daily_emp_sup(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}    
     obj = get_object_or_404(DailyMobEmployee, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="update_daily_emp_sup")
+    if guard:
+        return guard
+
+    old_emp_id = obj.EmployeeID_id
+    old_rate = obj.emp_rate
 
     per = catalogModel.period.objects.filter(status__in=(1,2)).first()
     context["per"] = per    
@@ -937,14 +1039,23 @@ def update_daily_emp_sup(request, id, LocID):
         empid = request.POST.get('EmployeeID')
         
         selectedEmp = catalogModel.Employee.objects.filter(employeeID = empid).first()
-        form.instance.EmployeeID = selectedEmp
+        empRate = _valid_hourly_rate(selectedEmp)
+        if selectedEmp is None or empRate is None:
+            form.add_error('EmployeeID', 'Employee must have a valid hourly rate.')
+        else:
+            employee_changed = selectedEmp.pk != old_emp_id
+            if employee_changed or old_rate is None or round(float(str(old_rate)), 2) <= 0:
+                form.instance.emp_rate = empRate
+            else:
+                form.instance.emp_rate = old_rate
+            form.instance.EmployeeID = selectedEmp
 
-        form.save()       
+            form.save()
 
-        update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet) 
+            update_ptp_Emp(obj.DailyID.id, obj.DailyID.split_paymet)
 
-        context["emp"] = emp       
-        return HttpResponseRedirect('/mobile/approve_timesheet/' + str(obj.DailyID.id)) 
+            context["emp"] = emp
+            return HttpResponseRedirect('/mobile/approve_timesheet/' + str(obj.DailyID.id))
 
     dailyID = DailyMob.objects.filter(id = obj.DailyID.id).first()
 
@@ -963,6 +1074,9 @@ def delete_daily_emp(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     obj = get_object_or_404(DailyMobEmployee, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_emp")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -982,6 +1096,9 @@ def delete_daily_emp_sup(request, id, LocID):
     emp = catalogModel.Employee.objects.filter(user__username__exact = request.user.username).first()
     context ={}
     obj = get_object_or_404(DailyMobEmployee, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_emp_sup")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -1007,6 +1124,9 @@ def create_daily_item(request, id, LocID):
     context["per"] = per
 
     dailyID = DailyMob.objects.filter(id = id).first()
+    guard = _closed_period_guard(request, daily=dailyID, action="create_daily_item")
+    if guard:
+        return guard
 
     dailyI = DailyMobItem.objects.filter(DailyID = dailyID)
     itemList = []
@@ -1070,6 +1190,9 @@ def create_daily_item_sup(request, id, LocID):
     context["per"] = per
 
     dailyID = DailyMob.objects.filter(id = id).first()
+    guard = _closed_period_guard(request, daily=dailyID, action="create_daily_item")
+    if guard:
+        return guard
 
     dailyI = DailyMobItem.objects.filter(DailyID = dailyID)
     itemList = []
@@ -1133,6 +1256,9 @@ def update_daily_item(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyMobItem, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="update_daily_item")
+    if guard:
+        return guard
 
     dailyID = DailyMob.objects.filter(id = obj.DailyID.id).first()
 
@@ -1179,6 +1305,9 @@ def update_daily_item_sup(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyMobItem, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="update_daily_item_sup")
+    if guard:
+        return guard
 
     dailyID = DailyMob.objects.filter(id = obj.DailyID.id).first()
 
@@ -1226,6 +1355,9 @@ def delete_daily_item(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyMobItem, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_item")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -1247,6 +1379,9 @@ def delete_daily_item_sup(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyMobItem, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_item_sup")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -1286,6 +1421,10 @@ class BulkUploadCompressedView(View):
                 'errors': f'Invalid DailyID: {daily_id_input}'
             }, status=400)
         
+        guard = _closed_period_guard(request, daily=daily_id, action="upload_daily_docs_compressed")
+        if guard:
+            return guard
+
         # Use the docType from the URL (original behavior)
         doc_type = int(docType)
         
@@ -1362,6 +1501,9 @@ class BulkUploadView(View):
 
         if form.is_valid():
             daily_id = form.cleaned_data['DailyID']
+            guard = _closed_period_guard(request, daily=daily_id, action="upload_daily_docs")
+            if guard:
+                return guard
             doc_type = form.cleaned_data['docType']            
             files = self.request.FILES.getlist('files')
             
@@ -1410,6 +1552,9 @@ class BulkUploadViewSup(View):
 
         if form.is_valid():
             daily_id = form.cleaned_data['DailyID']
+            guard = _closed_period_guard(request, daily=daily_id, action="upload_daily_docs_sup")
+            if guard:
+                return guard
             doc_type = form.cleaned_data['docType']
             files = self.request.FILES.getlist('files')
             
@@ -1461,6 +1606,9 @@ def delete_daily_docs(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyMobDocs, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_docs")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -1479,6 +1627,9 @@ def delete_daily_docs_sup(request, id, LocID):
     context["per"] = per
 
     obj = get_object_or_404(DailyMobDocs, id = id)
+    guard = _closed_period_guard(request, daily=obj.DailyID, action="delete_daily_docs_sup")
+    if guard:
+        return guard
  
     context["form"] = obj
     context["emp"] = emp
@@ -1496,6 +1647,9 @@ def send_payroll(request, id, LocID):
     context ={}
 
     obj = get_object_or_404(DailyMob, id = id)
+    guard = _closed_period_guard(request, daily=obj, action="send_payroll")
+    if guard:
+        return guard
 
     # Prevents an already-approved/rejected/deleted daily from being reverted to Sent.
     if obj.Status not in (1, 5):
@@ -1543,6 +1697,9 @@ def update_ptp_Emp(dailyID, split):
     emp_ptp = 0
     crew = DailyMob.objects.filter(id = dailyID).first()
     if crew:
+        if crew.Period_id and crew.Period.status == 3:
+            return emp_ptp
+
         itemCount = 0
         itemSum = 0
         
@@ -1585,6 +1742,13 @@ def update_ptp_Emp(dailyID, split):
             if empD.per_to_pay != None:                                         
                 emp_ptp += empD.per_to_pay   
 
+            empRate = validate_decimals(empD.emp_rate) if empD.emp_rate is not None else 0
+            if empRate <= 0:
+                fallbackRate = _valid_hourly_rate(empD.EmployeeID)
+                if fallbackRate is not None:
+                    empRate = fallbackRate
+                    empD.emp_rate = fallbackRate
+
             if itemCount > 0:
                 pay_out = validate_decimals(((itemSum * empD.per_to_pay) / 100))
                 production = validate_decimals(((itemSum * empD.per_to_pay) / 100))
@@ -1595,9 +1759,6 @@ def update_ptp_Emp(dailyID, split):
                     pay_out += ovEmp      
 
             else: 
-                if empD.EmployeeID.hourly_rate != None: 
-                    empRate = validate_decimals(empD.EmployeeID.hourly_rate)
-
                 rt_pay = (empD.regular_hours * empRate)
                 ot_pay = (empD.ot_hour * (empRate * 1.5))
                 dt_pay = (empD.double_time * (empRate * 2))
@@ -1612,7 +1773,6 @@ def update_ptp_Emp(dailyID, split):
             empD.rt_pay = rt_pay
             empD.ot_pay = ot_pay
             empD.dt_pay = dt_pay
-            empD.emp_rate = empRate
             empD.own_vehicle_pay = ovEmp
             empD.payout = pay_out
             empD.production = production            
@@ -1982,6 +2142,9 @@ def reject_timesheet(request, id, origen):
     context["per"] = per
 
     obj = get_object_or_404(DailyMob, id = id)
+    guard = _closed_period_guard(request, daily=obj, action="reject_timesheet")
+    if guard:
+        return guard
 
     superV = catalogModel.Employee.objects.filter(is_supervisor=True)
 
@@ -2120,6 +2283,9 @@ def approve_timesheet(request, id):
     context["per"] = per
 
     obj = get_object_or_404(DailyMob, id = id)
+    guard = _closed_period_guard(request, daily=obj, action="approve_timesheet")
+    if guard:
+        return guard
 
     superV = catalogModel.Employee.objects.filter(is_supervisor=True)
 
@@ -2167,6 +2333,26 @@ def approve_timesheet(request, id):
 
     if form.is_valid():
         try:
+            missing_rates = []
+            for row in dailyEmp:
+                if row.emp_rate is None or validate_decimals(row.emp_rate) <= 0:
+                    fallbackRate = _valid_hourly_rate(row.EmployeeID)
+                    if fallbackRate is None:
+                        missing_rates.append(str(row.EmployeeID))
+                    else:
+                        row.emp_rate = fallbackRate
+                        row.save(update_fields=["emp_rate"])
+            if missing_rates:
+                context['form'] = form
+                context["emp"] = emp
+                context["dailyEmp"] = dailyEmp
+                context["dailyItem"] = dailyItem
+                context["superV"] = superV
+                context["dailyWO"] = obj
+                context["id"] = id
+                context["errorMessage"] = "Employees without valid hourly rate: " + ", ".join(missing_rates)
+                return render(request, "mobile/approve_timesheet.html", context)
+
             form.instance.daily_date = datetime.now()           
             form.save()
             
@@ -2388,6 +2574,9 @@ def save_pdf_daily(request, id):
     context["per"] = per
 
     obj = get_object_or_404(DailyMob, id = id)
+    guard = _closed_period_guard(request, daily=obj, action="save_pdf_daily")
+    if guard:
+        return guard
 
 
     if request.method == 'POST' and request.FILES.get('pdfDaily'):
