@@ -34,9 +34,10 @@
                                     <thead class="table-primary">
                                         <tr>
                                             <th scope="col" style="width: 8%">Id</th>
-                                            <th scope="col" style="width: 32%">Name</th>
-                                            <th scope="col" style="width: 15%">City</th>
-                                            <th scope="col" style="width: 40%">Description</th>
+                                            <th scope="col" style="width: 25%">Name</th>
+                                            <th scope="col" style="width: 12%">City</th>
+                                            <th scope="col" style="width: 15%">Employee rate</th>
+                                            <th scope="col" style="width: 35%">Description</th>
                                             <th scope="col" style="width: 5%"></th>
                                         </tr>              
                                     </thead>
@@ -46,6 +47,7 @@
                                                 <td>{{data.LocationID}}</td>
                                                 <td>{{data.name}}</td>
                                                 <td>{{data.city}}</td>
+                                                <td>{{data.employee_rate|default_if_none:"Not set"}}</td>
                                                 <td>{{data.description}}</td>
                                                 <td> <a href="/update_location/{{data.LocationID}}"><i class="fa-solid fa-pen-to-square" style="color: green;"></i></a></td>
                                             </tr>                                             

@@ -44,6 +44,7 @@ class Locations(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=200, blank=True, null=True)
+    employee_rate = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

@@ -11,6 +11,12 @@ class LocationsForm(forms.ModelForm):
     name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={'class':'form-control'}))
     description = forms.CharField(max_length=150, widget=forms.Textarea(attrs={'class':'form-control'}))
     city= forms.CharField(max_length=50, widget=forms.TextInput(attrs={'class':'form-control'}))
+    employee_rate = forms.DecimalField(
+        label="Employee rate (USD/hour)",
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+    )
     is_active= forms.BooleanField(required=False)
 
     class Meta:
@@ -20,6 +26,7 @@ class LocationsForm(forms.ModelForm):
             "name",           
             "description",
              "city",
+             "employee_rate",
              'is_active'
              
         ]

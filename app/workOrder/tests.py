@@ -1,7 +1,62 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from workOrder.models import logInAudit, Employee, Locations, period
+from workOrder.forms import LocationsForm
 from datetime import datetime, timedelta
+
+
+class LocationEmployeeRateTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='location_rate_user', password='testpass123')
+        self.location = Locations.objects.create(
+            LocationID=9001,
+            name='Rate Test Location',
+            city='Los Angeles',
+            description='Location for rate tests',
+            employee_rate='20.00',
+        )
+        Employee.objects.create(
+            employeeID=9001,
+            first_name='Location',
+            last_name='Rate',
+            Location=self.location,
+            user=self.user,
+        )
+        self.client = Client()
+        self.client.login(username='location_rate_user', password='testpass123')
+
+    def test_location_form_requires_employee_rate(self):
+        form = LocationsForm(data={
+            'LocationID': '9002',
+            'name': 'New Location',
+            'description': 'New location description',
+            'city': 'Los Angeles',
+            'is_active': 'on',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('employee_rate', form.errors)
+
+    def test_update_location_saves_and_displays_employee_rate(self):
+        response = self.client.get('/update_location/9001')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Employee rate (USD/hour)')
+        self.assertContains(response, 'name="employee_rate"')
+
+        response = self.client.post('/update_location/9001', {
+            'LocationID': '9001',
+            'name': 'Rate Test Location',
+            'description': 'Location for rate tests',
+            'city': 'Los Angeles',
+            'employee_rate': '27.50',
+            'is_active': 'on',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.location.refresh_from_db()
+        self.assertEqual(str(self.location.employee_rate), '27.50')
+        self.assertContains(response, '27.50')
 
 
 class LoginAuditFilterTests(TestCase):
