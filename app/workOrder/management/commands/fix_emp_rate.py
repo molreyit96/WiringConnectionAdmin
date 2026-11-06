@@ -10,7 +10,7 @@ def _number(value):
 
 
 class Command(BaseCommand):
-    help = "Backfill DailyEmployee.emp_rate from payout for hourly rows without production items."
+    help = "Backfill DailyEmployee.emp_rate for hourly rows or active billable rows."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -23,25 +23,50 @@ class Command(BaseCommand):
             action="store_true",
             help="Print every row that would be updated.",
         )
+        parser.add_argument(
+            "--billable-live",
+            action="store_true",
+            help="Backfill active billable rows from Employee.hourly_rate instead of payout.",
+        )
 
     def handle(self, *args, **options):
         apply_changes = options["apply"]
         verbose = options["verbose"]
+        billable_live = options["billable_live"]
 
-        candidates = (
-            DailyEmployee.objects.filter(
-                Q(emp_rate__isnull=True) | Q(emp_rate=0),
-                DailyID__dailyitem__isnull=True,
+        if billable_live:
+            candidates = (
+                DailyEmployee.objects.filter(
+                    Q(emp_rate__isnull=True) | Q(emp_rate=0),
+                    billableHours=True,
+                )
+                .exclude(Status=4)
+                .select_related("DailyID", "EmployeeID")
+                .order_by("DailyID__day", "id")
             )
-            .select_related("DailyID", "EmployeeID")
-            .order_by("DailyID__day", "id")
-        )
+        else:
+            candidates = (
+                DailyEmployee.objects.filter(
+                    Q(emp_rate__isnull=True) | Q(emp_rate=0),
+                    DailyID__dailyitem__isnull=True,
+                )
+                .select_related("DailyID", "EmployeeID")
+                .order_by("DailyID__day", "id")
+            )
 
         changes = []
         no_hours = []
         no_source = []
 
         for row in candidates.iterator():
+            if billable_live:
+                emp_rate = round(_number(getattr(row.EmployeeID, "hourly_rate", None)), 2)
+                if emp_rate <= 0:
+                    no_source.append(row)
+                    continue
+                changes.append((row, emp_rate))
+                continue
+
             regular_hours = _number(row.regular_hours)
             overtime_hours = _number(row.ot_hour)
             double_time = _number(row.double_time)
@@ -65,9 +90,10 @@ class Command(BaseCommand):
 
             changes.append((row, emp_rate))
 
+        mode = "billable live rate" if billable_live else "payout"
         self.stdout.write(
-            "Candidates: %s | calculable: %s | no hours: %s | no payout source: %s"
-            % (len(changes) + len(no_hours) + len(no_source), len(changes), len(no_hours), len(no_source))
+            "Mode: %s | Candidates: %s | calculable: %s | no hours: %s | no source: %s"
+            % (mode, len(changes) + len(no_hours) + len(no_source), len(changes), len(no_hours), len(no_source))
         )
 
         for row in no_source:

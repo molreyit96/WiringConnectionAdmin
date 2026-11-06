@@ -2778,13 +2778,13 @@ def estimate(request, id, estimateID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
 
     total += Decimal(totalHoursRate) 
 
@@ -2860,6 +2860,23 @@ def partial_estimate(request, id, isPartial, Status, addressID):
     context["per"] = per
 
     wo = workOrder.objects.filter(id=id).first()
+
+    missing_rates = _billing_rate_issues(
+        DailyEmployee.objects.filter(
+            DailyID__woID=wo, billableHours=True
+        ).exclude(Status=4)
+    )
+    if missing_rates:
+        ids = ", ".join(str(row.id) for row in missing_rates)
+        logging.getLogger(__name__).error(
+            "Blocked billing operation for workOrder=%s; missing rates on DailyEmployee=%s",
+            id,
+            ids,
+        )
+        return HttpResponse(
+            "Missing billing rate for DailyEmployee: %s" % ids,
+            status=400,
+        )
 
     openEstimate = woEstimate.objects.filter(woID = wo, Status = 1).count()
 
@@ -3236,13 +3253,13 @@ def invoice(request, id, invoiceID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
 
     total += Decimal(totalHoursRate) 
 
@@ -3460,13 +3477,13 @@ def download_estimate_preview(request, id, estimateID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
     
     total += Decimal(totalHoursRate) 
 
@@ -3656,13 +3673,13 @@ def estimate_preview(request, id, estimateID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
     
     total += Decimal(totalHoursRate) 
 
@@ -3835,13 +3852,13 @@ def invoice_preview(request, id, invoiceID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
 
 
     total += Decimal(totalHoursRate) 
@@ -3975,13 +3992,13 @@ def calculate_invoice_total(request, id, invoiceID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
        
     total += Decimal(totalHoursRate) 
 
@@ -4059,13 +4076,13 @@ def calculate_estimate_total(request, id, estimateID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
        
     total += Decimal(totalHoursRate) 
 
@@ -4681,6 +4698,42 @@ def _valid_hourly_rate(employee):
     if rate <= 0:
         return None
     return rate
+
+
+def _billing_rate(row):
+    snapshot = getattr(row, "emp_rate", None)
+    if snapshot is not None:
+        rate = validate_decimals(snapshot)
+        if rate > 0:
+            return rate
+
+    live_rate = _valid_hourly_rate(getattr(row, "EmployeeID", None))
+    if live_rate is not None:
+        if not getattr(row, "_billing_rate_fallback_logged", False):
+            logging.getLogger(__name__).warning(
+                "Billing rate fallback to Employee.hourly_rate for DailyEmployee=%s; emp_rate=%s",
+                getattr(row, "id", None),
+                snapshot,
+            )
+            row._billing_rate_fallback_logged = True
+        return live_rate
+
+    if not getattr(row, "_billing_rate_error_logged", False):
+        logging.getLogger(__name__).error(
+            "Missing billing rate for DailyEmployee=%s; emp_rate=%s and Employee.hourly_rate are invalid",
+            getattr(row, "id", None),
+            snapshot,
+        )
+        row._billing_rate_error_logged = True
+    return 0
+
+
+def _billing_rate_issues(queryset):
+    return [
+        row
+        for row in queryset.select_related("EmployeeID")
+        if _billing_rate(row) <= 0
+    ]
 
 
 def _closed_period_guard(request, period_obj=None, daily=None, action=""):
@@ -9595,13 +9648,13 @@ def update_invoice(request, id, invoiceID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
        
 
     billableHours = [{'Description': 'Billable Hours', 'TotalHours': totalHours, 'totalHoursRate':totalHoursRate}]
@@ -9709,13 +9762,13 @@ def update_estimate(request, id, estimateID):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
 
     billableHours = [{'Description': 'Billable Hours', 'TotalHours': totalHours, 'totalHoursRate':totalHoursRate}]
     context["billableHours"]=billableHours
@@ -9731,13 +9784,13 @@ def update_estimate(request, id, estimateID):
     for bn in billNI:
         totalHoursNI +=  validate_decimals(bn.total_hours) 
         #Calculating Regular Hours
-        totalHoursRateNI += (validate_decimals(bn.regular_hours) * validate_decimals(bn.EmployeeID.hourly_rate))
+        totalHoursRateNI += (validate_decimals(bn.regular_hours) * _billing_rate(bn))
 
         #Calculating OT Hours
-        totalHoursRateNI += (validate_decimals(bn.ot_hour) * (validate_decimals(bn.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRateNI += (validate_decimals(bn.ot_hour) * (_billing_rate(bn)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRateNI += (validate_decimals(bn.double_time) * (validate_decimals(bn.EmployeeID.hourly_rate)* 2))
+        totalHoursRateNI += (validate_decimals(bn.double_time) * (_billing_rate(bn)* 2))
        
 
 
@@ -9917,6 +9970,23 @@ def add_hours_to_estimate(request, woID, estimateID):
         context["estimateNumber"] = 0
 
     if request.method == 'POST':
+        missing_rates = _billing_rate_issues(
+            DailyEmployee.objects.filter(
+                DailyID__woID=wo, billableHours=True
+            ).exclude(Status=4)
+        )
+        if missing_rates:
+            ids = ", ".join(str(row.id) for row in missing_rates)
+            logging.getLogger(__name__).error(
+                "Blocked add_hours_to_estimate for workOrder=%s; missing rates on DailyEmployee=%s",
+                wo.id,
+                ids,
+            )
+            return HttpResponse(
+                "Missing billing rate for DailyEmployee: %s" % ids,
+                status=400,
+            )
+
         #Update Hours PO
         internal = DailyEmployee.objects.filter(DailyID__woID =wo, billableHours = True).exclude(Status=4)
         
@@ -12238,13 +12308,13 @@ def get_invoiced_production_total_for_wo(wo):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
 
     total_facturado += validate_decimals(totalHoursRate) 
     return validate_decimals(total_facturado)
@@ -12292,13 +12362,13 @@ def get_uninvoiced_production_total_for_wo(wo):
     for b in bill:
         totalHours +=  validate_decimals(b.total_hours) 
         #Calculating Regular Hours
-        totalHoursRate += (validate_decimals(b.regular_hours) * validate_decimals(b.EmployeeID.hourly_rate))
+        totalHoursRate += (validate_decimals(b.regular_hours) * _billing_rate(b))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.ot_hour) * (validate_decimals(b.EmployeeID.hourly_rate)* 1.5))
+        totalHoursRate += (validate_decimals(b.ot_hour) * (_billing_rate(b)* 1.5))
 
         #Calculating OT Hours
-        totalHoursRate += (validate_decimals(b.double_time) * (validate_decimals(b.EmployeeID.hourly_rate)* 2))
+        totalHoursRate += (validate_decimals(b.double_time) * (_billing_rate(b)* 2))
 
     total_no_facturado += validate_decimals(totalHoursRate) 
     return validate_decimals(total_no_facturado)

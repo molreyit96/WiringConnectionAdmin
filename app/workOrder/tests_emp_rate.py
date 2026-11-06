@@ -3,7 +3,7 @@ from io import StringIO
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.test import Client, TestCase
+from django.test import Client, RequestFactory, TestCase
 
 from mobile.models import DailyMob, DailyMobEmployee, DailyMobItem
 from mobile.views import update_ptp_Emp as mobile_update_ptp
@@ -19,8 +19,11 @@ from workOrder.models import (
     itemPrice,
     period,
     workOrder,
+    woEstimate,
+    woInvoice,
 )
-from workOrder.views import _payroll_close_issues
+from workOrder.views import _billing_rate, _billing_rate_issues, _payroll_close_issues
+from workOrder.views import calculate_estimate_total, calculate_invoice_total
 from workOrder.views import update_ptp_Emp as web_update_ptp
 
 
@@ -593,3 +596,137 @@ class FixEmpRateCommandTests(EmpRateSnapshotBase):
         no_source.refresh_from_db()
         self.assertIsNone(no_hours.emp_rate)
         self.assertIsNone(no_source.emp_rate)
+
+
+class BillingRateTests(EmpRateSnapshotBase):
+    def _request(self):
+        request = RequestFactory().get("/")
+        request.user = self.user
+        return request
+
+    def test_estimate_uses_snapshot_instead_of_live_rate(self):
+        self.emp.hourly_rate = "30.00"
+        self.emp.save(update_fields=["hourly_rate"])
+        estimate = woEstimate.objects.create(woID=self.wo, estimateNumber=1)
+        DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            ot_hour=2,
+            double_time=1,
+            total_hours=11,
+            billableHours=True,
+            estimate="1",
+            emp_rate=18.57,
+        )
+
+        total = calculate_estimate_total(self._request(), self.wo.id, 1)
+
+        estimate.refresh_from_db()
+        expected = (8 * 18.57) + (2 * 18.57 * 1.5) + (1 * 18.57 * 2)
+        self.assertAlmostEqual(float(total), expected, places=2)
+        self.assertAlmostEqual(estimate.total, expected, places=2)
+
+    def test_invoice_uses_snapshot_instead_of_live_rate(self):
+        self.emp.hourly_rate = "30.00"
+        self.emp.save(update_fields=["hourly_rate"])
+        invoice = woInvoice.objects.create(
+            woID=self.wo, estimateNumber=1, invoiceNumber=1
+        )
+        DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            ot_hour=0,
+            double_time=0,
+            total_hours=8,
+            billableHours=True,
+            invoice="1",
+            emp_rate=18.57,
+        )
+
+        total = calculate_invoice_total(self._request(), self.wo.id, 1)
+
+        invoice.refresh_from_db()
+        self.assertAlmostEqual(float(total), 148.56, places=2)
+        self.assertAlmostEqual(invoice.total, 148.56, places=2)
+
+    def test_billing_falls_back_to_live_rate_when_snapshot_missing(self):
+        estimate = woEstimate.objects.create(woID=self.wo, estimateNumber=1)
+        DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            ot_hour=0,
+            double_time=0,
+            total_hours=8,
+            billableHours=True,
+            estimate="1",
+            emp_rate=None,
+        )
+
+        total = calculate_estimate_total(self._request(), self.wo.id, 1)
+
+        estimate.refresh_from_db()
+        self.assertAlmostEqual(float(total), 200.00, places=2)
+        self.assertAlmostEqual(estimate.total, 200.00, places=2)
+
+    def test_billing_rate_issues_detect_missing_snapshot_and_live_rate(self):
+        row = DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            billableHours=True,
+            emp_rate=None,
+        )
+        self.emp.hourly_rate = None
+        self.emp.save(update_fields=["hourly_rate"])
+
+        self.assertEqual(_billing_rate(row), 0)
+        self.assertEqual(_billing_rate_issues(DailyEmployee.objects.filter(id=row.id)), [row])
+
+    def test_billing_rate_issues_accept_fallback(self):
+        row = DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            billableHours=True,
+            emp_rate=None,
+        )
+
+        self.assertEqual(_billing_rate_issues(DailyEmployee.objects.filter(id=row.id)), [])
+
+
+class BillableEmpRateCommandTests(EmpRateSnapshotBase):
+    def test_billable_live_dry_run_does_not_write_and_apply_uses_live_rate(self):
+        daily_emp = DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            billableHours=True,
+            Status=1,
+            emp_rate=None,
+        )
+
+        call_command("fix_emp_rate", "--billable-live", stdout=StringIO())
+        daily_emp.refresh_from_db()
+        self.assertIsNone(daily_emp.emp_rate)
+
+        call_command("fix_emp_rate", "--billable-live", "--apply", stdout=StringIO())
+        daily_emp.refresh_from_db()
+        self.assertAlmostEqual(daily_emp.emp_rate, 25.00, places=2)
+
+    def test_billable_live_skips_removed_rows(self):
+        daily_emp = DailyEmployee.objects.create(
+            DailyID=self.daily,
+            EmployeeID=self.emp,
+            regular_hours=8,
+            billableHours=True,
+            Status=4,
+            emp_rate=0,
+        )
+
+        call_command("fix_emp_rate", "--billable-live", "--apply", stdout=StringIO())
+
+        daily_emp.refresh_from_db()
+        self.assertEqual(daily_emp.emp_rate, 0)
